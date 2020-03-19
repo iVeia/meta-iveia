@@ -1,0 +1,37 @@
+From 0ae2831bdf9a3e590019d9597d9ddeb1b0ce8d76 Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Tue, 17 Mar 2020 17:35:27 -0400
+Subject: [PATCH] iveia version banner
+
+---
+ lib/sw_apps/zynqmp_fsbl/src/xfsbl_main.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/lib/sw_apps/zynqmp_fsbl/src/xfsbl_main.c b/lib/sw_apps/zynqmp_fsbl/src/xfsbl_main.c
+index 4dc1eaa..21f687f 100644
+--- a/lib/sw_apps/zynqmp_fsbl/src/xfsbl_main.c
++++ b/lib/sw_apps/zynqmp_fsbl/src/xfsbl_main.c
+@@ -51,6 +51,7 @@
+ #include "xfsbl_hw.h"
+ #include "xfsbl_main.h"
+ #include "bspconfig.h"
++#include "iveia_version.h"
+ 
+ /************************** Constant Definitions *****************************/
+ 
+@@ -364,6 +365,12 @@ void XFsbl_PrintFsblBanner(void )
+                  "Release %d.%d   %s  -  %s\r\n",
+                  SDK_RELEASE_YEAR, SDK_RELEASE_QUARTER,__DATE__,__TIME__);
+ 
++	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"-------------------------------------------------\r\n");
++	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"iVeia %s FSBL\r\n", FSBL_MACHINE);
++	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Built    : %s, %s\r\n", __DATE__, __TIME__);
++	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Commits  : %s, %s\r\n", FSBL_BUILD_HASH, FSBL_META_BUILD_HASH);
++	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"-------------------------------------------------\r\n");
++
+ 	if(FsblInstance.ResetReason == XFSBL_PS_ONLY_RESET) {
+ 		XFsbl_Printf(DEBUG_GENERAL,"Reset Mode	:	PS Only Reset\r\n");
+ 	} else if (XFSBL_MASTER_ONLY_RESET == FsblInstance.ResetReason) {
+-- 
+2.7.4
+

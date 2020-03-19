@@ -1,0 +1,20 @@
+diff -urN build/fsbl/psu_init.c build.new/fsbl/psu_init.c
+--- build/fsbl/psu_init.c	2020-03-18 20:42:37.613969554 -0400
++++ build.new/fsbl/psu_init.c	2020-03-18 20:47:13.937714000 -0400
+@@ -20962,6 +20962,8 @@
+ 	return 0;
+ }
+ 
++void iv_z8_init();
++
+ int
+ psu_init(void)
+ {
+@@ -20974,6 +20976,7 @@
+ 	status &=  psu_ddr_init_data();
+ 	status &=  psu_ddr_phybringup_data();
+ 	status &=  psu_peripherals_init_data();
++	iv_z8_init();
+ 	status &=  init_serdes();
+ 	init_peripheral();
+ 

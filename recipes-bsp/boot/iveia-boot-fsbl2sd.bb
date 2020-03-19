@@ -32,6 +32,7 @@ do_fetch[noexec] = "1"
 do_unpack[noexec] = "1"
 do_patch[noexec] = "1"
 
+do_compile[depends] += "virtual/fsbl:do_deploy"
 do_compile() {
     cd ${WORKDIR}
     rm -f ${B}/${BOOTBIN_FILE_NAME}
@@ -47,14 +48,9 @@ do_install() {
     install -m 0644 ${B}/${BOOTBIN_FILE_NAME} ${D}/boot/${BOOTBIN_FILE_NAME}
 }
 
-BOOTBIN_BASE_NAME ?= "BOOT-${MACHINE}-${DATETIME}"
-BOOTBIN_BASE_NAME[vardepsexclude] = "DATETIME"
-
 do_deploy() {
     install -d ${DEPLOYDIR}
-    install -m 0644 ${B}/${BOOTBIN_FILE_NAME} ${DEPLOYDIR}/${BOOTBIN_BASE_NAME}.bin
-    ln -sf ${BOOTBIN_BASE_NAME}.bin ${DEPLOYDIR}/BOOT-${MACHINE}.bin
-    ln -sf ${BOOTBIN_BASE_NAME}.bin ${DEPLOYDIR}/boot.bin
+    install -m 0644 ${B}/${BOOTBIN_FILE_NAME} ${DEPLOYDIR}/${BOOTBIN_FILE_NAME}
 }
 
 FILES_${PN} += "/boot/${BOOTBIN_FILE_NAME}"
