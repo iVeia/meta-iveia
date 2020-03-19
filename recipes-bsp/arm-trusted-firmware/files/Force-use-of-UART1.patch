@@ -1,0 +1,34 @@
+From 18516b4a9c0baf149a49ab77fb74d5b5262c5d6d Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Thu, 19 Mar 2020 16:07:13 -0400
+Subject: [PATCH] Force use of UART1
+
+---
+ plat/xilinx/zynqmp/include/zynqmp_def.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/plat/xilinx/zynqmp/include/zynqmp_def.h b/plat/xilinx/zynqmp/include/zynqmp_def.h
+index 03c4a00..4436759 100644
+--- a/plat/xilinx/zynqmp/include/zynqmp_def.h
++++ b/plat/xilinx/zynqmp/include/zynqmp_def.h
+@@ -137,6 +137,9 @@
+ #define ZYNQMP_UART0_BASE		0xFF000000
+ #define ZYNQMP_UART1_BASE		0xFF010000
+ 
++#if 1
++# define ZYNQMP_UART_BASE	ZYNQMP_UART1_BASE
++#else
+ #if ZYNQMP_CONSOLE_IS(cadence) || ZYNQMP_CONSOLE_IS(dcc)
+ # define ZYNQMP_UART_BASE	ZYNQMP_UART0_BASE
+ #elif ZYNQMP_CONSOLE_IS(cadence1)
+@@ -144,6 +147,7 @@
+ #else
+ # error "invalid ZYNQMP_CONSOLE"
+ #endif
++#endif
+ 
+ #define ZYNQMP_CRASH_UART_BASE		ZYNQMP_UART_BASE
+ /* impossible to call C routine how it is done now - hardcode any value */
+-- 
+2.7.4
+
