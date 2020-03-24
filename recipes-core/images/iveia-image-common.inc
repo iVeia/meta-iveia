@@ -12,3 +12,6 @@ IMAGE_FSTYPES_remove = " \
     wic.qemu-sd \
     "
 IMAGE_FSTYPES_append = " ext4"
+
+DEPENDS_remove += "virtual/boot-bin"
+EXTRA_IMAGEDEPENDS_remove += "virtual/boot-bin"
