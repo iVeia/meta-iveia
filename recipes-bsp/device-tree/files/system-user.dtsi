@@ -3,16 +3,16 @@
     /* compatible = "iveia,atlas-ii-z8-hp", "xlnx,zynqmp-zcu102", "xlnx,zynqmp"; */
 
     aliases {
-		ethernet0 = &gem3;
-		gpio0 = &gpio;
-		i2c0 = &i2c0;
-		i2c1 = &i2c1;
-		mmc0 = &sdhci0;
-		mmc1 = &sdhci1;
+        ethernet0 = &gem3;
+        gpio0 = &gpio;
+        i2c0 = &i2c0;
+        i2c1 = &i2c1;
+        mmc0 = &sdhci0;
+        mmc1 = &sdhci1;
         serial0 = &uart1;
         serial1 = &uart0;
-		spi0 = &qspi;
-		usb0 = &usb0;
+        spi0 = &qspi;
+        usb0 = &usb0;
     };
 
     pss_ref_clk: pss_ref_clk {
@@ -54,7 +54,8 @@
     phy-handle = <&aurora_phy0>;
     phy-mode = "sgmii";
     use-internal-mdio = <1>;
-
+    is-internal-pcspma = "true";
+    
     aurora_phy0: phy@1 {
         reg = <1>;
         compatible = "ethernet-phy-ieee802.3-c22";
