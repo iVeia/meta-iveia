@@ -13,6 +13,32 @@
 #include <linux/ctype.h>
 #include <i2c.h>
 
+/*
+ * MAC address constants
+ *
+ * The 48-bit MAC address is generated from a board SN as follows:
+ * - A board SN is always 5 alphanumeric chars
+ * - The SN is converted to a number by mapping each char to 5-bits, using
+ * CHARMAP.  CHARMAP is exactly 32 chars.  That is, an 'A' is 0, a '9' is 31.
+ * Note that an SN (and therefore CHARMAP) excludes 0/1/I/O to make the SN more
+ * readable.
+ * - The numeric SN is therefore 25-bits.  The 23 lsbs are used for the MAC addr:
+ *      24 lsbs of MAC = (numeric_sn & 0x7FFFFF) << 1
+ * - There are two available MAC addrs per board, differing in the MAC lsb.
+ * - The 24 msbs of the MAC is the iVeia OUI.
+ */
+#define CHARMAP             "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+#define SN_LEN              5
+
+#define MAC_LEN             6
+#define NIC_SPECIFIC_LEN    3
+
+#define IVEIA_OUI           0x002168
+
+/*
+ * SN and IPMI board info defines
+ */
 typedef enum {
     IV_BOARD_CLASS_NONE,
     IV_BOARD_CLASS_MB,
@@ -121,14 +147,8 @@ static char * iv_board_get_field(char * buf, IV_BOARD_CLASS class, IV_BOARD_FIEL
     char * pfield;
     char * board;
 
-    if (class == IV_BOARD_CLASS_MB)
-        board = IV_MB_STRING;
-    else if (class == IV_BOARD_CLASS_IO)
-        board = IV_IO_STRING;
-    else if (class == IV_BOARD_CLASS_BP)
-        board = IV_BP_STRING;
-    else
-        return NULL;
+    board = class2string(class);
+    if (!board) return NULL;
 
     p = env_get(board);
     if (!p) {
@@ -186,6 +206,7 @@ static int iv_board_match(IV_BOARD_CLASS class, IV_BOARD_FIELD field,
  *
  * Returns non-zero on match
  */
+__attribute__((unused))
 static int iv_mb_board_ord_match(char * s)
 {
     return iv_board_match(IV_BOARD_CLASS_MB, IV_BOARD_FIELD_PN,
@@ -316,6 +337,12 @@ static void set_ipmi_env(int bus, int addr, IV_BOARD_CLASS class)
     int ret;
 
     /*
+     * If env vars were saved (i.e. saveenv), we don't want that old info here
+     * otherwise it might be wrong if the EEPROM read fails
+     */
+    env_set(varname, NULL);
+
+    /*
      * If there's an env var of the form "varname_forced", then we use it
      * instead of reading the IPMI info.
      *
@@ -421,6 +448,102 @@ static void board_scan(void)
 }
 
 /*
+ * Convert 5 digit alphanumeric SN to MAC address
+ *
+ * See top of file for conversion mapping.
+ *
+ * Returns 48-bit MAC address lsbs of 64-bit long, or zero on error.
+ */
+static unsigned long long sn_to_mac(char * sn)
+{
+    unsigned long long numeric_sn = 0;
+    unsigned long long mac;
+
+    if (strlen(sn) != SN_LEN) return 0;
+
+    for (int i = 0; i < SN_LEN; i++) {
+        int j;
+        for (j = 0; j < sizeof(CHARMAP) - 1; j++) {
+            if (toupper(sn[i]) == CHARMAP[j]) break;
+        }
+        if (j >= sizeof(CHARMAP) - 1) return 0;
+
+        numeric_sn <<= SN_LEN;
+        numeric_sn += j;
+    }
+    numeric_sn <<= 1; // Extra lsb for two macs per SN
+    if (numeric_sn > 0xFFFFFF) return 0;
+
+    mac = (((unsigned long long) IVEIA_OUI) << (8*NIC_SPECIFIC_LEN)) | numeric_sn;
+
+    return mac;
+}
+
+static int sn_to_mac_unittests(void)
+{
+    int pass = 1;
+
+    pass = pass && sn_to_mac("C6J36") == 0x0021685C4678LL;
+    pass = pass && sn_to_mac("B9LYW") == 0x0021683F55A8LL;
+    pass = pass && sn_to_mac("AAAAA") == 0x002168000000LL;
+    pass = pass && sn_to_mac("H9999") == 0x002168FFFFFELL;
+    pass = pass && sn_to_mac("JAAAA") == 0;
+    pass = pass && sn_to_mac("ABCDE") == sn_to_mac("abcde");
+    pass = pass && sn_to_mac("AA0AA") == 0;
+    pass = pass && sn_to_mac("AA#AA") == 0;
+
+    return pass;
+}
+
+static void set_mac_addrs(void)
+{
+    char buf[MAX_KERN_CMDLINE_FIELD_LEN];
+    char * mb_sn;
+    char * io_sn;
+    unsigned long long mb_mac, io_mac;
+    unsigned long long macs[4];
+    char mac_strs[4][32];
+
+    mb_sn = iv_board_get_field(buf, IV_BOARD_CLASS_MB, IV_BOARD_FIELD_SN, IV_BOARD_SUBFIELD_NONE);
+    mb_mac = mb_sn ? sn_to_mac(mb_sn) : 0;
+    io_sn = iv_board_get_field(buf, IV_BOARD_CLASS_IO, IV_BOARD_FIELD_SN, IV_BOARD_SUBFIELD_NONE);
+    io_mac = io_sn ? sn_to_mac(io_sn) : 0;
+    memset(macs, 0, sizeof(macs));
+    if (mb_mac && io_mac) {
+        macs[0] = mb_mac;
+        macs[1] = mb_mac + 1;
+        macs[2] = io_mac;
+        macs[3] = io_mac + 1;
+    } else if (mb_mac) {
+        macs[0] = mb_mac;
+        macs[1] = mb_mac + 1;
+    } else if (io_mac) {
+        macs[0] = io_mac;
+        macs[1] = io_mac + 1;
+    }
+
+    unsigned long long mac;
+    unsigned char macbytes[MAC_LEN];
+    for (int m = 0; m < ARRAY_SIZE(macs); m++) {
+        mac = macs[m];
+        if (mac == 0) continue;
+        for (int i = MAC_LEN - 1; i >= 0; i--) {
+            macbytes[i] = mac & 0xFF;
+            mac >>= 8;
+        }
+        sprintf(mac_strs[m], "%02X:%02X:%02X:%02X:%02X:%02X",
+            macbytes[0], macbytes[1], macbytes[2], macbytes[3], macbytes[4], macbytes[5]);
+        char var[32];
+        if (m == 0) {
+            sprintf(var, "ethaddr");
+        } else {
+            sprintf(var, "eth%daddr", m);
+        }
+        env_set(var, mac_strs[m]);
+    }
+}
+
+/*
  * misc_init_r() - called during the U-Boot init sequence for misc init.
  * Called before network setup, whch is required for configuring MAC addrs.
  */
@@ -428,6 +551,11 @@ int misc_init_r(void)
 {
     i2c_init(100000, 0);
     board_scan();
+    if (sn_to_mac_unittests()) {
+        set_mac_addrs();
+    } else {
+        printf("WARNING: MAC addr algorithm failed, MACs will be unassigned/random\n");
+    }
 
     return 0;
 }
