@@ -1,0 +1,27 @@
+From aacce183238d26db94f0d99e5cf5f0f30319e909 Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Sat, 4 Apr 2020 09:12:36 -0400
+Subject: [PATCH] add iveia-z8 config overriding xilinx zynqmp
+
+This disables the default Xilinx method of including config_distro_bootcmd.h,
+and allows iveia specific environment setup.
+---
+ include/configs/xilinx_zynqmp.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/configs/xilinx_zynqmp.h b/include/configs/xilinx_zynqmp.h
+index 1356314..b8f7b50 100644
+--- a/include/configs/xilinx_zynqmp.h
++++ b/include/configs/xilinx_zynqmp.h
+@@ -294,7 +294,7 @@
+ 	BOOT_TARGET_DEVICES_DHCP(func) \
+ 	func(XILINX, xilinx, na)
+ 
+-#include <config_distro_bootcmd.h>
++#include <configs/iveia-z8.h>
+ 
+ /* Initial environment variables */
+ #ifndef CONFIG_EXTRA_ENV_SETTINGS
+-- 
+2.7.4
+
