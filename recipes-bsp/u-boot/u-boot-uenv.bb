@@ -13,10 +13,11 @@ UENV_SUBDIR = "uenv"
 
 do_compile() {
     for u in ${UENV_TYPES}; do
-        SED_EXPR=
-        SED_EXPR+="s/__MACHINE__/${MACHINE}/;"
+        # Extra vars to always append to UENV_FILE
+        echo "machine=${MACHINE}" > ${B}/append
+
         mkdir -p ${B}/${UENV_SUBDIR}/${u}
-        sed "${SED_EXPR}" ${UENV_PATH}/${u}/${UENV_FILE} > ${B}/${UENV_SUBDIR}/${u}/${UENV_FILE}
+        cat ${UENV_PATH}/${u}/${UENV_FILE} ${B}/append > ${B}/${UENV_SUBDIR}/${u}/${UENV_FILE}
     done
 }
 

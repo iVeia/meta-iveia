@@ -1,8 +1,7 @@
 bootenv_cmd=run defargs; run load_kernel; setenv initrd_optional_addr ${initrd_addr}; run load_initrd || run use_sdrootfs; run boot_kernel
 use_sdrootfs=setenv initrd_optional_addr -; setenv sdrootfs root=/dev/mmcblk${sdbootdev}p4
 defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon ${sdrootfs}
-fdt_file=system.dtb
-mmm=__MACHINE__
+fdt_file=${machine}-system.dtb
 initrd_file=initrd
 load_kernel=load mmc ${sdbootdev} ${kernel_addr} Image; load mmc ${sdbootdev} ${fdt_addr} ${fdt_file}
 load_initrd=load mmc 0 ${initrd_addr} ${initrd_file}

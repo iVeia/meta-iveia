@@ -12,5 +12,3 @@ IMAGE_FSTYPES_remove = " \
     wic.qemu-sd \
     "
 IMAGE_FSTYPES_append = " ext4"
-
-DEPENDS = "u-boot-uenv"
