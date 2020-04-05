@@ -13,5 +13,4 @@ IMAGE_FSTYPES_remove = " \
     "
 IMAGE_FSTYPES_append = " ext4"
 
-DEPENDS_remove += "virtual/boot-bin"
-EXTRA_IMAGEDEPENDS_remove += "virtual/boot-bin"
+DEPENDS = "u-boot-uenv"
