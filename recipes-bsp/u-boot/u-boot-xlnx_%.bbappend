@@ -6,3 +6,6 @@ SRC_URI += " \
     file://add-iveia-z8-config-overriding-xilinx-zynqmp.patch \
     file://fragment.cfg \
     "
+
+inherit iveia-version-header
+IVEIA_VERSION_HEADER_FILE = "${S}/include/iveia_version.h"

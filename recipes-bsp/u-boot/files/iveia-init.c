@@ -12,6 +12,7 @@
 #include <common.h>
 #include <linux/ctype.h>
 #include <i2c.h>
+#include <iveia_version.h>
 
 /*
  * MAC address constants
@@ -549,6 +550,10 @@ static void set_mac_addrs(void)
  */
 int misc_init_r(void)
 {
+    printf("Machine:     iVeia %s\n", IVEIA_MACHINE);
+    printf("Src commit:  %s\n", IVEIA_SRC_BUILD_HASH);
+    printf("Meta commit: %s\n", IVEIA_META_BUILD_HASH);
+
     i2c_init(100000, 0);
     board_scan();
     if (sn_to_mac_unittests()) {
