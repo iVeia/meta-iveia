@@ -19,15 +19,13 @@ index 4dc1eaa..21f687f 100644
  
  /************************** Constant Definitions *****************************/
  
-@@ -364,6 +365,12 @@ void XFsbl_PrintFsblBanner(void )
+@@ -364,6 +365,10 @@ void XFsbl_PrintFsblBanner(void )
                   "Release %d.%d   %s  -  %s\r\n",
                   SDK_RELEASE_YEAR, SDK_RELEASE_QUARTER,__DATE__,__TIME__);
  
-+	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"-------------------------------------------------\r\n");
-+	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"iVeia %s FSBL\r\n", FSBL_MACHINE);
-+	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Built    : %s, %s\r\n", __DATE__, __TIME__);
-+	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Commits  : %s, %s\r\n", FSBL_BUILD_HASH, FSBL_META_BUILD_HASH);
-+	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"-------------------------------------------------\r\n");
++	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Machine:     iVeia %s\r\n", IVEIA_MACHINE);
++	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Src commit:  %s\r\n", IVEIA_SRC_BUILD_HASH);
++	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Meta commit: %s\r\n", IVEIA_META_BUILD_HASH);
 +
  	if(FsblInstance.ResetReason == XFSBL_PS_ONLY_RESET) {
  		XFsbl_Printf(DEBUG_GENERAL,"Reset Mode	:	PS Only Reset\r\n");
