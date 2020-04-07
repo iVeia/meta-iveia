@@ -4,6 +4,7 @@ SRC_URI += " \
     file://Makefile;subdir=git/board/xilinx/common \
     file://iveia-z8.h;subdir=git/include/configs \
     file://add-iveia-z8-config-overriding-xilinx-zynqmp.patch \
+    file://zynqmp-blank-out-repeated-boot_targets.patch \
     file://fragment.cfg \
     "
 
