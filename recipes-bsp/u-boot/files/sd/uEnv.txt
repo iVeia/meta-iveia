@@ -5,8 +5,7 @@ set_fdt_file=setenv fdt_file ${machine}-system.dtb
 initrd_file=initrd
 fpga_file=xilinx.bit
 fpga_addr=80000
-load_fpga=echo Loading FPGA if exists...; load mmc 0 ${fpga_addr} ${fpga_file} && fpga loadb 0 ${fpga_addr} ${filesize}
+load_fpga=echo Loading FPGA if exists...; load mmc ${sdbootdev} ${fpga_addr} ${fpga_file} && fpga loadb 0 ${fpga_addr} ${filesize}
 load_kernel=echo Loading Linux...; load mmc ${sdbootdev} ${kernel_addr} Image; run set_fdt_file; load mmc ${sdbootdev} ${fdt_addr} ${fdt_file}
-load_initrd=echo Loading initrd if exists...; load mmc 0 ${initrd_addr} ${initrd_file}
+load_initrd=echo Loading initrd if exists...; load mmc ${sdbootdev} ${initrd_addr} ${initrd_file}
 boot_kernel=booti ${kernel_addr} ${initrd_optional_addr} ${fdt_addr}
-
