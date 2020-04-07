@@ -503,7 +503,6 @@ static void set_mac_addrs(void)
     char * io_sn;
     unsigned long long mb_mac, io_mac;
     unsigned long long macs[4];
-    char mac_strs[4][32];
 
     mb_sn = iv_board_get_field(buf, IV_BOARD_CLASS_MB, IV_BOARD_FIELD_SN, IV_BOARD_SUBFIELD_NONE);
     mb_mac = mb_sn ? sn_to_mac(mb_sn) : 0;
@@ -524,7 +523,7 @@ static void set_mac_addrs(void)
     }
 
     unsigned long long mac;
-    unsigned char macbytes[MAC_LEN];
+    uint8_t macbytes[MAC_LEN];
     for (int m = 0; m < ARRAY_SIZE(macs); m++) {
         mac = macs[m];
         if (mac == 0) continue;
@@ -532,15 +531,14 @@ static void set_mac_addrs(void)
             macbytes[i] = mac & 0xFF;
             mac >>= 8;
         }
-        sprintf(mac_strs[m], "%02X:%02X:%02X:%02X:%02X:%02X",
-            macbytes[0], macbytes[1], macbytes[2], macbytes[3], macbytes[4], macbytes[5]);
         char var[32];
         if (m == 0) {
             sprintf(var, "ethaddr");
         } else {
             sprintf(var, "eth%daddr", m);
         }
-        env_set(var, mac_strs[m]);
+        if (!env_get(var))
+            eth_env_set_enetaddr(var, macbytes);
     }
 }
 
