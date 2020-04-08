@@ -5,9 +5,8 @@
     "initrd_addr=0x10000000\0" \
     "bootenv_file=uEnv.txt\0" \
     "boot_targets=mmc0 mmc1 dhcp\0" \
-    "loadenv_mmc=load mmc ${sdbootdev} ${bootenv_addr} ${bootenv_file}\0" \
-    "loadenv_mmc0=setenv sdbootdev 0; run loadenv_mmc;\0" \
-    "loadenv_mmc1=setenv sdbootdev 1; run loadenv_mmc;\0" \
+    "loadenv_mmc0=load mmc 0 ${bootenv_addr} ${bootenv_file}\0" \
+    "loadenv_mmc1=load mmc 1 ${bootenv_addr} ${bootenv_file}\0" \
     "loadenv_dhcp=dhcp ${bootenv_addr} ${bootenv_file}\0" \
     "importenv=env import -t ${bootenv_addr} ${filesize}\0" \
     "bootseq=" \
