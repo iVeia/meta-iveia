@@ -1,0 +1,30 @@
+From 3c215433adfecdda8a42e214046e586ba8b96f30 Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Wed, 8 Apr 2020 11:37:41 -0400
+Subject: [PATCH] Fix: saveenv causes next boot to skip board_late_init()
+
+We always want board_late_init() to fully run, because even when the env was
+previously saved, we still need to determine the bootmode, reset reason, etc.
+---
+ board/xilinx/zynqmp/zynqmp.c | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/board/xilinx/zynqmp/zynqmp.c b/board/xilinx/zynqmp/zynqmp.c
+index 853f4f9..762fd6a 100644
+--- a/board/xilinx/zynqmp/zynqmp.c
++++ b/board/xilinx/zynqmp/zynqmp.c
+@@ -589,11 +589,6 @@ int board_late_init(void)
+ 	usb_ether_init();
+ #endif
+ 
+-	if (!(gd->flags & GD_FLG_ENV_DEFAULT)) {
+-		debug("Saved variables - Skipping\n");
+-		return 0;
+-	}
+-
+ 	ret = set_fdtfile();
+ 	if (ret)
+ 		return ret;
+-- 
+2.7.4
+
