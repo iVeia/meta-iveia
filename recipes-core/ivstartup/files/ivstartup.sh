@@ -1,7 +1,6 @@
-# Should be moved to fstab
-mkdir -p /media/sd
-mount /dev/mmcblk0p1 /media/sd
-
-echo "Running iVeia startup.sh"
-/media/sd/startup.sh &
-
+if [ -e /media/sd/startup.sh ];  then
+    echo "Running iVeia startup.sh"
+    /media/sd/startup.sh &
+else
+    echo "iVeia startup.sh not found.  Skipping."
+fi

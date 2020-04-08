@@ -1,4 +1,4 @@
-IMAGE_INSTALL += " ivstartup "
+IMAGE_INSTALL += " ivstartup sdmount"
 IMAGE_INSTALL += " rsync parted coreutils "
 IMAGE_INSTALL += " e2fsprogs-e2fsck e2fsprogs-mke2fs e2fsprogs-tune2fs e2fsprogs-badblocks "
 
