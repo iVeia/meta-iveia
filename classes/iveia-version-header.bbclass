@@ -16,7 +16,7 @@ do_pre_compile_version () {
     # append a tainted label to the revision
     #
     TAINTED=""
-    ls ${STAMP}.*.taint && TAINTED="(tainted)"
+    ls ${STAMP}.*.taint 2>/dev/null && TAINTED="(tainted)"
     GIT_REV="`cd ${S} && git describe --long --tags`${TAINTED}"
     echo '#define IVEIA_SRC_BUILD_HASH "'${GIT_REV}$'"' >> ${IVEIA_VERSION_HEADER_FILE}
 
