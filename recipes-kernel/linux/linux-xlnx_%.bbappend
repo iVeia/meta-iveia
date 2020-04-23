@@ -1,7 +1,11 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += " \
     file://zap-add-driver.patch \
+    file://iveia-version-banner.patch \
     "
+
+inherit iveia-version-header
+IVEIA_VERSION_HEADER_FILE = "${S}/include/iveia_version.h"
 
 #
 # Zap not currently buildable as an OOT module.  Copy drivers and build as
