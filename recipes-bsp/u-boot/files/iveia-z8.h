@@ -14,6 +14,7 @@
             "echo Attempting load of ${bootenv_file} from ${t}...; " \
             "if run loadenv_${t}; then " \
                 "run importenv; " \
+                "setenv loadmode ${t}; " \
                 "run bootenv_cmd; " \
             "fi; " \
         "done; " \

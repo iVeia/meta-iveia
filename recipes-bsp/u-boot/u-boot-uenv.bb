@@ -6,26 +6,18 @@ INHIBIT_DEFAULT_DEPS = "1"
 
 inherit deploy
 
-UENV_TYPES = "sd tftp"
 UENV_PATH := "${THISDIR}/files"
 UENV_FILE = "uEnv.txt"
-UENV_SUBDIR = "uenv"
 
 do_compile() {
-    for u in ${UENV_TYPES}; do
-        # Extra vars to always append to UENV_FILE
-        echo "machine=${MACHINE}" > ${B}/append
+    cat ${UENV_PATH}/${UENV_FILE} > ${B}/${UENV_FILE}
 
-        mkdir -p ${B}/${UENV_SUBDIR}/${u}
-        cat ${UENV_PATH}/${u}/${UENV_FILE} ${B}/append > ${B}/${UENV_SUBDIR}/${u}/${UENV_FILE}
-    done
+    # Extra vars to append to UENV_FILE
+    echo "machine=${MACHINE}" >> ${B}/${UENV_FILE}
 }
 
 do_deploy() {
-    for u in ${UENV_TYPES}; do
-        install -Dm 0644 ${B}/${UENV_SUBDIR}/${u}/${UENV_FILE} \
-            ${DEPLOYDIR}/${UENV_SUBDIR}/${u}/${UENV_FILE}
-    done
+    install -Dm 0644 ${B}/${UENV_FILE} ${DEPLOYDIR}/${UENV_FILE}
 }
 addtask do_deploy after do_compile before do_build
 
