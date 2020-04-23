@@ -2,43 +2,6 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/pinctrl/pinctrl-zynqmp.h>
 #include <dt-bindings/phy/phy.h>
-/ {
-    model = "Atlas-II Z8 HP";
-    compatible = "iveia,atlas-ii-z8-hp", "xlnx,zynqmp-zcu102", "xlnx,zynqmp";
-
-    aliases {
-        ethernet0 = &gem3;
-        gpio0 = &gpio;
-        i2c0 = &i2c0;
-        i2c1 = &i2c1;
-        mmc0 = &sdhci0;
-        mmc1 = &sdhci1;
-        serial0 = &uart1;
-        serial1 = &uart0;
-        spi0 = &qspi;
-        usb0 = &usb0;
-    };
-
-    pss_ref_clk: pss_ref_clk {
-        clock-frequency = <50000000>;
-    };
-};
-
-&qspi {
-    is-dual = <0>;
-};
-
-&sdhci1 {
-    status = "okay";
-    no-1-8-v;       /* for 1.0 silicon */
-    disable-wp;
-};
-
-&sdhci0 {
-    status = "okay";
-    no-1-8-v;       /* for 1.0 silicon */
-    disable-wp;
-};
 
 &gem0 {
     status = "disabled";

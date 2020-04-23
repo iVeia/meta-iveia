@@ -1,9 +1,12 @@
+IV_MB_DTSI = "${MACHINE}.dtsi"
+IV_IO_DTSI = "aurora.dtsi"
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
- 
-SYSTEM_USER_DTSI ?= "system-user.dtsi"
- 
-SRC_URI_append = " file://${SYSTEM_USER_DTSI}"
+SRC_URI += " \
+    file://${IV_MB_DTSI} \
+    file://ivio/ \
+    "
 
 do_configure_append() {
-    cat "${WORKDIR}/${SYSTEM_USER_DTSI}" >> ${B}/device-tree/system-top.dts
+    cat "${WORKDIR}/${IV_MB_DTSI}" >> ${B}/device-tree/system-top.dts
+    cat "${WORKDIR}/ivio/${IV_IO_DTSI}" >> ${B}/device-tree/system-top.dts
 }
