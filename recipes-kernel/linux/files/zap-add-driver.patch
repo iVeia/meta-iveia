@@ -1,0 +1,51 @@
+From 8503eed10f4ef7a9fbe32b78891a568b474aa4aa Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Wed, 22 Apr 2020 21:26:54 -0400
+Subject: [PATCH] zap: add driver
+
+Driver currently requires allocating DMA memory outside of Linux management via
+alloc_bootmem_pages().
+---
+ drivers/char/Makefile | 1 +
+ init/main.c           | 6 ++++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index b8d42b4..3e43624 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -3,6 +3,7 @@
+ # Makefile for the kernel character device drivers.
+ #
+ 
++obj-y				+= zap/
+ obj-y				+= mem.o random.o
+ obj-$(CONFIG_TTY_PRINTK)	+= ttyprintk.o
+ obj-y				+= misc.o
+diff --git a/init/main.c b/init/main.c
+index 18f8f01..457eb16 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -528,6 +528,9 @@ static void __init mm_init(void)
+ 	pti_init();
+ }
+ 
++extern volatile void * tx_vaddr;
++extern volatile void * rx_vaddr;
++
+ asmlinkage __visible void __init start_kernel(void)
+ {
+ 	char *command_line;
+@@ -567,6 +570,9 @@ asmlinkage __visible void __init start_kernel(void)
+ 	build_all_zonelists(NULL);
+ 	page_alloc_init();
+ 
++        rx_vaddr = alloc_bootmem_pages(4*1024*1024);
++        tx_vaddr = alloc_bootmem_pages(4*1024*1024);
++
+ 	pr_notice("Kernel command line: %s\n", boot_command_line);
+ 	parse_early_param();
+ 	after_dashes = parse_args("Booting kernel",
+-- 
+2.7.4
+
