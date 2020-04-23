@@ -12,4 +12,4 @@ IMAGE_FSTYPES_remove = " \
     jffs2 \
     wic.qemu-sd \
     "
-IMAGE_FSTYPES_append = " ext4"
+IMAGE_FSTYPES_append = " ext4 tar.xz"
