@@ -1,4 +1,4 @@
-bootenv_cmd=run set_loader; run load_fpga; run load_kernel; run defargs set_fdt_chosen set_initrd; run load_initrd || run use_sdrootfs; run boot_kernel
+bootenv_cmd=run set_loader; run load_fpga; run load_kernel; run set_fdt_chosen set_initrd; run load_initrd || run use_sdrootfs; run defargs boot_kernel
 set_loader=run set_loader${loadmode}
 set_loaderdhcp=setenv loader tftpboot
 set_loadermmc0=setenv loader load mmc 0
