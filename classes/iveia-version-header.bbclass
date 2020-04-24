@@ -22,7 +22,6 @@ do_post_patch_version() {
 
 do_compile[prefuncs] += "do_pre_compile_version"
 do_pre_compile_version () {
-    bbplain "hey"
     cp ${WORKDIR}/iveia_src_version ${IVEIA_VERSION_HEADER_FILE}
 
     TAINTED=""
