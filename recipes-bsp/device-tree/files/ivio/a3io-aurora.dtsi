@@ -3,8 +3,23 @@
 #include <dt-bindings/pinctrl/pinctrl-zynqmp.h>
 #include <dt-bindings/phy/phy.h>
 
+
+/ {
+    aliases {
+        ethernet0 = &gem3;
+        ethernet1 = &gem0;
+        /delete-property/ ethernet2;
+        /delete-property/ ethernet3;
+    };
+};
+
 &gem0 {
-    status = "disabled";
+    status = "okay";
+    phy-handle = <&ethernet_phy2>;
+    phy-mode = "gmii";
+    ethernet_phy2: ethernet-phy@2 {
+        reg = <2>;
+    };
 };
 
 &gem1 {
