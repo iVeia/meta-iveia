@@ -2,26 +2,19 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/pinctrl/pinctrl-zynqmp.h>
 #include <dt-bindings/phy/phy.h>
+
 / {
     model = "Atlas-II Z8 HP";
-    compatible = "iveia,atlas-ii-z8-hp", "xlnx,zynqmp-zcu102", "xlnx,zynqmp";
+    compatible = "iveia,atlas-ii-z8-hp", "xlnx,zynqmp";
 
     aliases {
-        ethernet0 = &gem3;
-        gpio0 = &gpio;
-        i2c0 = &i2c0;
-        i2c1 = &i2c1;
-        mmc0 = &sdhci0;
-        mmc1 = &sdhci1;
         serial0 = &uart1;
         serial1 = &uart0;
-        spi0 = &qspi;
-        usb0 = &usb0;
     };
+};
 
-    pss_ref_clk: pss_ref_clk {
-        clock-frequency = <50000000>;
-    };
+&pss_ref_clk {
+    clock-frequency = <50000000>;
 };
 
 &qspi {
@@ -40,3 +33,44 @@
     disable-wp;
 };
 
+&pinctrl0 {
+	status = "okay";
+	pinctrl_usb0_default: usb0-default {
+		mux {
+			groups = "usb0_0_grp";
+			function = "usb0";
+		};
+
+		conf {
+			groups = "usb0_0_grp";
+			slew-rate = <SLEW_RATE_SLOW>;
+			io-standard = <IO_STANDARD_LVCMOS18>;
+		};
+
+		conf-rx {
+			pins = "MIO52", "MIO53", "MIO55";
+			bias-high-impedance;
+		};
+
+		conf-tx {
+			pins = "MIO54", "MIO56", "MIO57", "MIO58", "MIO59",
+			       "MIO60", "MIO61", "MIO62", "MIO63";
+			bias-disable;
+		};
+	};
+};
+
+&usb0 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usb0_default>;
+};
+
+&dwc3_0 {
+	status = "okay";
+	dr_mode = "host";
+	snps,usb3_lpm_capable;
+	phy-names = "usb3-phy";
+	phys = <&lane0 PHY_TYPE_USB3 0 2 26000000>;
+	maximum-speed = "super-speed";
+};
