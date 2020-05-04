@@ -1,0 +1,53 @@
+From 75864480bcd59c884d579e17cdda7149f3aa9186 Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Thu, 30 Apr 2020 17:01:50 -0400
+Subject: [PATCH] net: macb: Allow eth%d ordering according to DTS ethernet%d
+ alias
+
+The existing driver uses first-come first-serve ordering for mapping DTS
+nodes to eth net names.  For example, on a device with two macb device
+nodes named gem0 and gem1, the net name is always mapped as gem0 -> eth0,
+and gem1 -> eth1, regardless of aliases in the DTS.
+
+This patch allows ethernet aliases that can reorder the eth net names.  For
+example, an aliases node containing:
+
+    aliases {
+        ethernet0 = &gem1;
+        ethernet1 = &gem0;
+    }
+
+would map gem0 -> eth1 and gem1 -> eth0.
+
+Signed-off-by: Brian Silverman <bsilverman@iveia.com>
+---
+ drivers/net/ethernet/cadence/macb_main.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/net/ethernet/cadence/macb_main.c b/drivers/net/ethernet/cadence/macb_main.c
+index fff8b4a..4bfbf66 100644
+--- a/drivers/net/ethernet/cadence/macb_main.c
++++ b/drivers/net/ethernet/cadence/macb_main.c
+@@ -4183,6 +4183,7 @@ static int macb_probe(struct platform_device *pdev)
+ 	const char *mac;
+ 	struct macb *bp;
+ 	int err, val;
++	int id;
+ 
+ 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	mem = devm_ioremap_resource(&pdev->dev, regs);
+@@ -4218,6 +4219,11 @@ static int macb_probe(struct platform_device *pdev)
+ 		goto err_disable_clocks;
+ 	}
+ 
++	/* If an FDT ethernet%d alias is provided, use its index for ordering */
++	id = of_alias_get_id(np, "ethernet");
++	if (id >= 0)
++		sprintf(dev->name, "eth%d", id);
++
+ 	dev->base_addr = regs->start;
+ 
+ 	SET_NETDEV_DEV(dev, &pdev->dev);
+-- 
+2.7.4
+
