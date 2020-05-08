@@ -1,17 +1,10 @@
+/dts-v1/;
+/plugin/;
+
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/pinctrl/pinctrl-zynqmp.h>
 #include <dt-bindings/phy/phy.h>
-
-
-/ {
-    aliases {
-        ethernet0 = &gem3;
-        ethernet1 = &gem0;
-        /delete-property/ ethernet2;
-        /delete-property/ ethernet3;
-    };
-};
 
 &gem0 {
     status = "okay";

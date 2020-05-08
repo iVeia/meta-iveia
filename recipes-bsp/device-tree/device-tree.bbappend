@@ -1,5 +1,4 @@
 IV_MB_DTSI = "${MACHINE}.dtsi"
-IV_IO_DTSI = "a3io-aurora.dtsi"
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += " \
     file://${IV_MB_DTSI} \
@@ -7,6 +6,18 @@ SRC_URI += " \
     "
 
 do_configure_append() {
-    cat "${WORKDIR}/${IV_MB_DTSI}" >> ${B}/device-tree/system-top.dts
-    cat "${WORKDIR}/ivio/${IV_IO_DTSI}" >> ${B}/device-tree/system-top.dts
+    echo "#include <${IV_MB_DTSI}>" >> ${DT_FILES_PATH}/system-top.dts
+    cp ${WORKDIR}/ivio/*.dts ${DT_FILES_PATH}
+}
+
+python do_compile_append() {
+    import shutil
+    B = d.getVar("B")
+    src = "{:s}/system-top.dtb".format(B)
+    dest = "{:s}/{:s}.dtb".format(B, d.getVar("MACHINE"))
+    shutil.move(src, dest)
+}
+
+do_deploy() {
+    devicetree_do_deploy
 }
