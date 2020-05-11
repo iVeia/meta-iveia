@@ -21,9 +21,9 @@ SRC_URI += " \
 do_configure[prefuncs] += "do_pre_configure_ivio"
 do_pre_configure_ivio[vardepsexclude] += "BB_ORIGENV"
 python do_pre_configure_ivio() {
-    ivio = d.getVar("BB_ORIGENV").getVar("IVIO")
-    if ivio:
-        d.setVar("IVIO_ENV", ivio)
+    ivio_env = d.getVar("BB_ORIGENV").getVar("IVIO")
+    ivio = ivio_env if ivio_env else d.getVar("IVIO")
+    d.setVar("IVIO", ivio)
 }
 
 do_configure_append() {
@@ -32,9 +32,6 @@ do_configure_append() {
     mv ${DT_FILES_PATH}/system-top.dts ${DT_FILES_PATH}/${MACHINE}.dts
 
     # Combo DTB.  Use IVIO from env var if available.
-    if [ -n "${IVIO_ENV}" ]; then
-        IVIO="${IVIO_ENV}"
-    fi
     if [ -n "${IVIO}" ]; then
         COMBO_DTS=${DT_FILES_PATH}/${MACHINE}_${IVIO}_combo.dts
         cp ${DT_FILES_PATH}/${MACHINE}.dts ${COMBO_DTS}
