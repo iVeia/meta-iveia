@@ -1,0 +1,8 @@
+#include <atlas-z8.dtsi>
+
+/ {
+    model = "Atlas-III Z8";
+    compatible = "iveia,atlas-iii-z8", "iveia,atlas-z8", "xlnx,zynqmp";
+};
+
+

@@ -14,7 +14,7 @@
 IV_MB_DTSI = "${MACHINE}.dtsi"
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += " \
-    file://${IV_MB_DTSI} \
+    file://*.dtsi \
     file://ivio/ \
     "
 
