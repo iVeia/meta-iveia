@@ -1,8 +1,7 @@
 /*
  * iv_z8_init.c
  *
- *  Created on: Jan 5, 2017
- *      Author: jimmy
+ * (C) Copyright 2017-2020, iVeia
  */
 #include <xil_io.h>
 #include <sleep.h>
@@ -745,16 +744,25 @@ static void init_gt_clks(unsigned char ucDev){
 #define IOU_SLCR_MIO_PIN_8_OFFSET 0xff180020
 #define IOU_SLCR_MIO_PIN_9_OFFSET 0xff180024
 
+void __attribute__((weak)) iv_z8_init_before_hook() 
+{
+    PSU_Mask_Write (0XFF180208, 0x0003DFC3, 0x00000082);
+    PSU_Mask_Write (0XFF5E0238, 0x00100000, 0x00000000);
+    PSU_Mask_Write (0XFF5E0238, 0x00000600, 0x00000000);
+
+    PSU_Mask_Write (IOU_SLCR_MIO_PIN_8_OFFSET ,0x000000FEU ,0x00000040U);
+    PSU_Mask_Write (IOU_SLCR_MIO_PIN_9_OFFSET ,0x000000FEU ,0x00000040U);
+
+    //Take out of reset
+    jsm_clrbits_le32(0xff5e0238, 1 << 10);
+}
+
+void __attribute__((weak)) iv_z8_init_after_hook() 
+{
+}
+
 void iv_z8_init(){
-	PSU_Mask_Write (0XFF180208, 0x0003DFC3, 0x00000082);
-	PSU_Mask_Write (0XFF5E0238, 0x00100000, 0x00000000);
-	PSU_Mask_Write (0XFF5E0238, 0x00000600, 0x00000000);
-
-	PSU_Mask_Write (IOU_SLCR_MIO_PIN_8_OFFSET ,0x000000FEU ,0x00000040U);
-	PSU_Mask_Write (IOU_SLCR_MIO_PIN_9_OFFSET ,0x000000FEU ,0x00000040U);
-
-	//Take out of reset
-	jsm_clrbits_le32(0xff5e0238, 1 << 10);
-
+    iv_z8_init_before_hook();
     init_gt_clks(0x70);
+    iv_z8_init_after_hook();
 }
