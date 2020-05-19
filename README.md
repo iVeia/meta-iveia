@@ -1,4 +1,3 @@
-
 # meta-iveia
 
 The meta-iveia Yocto BSP layer provides support for iVeia Atlas SoMs and carriers.
@@ -34,7 +33,7 @@ in the next section.
 iVeia follows the Xilinx tools in regards to supported OS versions, currently
 including Ubuntu 16.04 and 18.04.
 
-The build steps are as follows:
+The first time download and build steps are as follows:
 ```
 repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-v2019.2          # Xilinx step
 repo sync                                                                        # Xilinx step
@@ -43,6 +42,13 @@ source setupsdk                                                                 
 bitbake-layers add-layer ../sources/meta-iveia                                   # add meta-iveia
 MACHINE=atlas-ii-z8-hp bitbake iveia-boot iveia-image-minimal                    # build iveia targets
 ```
+
+Note: the above versions for Xilinx and iVeia (defined in the `repo init` and
+`git clone` lines, respectively), and the `MACHINE` may de different for your
+board.
+
+After the first run, all future runs require `source setupsdk` to setup
+environment in a new shell, and then building with the last line above.
 
 # Build targets and products
 
