@@ -11,7 +11,7 @@
             "run importenv; " \
             "setenv loadmode ${tgt}; " \
             "run bootenv_cmd; " \
-        "fi; " \
+        "fi;\0" \
     "bootseq=" \
         "for tgt in ${boot_targets}; do " \
             "echo Attempting load of ${bootenv_file} from ${tgt}...; " \
