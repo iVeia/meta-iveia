@@ -1,0 +1,1 @@
+require xsct-workaround.inc
