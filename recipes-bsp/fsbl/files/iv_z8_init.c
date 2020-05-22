@@ -8,7 +8,7 @@
 
 #pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
 
-static void PSU_Mask_Write (unsigned long offset, unsigned long mask, unsigned long val)
+void PSU_Mask_Write (unsigned long offset, unsigned long mask, unsigned long val)
 {
 	unsigned long RegVal = 0x0;
 	RegVal = Xil_In32 (offset);

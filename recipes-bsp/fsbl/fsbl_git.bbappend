@@ -12,7 +12,7 @@ POST_CONFIGURE_PATCHES := "\
 FSBL_SRCS := "\
     ${THISDIR}/files/iv_z8_init.c \
     "
-FSBL_SRCS_atlas-iii-z8_append := " ${THISDIR}/files/${MACHINE}.c"
+FSBL_SRCS_append_atlas-iii-z8 := " ${THISDIR}/files/${MACHINE}.c"
 
 inherit switch-uart
 XPARAMETERS_H = "${B}/fsbl/zynqmp_fsbl_bsp/psu_cortexa53_0/include/xparameters.h"
