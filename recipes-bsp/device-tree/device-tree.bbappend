@@ -18,6 +18,8 @@ SRC_URI += " \
     file://ivio/ \
     "
 
+DTC_BFLAGS = "-p ${DT_PADDING_SIZE} -@ -H epapr"
+
 do_configure[prefuncs] += "do_pre_configure_ivio"
 do_pre_configure_ivio[vardepsexclude] += "BB_ORIGENV"
 python do_pre_configure_ivio() {
