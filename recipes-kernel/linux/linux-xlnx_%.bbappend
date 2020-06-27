@@ -15,9 +15,9 @@ IVEIA_VERSION_HEADER_FILE = "${S}/include/iveia_version.h"
 ZAP_SRC_DIR := "${THISDIR}/files/zap/"
 ZAP_DEST_DIR := "${S}/drivers/char/zap"
 
-do_configure[postfuncs] += "do_post_configure_copy"
-do_post_configure_copy () {
-    cp -r ${ZAP_SRC_DIR} ${ZAP_DEST_DIR}
+do_compile[prefuncs] += "do_pre_compile_copy"
+do_pre_compile_copy () {
+    cp -r --no-target-directory ${ZAP_SRC_DIR} ${ZAP_DEST_DIR}
 }
 
 
