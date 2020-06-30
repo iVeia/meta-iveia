@@ -6,12 +6,12 @@
     "loadenv_mmc1=load mmc 1 ${bootenv_addr} ${bootenv_file}\0" \
     "loadenv_dhcp=dhcp ${bootenv_addr} ${bootenv_file}\0" \
     "importenv=env import -t ${bootenv_addr} ${filesize}\0" \
-    "boottgt=" \
-        "if run loadenv_${tgt}; then " \
-            "run importenv; " \
-            "setenv loadmode ${tgt}; " \
-            "run bootenv_cmd; " \
-        "fi;\0" \
+    "load_mmc0=setenv tgt mmc0; run loadtgt\0"\
+    "load_mmc1=setenv tgt mmc1; run loadtgt\0"\
+    "load_dhcp=setenv tgt dhcp; run loadtgt\0"\
+    "trybootenv_cmd=test -n ${bootenv_cmd} && run bootenv_cmd\0"\
+    "loadtgt=if run loadenv_${tgt}; then run importenv; setenv loadmode ${tgt}; fi\0"\
+    "boottgt=run loadtgt trybootenv_cmd\0"\
     "bootseq=" \
         "for tgt in ${boot_targets}; do " \
             "echo Attempting load of ${bootenv_file} from ${tgt}...; " \
