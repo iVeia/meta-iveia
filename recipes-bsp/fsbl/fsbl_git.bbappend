@@ -9,6 +9,8 @@ POST_CONFIGURE_PATCHES := "\
     ${THISDIR}/files/add-iveia-init-hook.patch \
     ${THISDIR}/files/set-secondary-boot-mode-register.patch \
     "
+FSBL_DIR := "${THISDIR}"
+
 FSBL_SRCS := "\
     ${THISDIR}/files/iv_z8_init.c \
     "
