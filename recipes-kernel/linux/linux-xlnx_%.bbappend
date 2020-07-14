@@ -2,7 +2,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += " \
     file://zap-add-driver.patch \
     file://iveia-version-banner.patch \
-    file://net-macb-Allow-eth-d-ordering-according-to-DTS-ether.patch \
+    file://net-macb-Allow-eth-d-ordering-by-DTS-index-prop.patch \
     "
 
 inherit iveia-version-header

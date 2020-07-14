@@ -13,6 +13,7 @@
     ethernet_phy2: ethernet-phy@2 {
         reg = <2>;
     };
+    index = <1>; /* Use eth1 */
 };
 
 &gem1 {
@@ -31,4 +32,5 @@
     ethernet_phy1: ethernet-phy@1 {
         reg = <1>;
     };
+    index = <0>; /* Use eth0 */
 };

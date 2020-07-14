@@ -1,0 +1,50 @@
+From dd2fe833a7a07597d928423ee6308399ff9ce4a2 Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Tue, 14 Jul 2020 15:44:01 -0400
+Subject: [PATCH] net: macb: Allow eth%d ordering by DTS "index" prop
+
+The existing driver uses first-come first-serve ordering for mapping DTS nodes
+to eth net names.  For example, on a device with two macb device nodes named
+gem0 and gem1, the net name is always mapped as gem0 -> eth0, and gem1 -> eth1,
+regardless of aliases in the DTS.
+
+This patch allows an "index" prop in the gem node that can reorder the eth net
+names.  For example, modifying the gem nodes as follows:
+
+    &gem0 {
+        index = <1>;
+    };
+
+    &gem1 {
+        index = <0>;
+    };
+
+would map gem0 -> eth1 and gem1 -> eth0.  Two nodes should not be mapped to the
+same index.
+
+Signed-off-by: Brian Silverman <bsilverman@iveia.com>
+---
+ drivers/net/ethernet/cadence/macb_main.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/net/ethernet/cadence/macb_main.c b/drivers/net/ethernet/cadence/macb_main.c
+index fff8b4a..5476553 100644
+--- a/drivers/net/ethernet/cadence/macb_main.c
++++ b/drivers/net/ethernet/cadence/macb_main.c
+@@ -4218,6 +4218,13 @@ static int macb_probe(struct platform_device *pdev)
+ 		goto err_disable_clocks;
+ 	}
+ 
++	/* If an FDT index prop is provided, use it for ordering */
++	{
++		const __be32 *prop = of_get_property(np, "index", NULL);
++		if (prop)
++			sprintf(dev->name, "eth%d", be32_to_cpup(prop));
++	}
++
+ 	dev->base_addr = regs->start;
+ 
+ 	SET_NETDEV_DEV(dev, &pdev->dev);
+-- 
+2.7.4
+

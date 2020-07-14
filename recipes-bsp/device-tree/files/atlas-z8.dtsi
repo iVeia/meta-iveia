@@ -8,12 +8,6 @@
         /* uart1 is console */
         serial0 = &uart1;
         serial1 = &uart0;
-
-        /* Reorder ethernet - gem3 is SGMII and always there, so put first */
-        ethernet0 = &gem3;
-        ethernet1 = &gem0;
-        ethernet2 = &gem1;
-        ethernet3 = &gem2;
     };
 };
 
