@@ -1,14 +1,22 @@
 # meta-iveia
 
-The meta-iveia Yocto BSP layer provides support for iVeia Atlas SoMs and carriers.
+The meta-iveia Yocto BSP layer provides support for iVeia Atlas SoMs and
+carriers.  meta-iveia uses the Yocto layered approach on top of the meta-xilinx
+layer, which itself is built on top of the Poky reference design.
+
+The Yocto build process is self contained, therefore Xilinx build tools do not
+need to be installed.
 
 # Supported Boards/Machines
 
 iVeia Mainboard SoMs (`MACHINE`) supported by this layer:
+- atlas-iii-z8 (PN 00104)
+- atlas-ii-z8ev (PN 00127)
 - atlas-ii-z8-hp (PN 00122)
 
 iVeia IO boards (`IVIO`) supported by this layer:
-- a3i0-aurora (PN 00100)
+- a3io-aurora (PN 00100)
+- io-captiva (PN 00074)
 
 # Building
 
