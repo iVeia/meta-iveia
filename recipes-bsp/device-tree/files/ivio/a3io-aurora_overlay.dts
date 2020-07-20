@@ -8,12 +8,12 @@
 
 &gem0 {
     status = "okay";
+    index = <1>; /* Use eth1 */
     phy-handle = <&ethernet_phy2>;
     phy-mode = "gmii";
     ethernet_phy2: ethernet-phy@2 {
         reg = <2>;
     };
-    index = <1>; /* Use eth1 */
 };
 
 &gem1 {
@@ -26,11 +26,11 @@
 
 &gem3 {
     status = "okay";
+    index = <0>; /* Use eth0 */
     phy-handle = <&ethernet_phy1>;
     phy-mode = "sgmii";
     is-internal-pcspma = "true";
     ethernet_phy1: ethernet-phy@1 {
         reg = <1>;
     };
-    index = <0>; /* Use eth0 */
 };
