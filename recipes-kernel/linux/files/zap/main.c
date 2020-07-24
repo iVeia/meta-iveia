@@ -220,6 +220,27 @@ setup_multiple_pools(int iNumPools)
 
 }
 
+static int 
+IsJumboPacketSupported(void)
+{
+	#define VMAJOR_REQ       2
+	#define VMINOR_REQ       2
+	#define VRELEASE_REQ     'a'
+	#define VMAJOR       zap_devp->fpga_params.fpga_version_major
+	#define VMINOR       zap_devp->fpga_params.fpga_version_minor
+	#define VRELEASE     zap_devp->fpga_params.fpga_version_release
+
+	if (VMAJOR < VMAJOR_REQ)
+		return 0;
+
+	if (VMINOR < VMINOR_REQ)
+		return 0;
+    
+	if (VRELEASE < VRELEASE_REQ)
+		return 0;
+
+	return 1;
+}
 ///////////////////////////////////////////////////////////////////////////
 //
 // Public funcs
@@ -554,12 +575,12 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 			//If IB Max Size > TX FIFO Size, return error
 			if (dev->interface[iDevice].tx_header_enable){
-				if ((ulTemp - dev->interface[iDevice].tx_header_size) > dev->fpga_params.tx_dat_fifo_size){
+				if (((ulTemp - dev->interface[iDevice].tx_header_size) > dev->fpga_params.tx_dat_fifo_size) && (dev->interface[iDevice].tx_jumbo_pkt_enable == 0)){
 					retval = -EFBIG;
 					break;
 				}
 			}else{
-				if (ulTemp > dev->fpga_params.tx_dat_fifo_size){
+				if ((ulTemp > dev->fpga_params.tx_dat_fifo_size) && (dev->interface[iDevice].tx_jumbo_pkt_enable == 0)){
 					retval = -EFBIG;
 					break;
 				}
@@ -595,10 +616,11 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				break;
 			}
 
-			if ( (dev->interface[iDevice].tx_payload_max_size - ulTemp) > dev->fpga_params.tx_dat_fifo_size){
+			if ( ((dev->interface[iDevice].tx_payload_max_size - ulTemp) > dev->fpga_params.tx_dat_fifo_size) && (dev->interface[iDevice].tx_jumbo_pkt_enable == 0)){
 				retval = -EFBIG;
 				break;
 			}
+
 			// Set tx_header_enable, User no longer has this control
 			if (ulTemp == 0)
 				dev->interface[iDevice].tx_header_enable = 0;
@@ -619,12 +641,12 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 			//If IB Max Size > TX FIFO Size, return error
 			if (dev->interface[iDevice].rx_header_enable){
-				if ( (ulTemp - dev->interface[iDevice].rx_header_size) > dev->fpga_params.rx_dat_fifo_size){
+				if ( ((ulTemp - dev->interface[iDevice].rx_header_size) > dev->fpga_params.rx_dat_fifo_size) && (dev->interface[iDevice].rx_jumbo_pkt_enable == 0)){
 					retval = -EFBIG;
 					break;
 				}
 			}else{
-				if (ulTemp > dev->fpga_params.rx_dat_fifo_size){
+				if ( (ulTemp > dev->fpga_params.rx_dat_fifo_size) && (dev->interface[iDevice].rx_jumbo_pkt_enable == 0)){
 					retval = -EFBIG;
 					break;
 				}
@@ -659,7 +681,7 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				break;
 			}
 
-			if ( (dev->interface[iDevice].rx_payload_max_size - ulTemp) > dev->fpga_params.rx_dat_fifo_size){
+			if ( ((dev->interface[iDevice].rx_payload_max_size - ulTemp) > dev->fpga_params.rx_dat_fifo_size) && (dev->interface[iDevice].rx_jumbo_pkt_enable == 0)){
 				retval = -EFBIG;
 				break;
 			}
@@ -673,6 +695,52 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			dev->interface[iDevice].rx_header_size = ulTemp;
 
 			break;
+		case ZAP_IOC_R_RX_JUMBO_EN:
+			__put_user( dev->interface[iDevice].rx_jumbo_pkt_enable, (unsigned long __user *)arg);
+			break;
+
+		case ZAP_IOC_W_RX_JUMBO_EN:
+			//retval = dma_stop();
+			retval = dma_stop_rx(iDevice);
+			if ( retval ) break;
+			__get_user( ulTemp, (unsigned long __user *)arg);
+
+			if (ulTemp == 0)
+				dev->interface[iDevice].rx_jumbo_pkt_enable = 0;
+			else{
+				if (!IsJumboPacketSupported()){
+					retval = -EINVAL;
+					printk(KERN_ERR "ZAP : FPGA Image does not support Jumbo Packets\n");
+					break;
+				}
+				dev->interface[iDevice].rx_jumbo_pkt_enable = 1;
+			}
+
+			break;
+
+		case ZAP_IOC_R_TX_JUMBO_EN:
+			__put_user( dev->interface[iDevice].tx_jumbo_pkt_enable, (unsigned long __user *)arg);
+			break;
+
+		case ZAP_IOC_W_TX_JUMBO_EN:
+			//retval = dma_stop();
+			retval = dma_stop_tx(iDevice);
+			if ( retval ) break;
+			__get_user( ulTemp, (unsigned long __user *)arg);
+
+			if (ulTemp == 0)
+				dev->interface[iDevice].tx_jumbo_pkt_enable = 0;
+			else{
+				if (!IsJumboPacketSupported()){
+					retval = -EINVAL;
+					printk(KERN_ERR "ZAP : FPGA Image does not support Jumbo Packets\n");
+					break;
+				}
+				dev->interface[iDevice].tx_jumbo_pkt_enable = 1;
+			}
+
+			break;
+
 		case ZAP_IOC_R_FAKEY:
 			//__put_user( dev->fakey, (unsigned long __user *)arg);
             __put_user( (dev->interface[zap_device_num(filp)].fakey),(unsigned long __user *)arg); 
@@ -904,6 +972,8 @@ int zap_init_module(void)
 	    zap_devp->interface[i].tx_header_size = 0;
 		device_create(zap_class, NULL, MKDEV(MAJOR(zap_dev_num),i*2), NULL, "zaprx%d",i);
 		device_create(zap_class, NULL, MKDEV(MAJOR(zap_dev_num),(i*2)+1), NULL, "zaptx%d",i);
+	    zap_devp->interface[i].rx_jumbo_pkt_enable = 0;
+	    zap_devp->interface[i].tx_jumbo_pkt_enable = 0;
     }
 
 	err = dma_init(zap_devp,

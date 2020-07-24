@@ -254,11 +254,6 @@ pool_resize(
 	int i;
 
 	//
-	// Packets cannot exceed the max size defined by the FPGA core.
-	//
-	if ( packet_size > ZAP_PACKET_FPGA_MAX_SIZE ) return -EFBIG;
-
-	//
 	// We need at least space for a packet, plus the pentries struct (page
 	// aligned)
 	//

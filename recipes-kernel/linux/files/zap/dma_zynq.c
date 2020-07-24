@@ -63,6 +63,8 @@ volatile void * rx_vaddr;
 
 //START INTERFACE DEPENDENT REGS
 #define ZAP_REG_CSR	0x00000000
+	#define CSR_TX_JUMBO_EN	(1 << 5)
+	#define CSR_RX_JUMBO_EN	(1 << 4)
 	#define CSR_TX_OOB		(1 << 3)
 	#define CSR_RX_OOB		(1 << 2)
 	#define CSR_TXEN		(1 << 1)
@@ -349,19 +351,24 @@ dma_isr(
 			len = ZAP_REG_READ(iDevice, ZAP_REG_BSR);
 
 			flags = 0;
-			if (len & RX_SIZE_OOB_OVERFLOW_ERR)
-				flags |= ZAP_DESC_FLAG_OVERFLOW_OOB;
+			if (pdma_if->zap_dev->interface[iDevice].rx_jumbo_pkt_enable == 0){
+				if (len & RX_SIZE_OOB_OVERFLOW_ERR)
+					flags |= ZAP_DESC_FLAG_OVERFLOW_OOB;
 
-			if (len & RX_SIZE_DAT_OVERFLOW_ERR)
-				flags |= ZAP_DESC_FLAG_OVERFLOW_DATA;
+				if (len & RX_SIZE_DAT_OVERFLOW_ERR)
+					flags |= ZAP_DESC_FLAG_OVERFLOW_DATA;
 
-			ooblen = 0x00003FFF & (len >> 16);
-			ooblen = ooblen << 2;//(Times 4)
-			len &= 0x0000FFFF;
-			len = len << 2;//(Times 4)
+				ooblen = 0x00003FFF & (len >> 16);
+				ooblen = ooblen << 2;//(Times 4)
+				len &= 0x0000FFFF;
+				len = len << 2;//(Times 4)
 
-			if ( (!pdma_if->zap_dev->interface[iDevice].rx_header_enable) && ooblen!=0){
-				printk(KERN_ERR MODNAME "**ERROR OOB_SIZE RETURNED AS %d\n",ooblen);
+				if ( (!pdma_if->zap_dev->interface[iDevice].rx_header_enable) && ooblen!=0){
+					printk(KERN_ERR MODNAME "**ERROR OOB_SIZE RETURNED AS %d\n",ooblen);
+				}
+			}else{ // jumbo_pkt_enable = 1
+				ooblen = 0;
+				len = len << 2;//Time 4
 			}
 
 #ifdef MAPIT
@@ -403,8 +410,12 @@ dma_isr(
 					return -1;//FAIL
 				}
 
-				ulTemp = 0x0000ffff & (ulLen >> 2);
-				ulTemp |= ((ulOoblen << 14) & 0xffff0000);
+				if (pdma_if->zap_dev->interface[iDevice].tx_jumbo_pkt_enable == 0){
+					ulTemp = 0x0000ffff & (ulLen >> 2);
+					ulTemp |= ((ulOoblen << 14) & 0xffff0000);
+				}else{
+					ulTemp = ulLen >> 2;
+				}
 
 				ZAP_REG_WRITE(iDevice, ZAP_REG_TBAR, (uint32_t)tx_buffer2phys( pbuf ));
 				ZAP_REG_WRITE(iDevice, ZAP_REG_BSR, (uint32_t)ulTemp);
@@ -464,6 +475,11 @@ dma_ll_start_tx(
 	else
 		ZAP_REG_WRITE_MASKED(iDevice, ZAP_REG_CSR, 0, CSR_TX_OOB);	
 
+	if (pdma_if->zap_dev->interface[iDevice].tx_jumbo_pkt_enable)
+		ZAP_REG_WRITE_MASKED(iDevice, ZAP_REG_CSR, CSR_TX_JUMBO_EN, CSR_TX_JUMBO_EN);
+	else
+		ZAP_REG_WRITE_MASKED(iDevice, ZAP_REG_CSR, 0, CSR_TX_JUMBO_EN);
+
 	//Implement masked in future?
 	//ZAP_REG_WRITE(iDevice, ZAP_REG_ICR, ICR_SET_TXERR | ICR_SET_TX_FREE_RDY | ICR_SET_GLBL);
     ZAP_REG_WRITE(iDevice, ZAP_REG_ICR, ICR_SET_TX_FREE_RDY | ICR_SET_GLBL);
@@ -507,9 +523,13 @@ dma_ll_start_rx(
 
 	ulPayloadWords -= ulOobWords;
 
-	ulTemp = 0;
-	ulTemp |= ( (ulPayloadWords - 1) << MAX_RX_DAT_SIZE_SHIFT ) & MAX_RX_DAT_SIZE_MASK;
-	ulTemp |= ( (ulOobWords - 1) << MAX_RX_OOB_SIZE_SHIFT ) & MAX_RX_OOB_SIZE_MASK;
+	if (pdma_if->zap_dev->interface[iDevice].rx_jumbo_pkt_enable == 0){
+		ulTemp = 0;
+		ulTemp |= ( (ulPayloadWords - 1) << MAX_RX_DAT_SIZE_SHIFT ) & MAX_RX_DAT_SIZE_MASK;
+		ulTemp |= ( (ulOobWords - 1) << MAX_RX_OOB_SIZE_SHIFT ) & MAX_RX_OOB_SIZE_MASK;
+	}else{
+		ulTemp = (ulPayloadWords - 1);
+	}
 
 	ZAP_REG_WRITE(iDevice, ZAP_REG_MAX_RX_SIZE, (uint32_t)ulTemp);
 
@@ -521,6 +541,11 @@ dma_ll_start_rx(
 		ZAP_REG_WRITE_MASKED(iDevice, ZAP_REG_CSR, CSR_RX_OOB, CSR_RX_OOB);
 	else
 		ZAP_REG_WRITE_MASKED(iDevice, ZAP_REG_CSR, 0, CSR_RX_OOB);	
+
+	if (pdma_if->zap_dev->interface[iDevice].rx_jumbo_pkt_enable)
+		ZAP_REG_WRITE_MASKED(iDevice, ZAP_REG_CSR, CSR_RX_JUMBO_EN, CSR_RX_JUMBO_EN);
+	else
+		ZAP_REG_WRITE_MASKED(iDevice, ZAP_REG_CSR, 0, CSR_RX_JUMBO_EN);
 
 	ZAP_REG_WRITE(iDevice, ZAP_REG_ICR, ICR_SET_RXRDY | ICR_SET_GLBL);
 

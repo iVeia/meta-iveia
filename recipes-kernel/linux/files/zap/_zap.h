@@ -81,6 +81,8 @@ struct zap_dev {
 	    unsigned long tx_header_size;
 	    unsigned long rx_header_enable;
 	    unsigned long tx_header_enable;
+	    unsigned long rx_jumbo_pkt_enable;
+	    unsigned long tx_jumbo_pkt_enable;
 
 	} interface[ZAP_MAX_DEVICES];
 

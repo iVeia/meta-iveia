@@ -44,7 +44,14 @@
 #define ZAP_IOC_R_POOL_SIZE             _IOR(ZAP_IOC_MAGIC,  25, unsigned long)
 
 #define ZAP_IOC_R_INSTANCE_COUNT		_IOR(ZAP_IOC_MAGIC,  26, unsigned long)
-#define ZAP_IOC_MAXNR 26 
+
+#define ZAP_IOC_R_RX_JUMBO_EN		_IOR(ZAP_IOC_MAGIC,  27, unsigned long)
+#define ZAP_IOC_W_RX_JUMBO_EN		_IOR(ZAP_IOC_MAGIC,  28, unsigned long)
+
+#define ZAP_IOC_R_TX_JUMBO_EN		_IOR(ZAP_IOC_MAGIC,  29, unsigned long)
+#define ZAP_IOC_W_TX_JUMBO_EN		_IOR(ZAP_IOC_MAGIC,  30, unsigned long)
+
+#define ZAP_IOC_MAXNR 30 
 
 /*
  * Ioctl argument values.
@@ -61,14 +68,5 @@
 #define ZAP_DESC_FLAG_INVALID_APP_DATA          (0x08)
 #define ZAP_DESC_FLAG_STREAMING_WITH_OOB_ERR    (0x40000000)
 #define ZAP_DESC_FLAG_DMA_ERR                   (0x80000000)
-
-//
-// NOTE: This size is based on the FPGA FIFO size.  It would be better if we
-// dynamically got this from the FPGA.  Also, separate TX and RX sizes would be
-// good.  And, for TX the size could match the full FIFO size, while with RX,
-// it would be better for the max size to be half the FIFO size or so (to allow
-// buffering).
-//
-#define ZAP_PACKET_FPGA_MAX_SIZE (64*1024)
 
 #endif
