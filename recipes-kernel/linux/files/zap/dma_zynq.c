@@ -591,6 +591,9 @@ dma_ll_stop_rx(
 {
 	int err;
 
+    //Disable Interrupts (was occasionaly seeing error when this doesn’t happen)
+	ZAP_REG_WRITE(iDevice, ZAP_REG_ICR, ICR_CLR_RXRDY);
+
 	pdma_if->interface[iDevice].rx_on = 0;
 
 	//
