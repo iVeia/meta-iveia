@@ -369,7 +369,7 @@ static int __init ocp_init(void)
     cdev_init(&ocp_devp->cdev, &ocp_fops);
     ocp_devp->cdev.owner = THIS_MODULE;
     ocp_devp->cdev.ops = &ocp_fops;
-    err = cdev_add (&ocp_devp->cdev, ocp_dev_num, IV_OCP_NUM_ADDR_SPACES);
+    err = cdev_add (&ocp_devp->cdev, ocp_dev_num, IV_OCP_NUM_ADDR_SPACES + 1);
     if (err) {
         printk(KERN_NOTICE MODNAME ": Error %d adding ocp\n", err);
         goto fail;
