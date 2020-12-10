@@ -91,6 +91,9 @@ final build products for each targets are:
           manually flash to SD partition
         - **`iveia-image-minimal-${MACHINE}.tar.xz`**: Format used by
           iVeia's `sdformat` utility to populate SD card.
+    - **`startup.sh`**: User initialization shell script.  Empty by default.
+      Allows user to easily add startup apps that run at the end of the Linux
+      boot process.
 
 It is not necessary to build both targets - they are independent.
 
@@ -125,6 +128,32 @@ Therefore, there are two choices for boot:
 - Program `boot.bin` directly to QSPI.
 
 The above model also allows for other secondary devices, such as onboard eMMC.
+
+## SD Card (or eMMC)
+
+When using the `boot2sd.bin` as defined above, the rest of the boot (excluding
+the FSBL), run from the SD card (this process can also be used with eMMC, but
+it is not built by default).
+
+The boot process from SD requires the following files on the first partition of
+the SD card (FAT32 formatted).  The files are listed in the order that they are
+loaded:
+- **`boot.bin`** (REQUIRED): Boot's bootloaders up to U-Boot.
+- **`uEnv.txt`** (REQUIRED): boot script loaded by U-Boot.
+- **`xilinx.bit`** (OPTIONAL): FPGA bitfile.
+- **`Image`** (REQUIRED): Linux kernel image
+- **`${MACHINE}.dtb`** (REQUIRED): Device tree for the SoM.
+- **`overlay.dtbo`** (OPTIONAL): Device tree for IO board specific features.
+  This file must be renamed from **`${IVIO}_overlay.dtbo`** in the Yocto build
+  directory (see Build targets and products section above).
+- ROOTFS (REQUIRED): either of the following images found in the Yocto build
+  directory (see Build targets and products section above):
+    - **`initrd`**: Linux inital RAM disk, renamed from
+      **`iveia-image-minimal-${MACHINE}.cpio.gz.u-boot`**.
+    - Partition 3 of the SD card with the
+      **`iveia-image-minimal-${MACHINE}.ext4`** image directly copied to it
+      (`dd` recommended).
+- **`startup.sh`** (OPTIONAL): User initialization shell script.
 
 ## Programming Flash
 
