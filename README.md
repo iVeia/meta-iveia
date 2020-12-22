@@ -33,20 +33,21 @@ the full suite of software requires:
 
 See [Xilinx's instructions](https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18841862/Install+and+Build+with+Xilinx+Yocto) for more information about the meta-xilinx layer and build process.
 
-Tagged iVeia versions are based off of a specific Xilinx version included in
-the tag followed by an iVeia version number, e.g. `2019.2-1.0`.
-
 iVeia provides two primary targets `iveia-boot` and `iveia-image-*`, described
 in the next section.
 
 iVeia follows the Xilinx tools in regards to supported OS versions, currently
 including Ubuntu 16.04 and 18.04.
 
+Tagged iVeia versions are based off of a specific Xilinx version included in
+the tag followed by an iVeia version number, e.g. `2019.2-1.0`.
+
 The first time download and build steps are as follows:
 ```
+IVEIA_TAG=<CHOOSE THE LATEST TAGGED VERSION, I.E. 2019.2-M.N>
 repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-v2019.2          # Xilinx step
 repo sync                                                                        # Xilinx step
-git clone -b 2019.2-1.0 git://github.com/iVeia/meta-iveia.git sources/meta-iveia # clone meta-iveia
+git clone -b $IVEIA_TAG git://github.com/iVeia/meta-iveia.git sources/meta-iveia # clone meta-iveia
 source setupsdk                                                                  # Xilinx step
 bitbake-layers add-layer ../sources/meta-iveia                                   # add meta-iveia
 MACHINE=atlas-ii-z8-hp bitbake iveia-boot iveia-image-minimal                    # build iveia targets
