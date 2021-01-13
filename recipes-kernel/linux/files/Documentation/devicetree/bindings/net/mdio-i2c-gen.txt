@@ -1,0 +1,38 @@
+Generic MDIO bus over I2C
+
+Required properties :
+- compatible : Must be "mdio-i2c-gen"
+- reg : I2C address of the device
+- #address-cells : Must be <1>;
+- #size-cells : Must be <0>;
+
+Must have exactly one child node that is a standard Ethernet PHY device node as
+described in Documentation/devicetree/bindings/net/phy.txt.  The child node's
+"reg" property is the PHY address, and must be exactly 0x40 less than the I2C
+address of the parent MDIO node.  PHY addresses of 0x10 and 0x11 are not
+allowed, because of driver library limitations for SFP compatibility.
+
+Example :
+
+/* Associated Ethernet node */
+&gem3 {
+    status = "okay";
+    phy-handle =  <&phy0>;
+};
+
+/* Parent I2C bus of MDIO I2C node */
+&i2c0 {
+    mdio@40 {
+        compatible = "mdio-i2c-gen";
+        reg = <0x40>;
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        phy0: phy@0 {
+            reg = <0>;
+        };
+    };
+};
+
+
+

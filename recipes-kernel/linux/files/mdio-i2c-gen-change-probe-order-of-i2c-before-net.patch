@@ -1,0 +1,42 @@
+From f21ff6c1b05d0f53de48735cb1d3904492376d91 Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Tue, 12 Jan 2021 13:48:30 -0500
+Subject: [PATCH 2/2] mdio-i2c-gen: Change probe order of i2c before net
+
+The mdio-i2c-gen driver requires I2C to be available at probe time.  In this
+case, EPROBE_DEFER cannot be used, because it must be returned by the Ethernet
+driver when the driver connects to the PHY.  Note: that does work, but requires
+modifying the Ethernet driver.
+
+So the choice is either modifying the Eth driver, or modifying the probe order,
+and this commit chooses the later (as being more generic).
+
+This was discussed in Jan, 2020 on the netdev LKML with the PHY maintainers.
+---
+ drivers/Makefile | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 578f469..1662c8a 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -85,6 +85,7 @@ obj-$(CONFIG_SPI)		+= spi/
+ obj-$(CONFIG_SPMI)		+= spmi/
+ obj-$(CONFIG_HSI)		+= hsi/
+ obj-$(CONFIG_SLIMBUS)		+= slimbus/
++obj-y				+= i2c/
+ obj-y				+= net/
+ obj-$(CONFIG_ATM)		+= atm/
+ obj-$(CONFIG_FUSION)		+= message/
+@@ -111,7 +112,7 @@ obj-$(CONFIG_SERIO)		+= input/serio/
+ obj-$(CONFIG_GAMEPORT)		+= input/gameport/
+ obj-$(CONFIG_INPUT)		+= input/
+ obj-$(CONFIG_RTC_LIB)		+= rtc/
+-obj-y				+= i2c/ media/
++obj-y				+= media/
+ obj-$(CONFIG_PPS)		+= pps/
+ obj-y				+= ptp/
+ obj-$(CONFIG_W1)		+= w1/
+-- 
+2.7.4
+
