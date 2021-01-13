@@ -34,3 +34,32 @@
         reg = <1>;
     };
 };
+
+// disabled zynqmp rtc
+&rtc {
+    status = "disabled";
+};
+
+// enable carrier rtc
+&i2c0 {
+    status = "okay";
+    clock-frequency = <400000>;
+
+    switch@77 {
+        compatible = "nxp,pca9547";
+        #address-cells = <1>;
+        #size-cells = <0>;
+        reg = <0x77>;
+
+        i2c@0 {
+            #address-cells = <1>;
+            #size-cells = <0>;
+            reg = <0>;
+
+            rtc@68 {
+                compatible = "st,m41t62";
+                reg = <0x68>;
+            };
+        };
+    };
+};

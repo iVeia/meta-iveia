@@ -3,6 +3,7 @@ SRC_URI += " \
     file://zap-add-driver.patch \
     file://iveia-version-banner.patch \
     file://net-macb-Allow-eth-d-ordering-by-DTS-index-prop.patch \
+    file://rtc.cfg \
     "
 
 inherit iveia-version-header

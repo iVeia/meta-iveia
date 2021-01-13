@@ -21,3 +21,20 @@
 &gem3 {
     status = "disabled";
 };
+
+// disabled zynqmp rtc
+&rtc {
+    status = "disabled";
+};
+
+// enable carrier rtc
+&i2c0 {
+    status = "okay";
+    clock-frequency = <400000>;
+
+    rtc@68 {
+        compatible = "st,m41t62";
+        reg = <0x68>;
+    };
+};
+
