@@ -1,0 +1,18 @@
+diff --git a/fsbl/xfsbl_main.c
+index dd4fe75125..0e230efd8a 100644
+--- a/fsbl/xfsbl_main.c
++++ b/fsbl/xfsbl_main.c
+@@ -141,6 +141,13 @@ int main(void )
+ 				XFsbl_Printf(DEBUG_INFO,
+ 						"================= In Stage 2 ============ \n\r");
+ 
++                if (  iv_sequence_boot() != XFSBL_SUCCESS )
++                {
++                    FsblStatus += XFSBL_ERROR_STAGE_2;
++                    FsblStage = XFSBL_STAGE_ERR;
++                    break;
++                }
++
+ 				/**
+ 				 * 	Primary Device
+ 				 *  Secondary boot device

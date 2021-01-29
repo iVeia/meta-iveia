@@ -8,11 +8,15 @@ inherit post-configure-patches
 POST_CONFIGURE_PATCHES := "\
     ${THISDIR}/files/add-iveia-init-hook.patch \
     ${THISDIR}/files/set-secondary-boot-mode-register.patch \
+    ${THISDIR}/files/add_sequence_boot.patch \
     "
 FSBL_DIR := "${THISDIR}"
 
 FSBL_SRCS := "\
     ${THISDIR}/files/iv_z8_init.c \
+    ${THISDIR}/files/iv_z8_sequence_boot.c \
+    ${THISDIR}/files/iv_z8_sequence_boot.h \
+    ${THISDIR}/files/iv_z8_user_boot_sequence.c \
     "
 FSBL_SRCS_append_atlas-iii-z8 := " ${THISDIR}/files/${MACHINE}.c"
 FSBL_SRCS_append_atlas-ii-z8ev := " ${THISDIR}/files/${MACHINE}.c"
