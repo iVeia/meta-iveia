@@ -169,6 +169,20 @@ where `FSBL_BIN` is the file to be flashed (can be either `boot2sd.bin` or
 `boot.bin)` and `FSBL_ELF` is the FSBL program in elf format
 (`fsbl-${MACHINE}.elf`).
 
+# Package support
+
+The default package management system is opkg.  Packges will be created in
+tmp/deploy/ipk.
+
+To build and add a package:
+- `MACHINE=<machine-name> bitbake <package-name>`
+- Copy .ipk from tmp/deploy/ipk to target
+- Install on target with "opkg install --force-depends <ipk>"
+
+Available package recipes can be found at the OpenEmbedded Layer Index at:
+
+> https://layers.openembedded.org/
+
 # Maintainers
 
 Please submit any patches against the meta-iveia layer to the maintainer:

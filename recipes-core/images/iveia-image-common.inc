@@ -4,6 +4,9 @@ IMAGE_INSTALL += "e2fsprogs-e2fsck e2fsprogs-mke2fs e2fsprogs-tune2fs e2fsprogs-
 IMAGE_INSTALL += "i2c-tools"
 IMAGE_INSTALL += "strace"
 
+IMAGE_INSTALL += "opkg"
+IMAGE_REMOVE += "rpm"
+
 IMAGE_INSTALL += "kernel-module-ocp"
 
 IMAGE_CLASSES_remove = "image-types-xilinx-qemu qemuboot-xilinx"
