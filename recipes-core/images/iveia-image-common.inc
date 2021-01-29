@@ -3,6 +3,7 @@ IMAGE_INSTALL += "rsync parted coreutils"
 IMAGE_INSTALL += "e2fsprogs-e2fsck e2fsprogs-mke2fs e2fsprogs-tune2fs e2fsprogs-badblocks"
 IMAGE_INSTALL += "i2c-tools"
 IMAGE_INSTALL += "strace"
+IMAGE_INSTALL += "lmsensors"
 
 IMAGE_INSTALL += "opkg"
 IMAGE_REMOVE += "rpm"

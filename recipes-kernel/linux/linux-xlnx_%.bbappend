@@ -3,6 +3,7 @@ SRC_URI += " \
     file://iveia-version-banner.patch \
     file://net-macb-Allow-eth-d-ordering-by-DTS-index-prop.patch \
     file://rtc.cfg \
+    file://hwmon.cfg \
     "
 
 inherit iveia-version-header

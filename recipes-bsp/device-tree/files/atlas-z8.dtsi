@@ -72,3 +72,47 @@
 	phys = <&lane0 PHY_TYPE_USB3 0 2 26000000>;
 	maximum-speed = "super-speed";
 };
+
+&i2c1 {
+    lm75@48 {
+        compatible = "lm75";
+        reg = <0x48>;
+        status = "okay";
+    };
+};
+
+&ams_pl {
+    xlnx,ext-channels {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        channel@0 {
+            reg = <0>;
+            xlnx,bipolar;
+        };
+    };
+};
+
+
+&amba {
+    ams_ctrl_hwmon {
+        compatible = "iio-hwmon";
+        io-channels = <&xilinx_ams 0>, <&xilinx_ams 1>, <&xilinx_ams 2> , <&xilinx_ams 3>,
+                        <&xilinx_ams 4>, <&xilinx_ams 5>, <&xilinx_ams 6>;
+    };
+
+    ams_ps_hwmon {
+        compatible = "iio-hwmon";
+        io-channels = <&xilinx_ams 7>, <&xilinx_ams 8>, <&xilinx_ams 9>, <&xilinx_ams 10>, 
+                        <&xilinx_ams 11>, <&xilinx_ams 12>, <&xilinx_ams 13>, <&xilinx_ams 14>, 
+                        <&xilinx_ams 15>, <&xilinx_ams 16>, <&xilinx_ams 17>, <&xilinx_ams 18>, 
+                        <&xilinx_ams 19>;
+    };
+
+    ams_pl_hwmon {
+        compatible = "iio-hwmon";
+        io-channels = <&xilinx_ams 20>, <&xilinx_ams 21>, <&xilinx_ams 22>, <&xilinx_ams 23>,
+                        <&xilinx_ams 24>, <&xilinx_ams 25>, <&xilinx_ams 26>, <&xilinx_ams 27>,
+                        <&xilinx_ams 28>, <&xilinx_ams 29>, <&xilinx_ams 30>;
+    };
+};
+
