@@ -2,7 +2,7 @@
  * iv_z8_sequence_boot.c
  *
  * This module checks for valid boot images in an ordered list of boot devices.
- * For each entry in the list, the multi-boot value is update until the max 
+ * For each entry in the list, the multi-boot value is updated until the max 
  * specified in the list entry and the corresponding device init function is
  * called.  If a valid boot image is found for the device / multi-boot combination, 
  * the device init function returns success.  In this case, the boot mode user reg
@@ -40,20 +40,13 @@ int iv_sequence_boot( void )
     XFsbl_Printf(DEBUG_PRINT_ALWAYS, "\r\nIVEIA SEQ BOOT MODE (0x%08x): %s, %s\r\n", 
             boot_mode_user_reg, pr_boot_mode(boot_mode), alt_boot ? "ALT":"NORM");
 
-    switch ( boot_mode )
+    if ( alt_boot )
     {
-        case XFSBL_QSPI24_BOOT_MODE:
-        case XFSBL_QSPI32_BOOT_MODE:
-            // if booting from qspi, continue on to traverse sequential boot
-            //   device list
-            break;
-        default:
-            // good boot device determined in previous call to this function, 
-            //   return to continue boot for selected device
-            return XFSBL_SUCCESS;
-            break;
+        // alt_boot will be false for initial power up.  if alt_boot is true, that means 
+        //   that we got here after reset from successful completion of sequence boot below, 
+        //   so return success to continue on with boot
+        return XFSBL_SUCCESS;
     }
-    
 
     for ( int boot_idx = 0; boot_idx < boot_dev_count; boot_idx++ )
     {
@@ -104,8 +97,9 @@ int iv_sequence_boot( void )
         }
     }
 
-    XFsbl_Printf(DEBUG_PRINT_ALWAYS, "SEQUENCE BOOT COMPLETE, NO VALID IMAGES FOUND\r\n");
-    return XFSBL_FAILURE;
+    XFsbl_Printf(DEBUG_PRINT_ALWAYS, "CONTINUING WITH QSPI BOOT\r\n");
+    Xil_Out32(CSU_CSU_MULTI_BOOT, 0);
+    return XFSBL_SUCCESS;
 }
 
 
