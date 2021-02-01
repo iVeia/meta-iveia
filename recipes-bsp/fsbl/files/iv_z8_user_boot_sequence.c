@@ -20,8 +20,9 @@
 
 
 iv_boot_sequence_t boot_seq[] = {
-    { .mode = XFSBL_SD0_BOOT_MODE, .num_attempts = 3 },
-    { .mode = XFSBL_SD1_BOOT_MODE, .num_attempts = 3 },
+    { .mode = XFSBL_SD0_BOOT_MODE, .num_attempts = 1 },
+    { .mode = XFSBL_SD1_BOOT_MODE, .num_attempts = 1 },
+    // Final fallback mode is always QSPI
 };
 int boot_dev_count = sizeof(boot_seq) / sizeof(boot_seq[0]);
 

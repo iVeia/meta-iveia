@@ -33,11 +33,11 @@ int iv_sequence_boot( void )
 {
     uint32_t boot_mode_user_reg = Xil_In32(CRL_APB_BOOT_MODE_USER);
     uint32_t boot_mode = boot_mode_user_reg & CRL_APB_BOOT_MODE_USER_BOOT_MODE_MASK;
-    uint32_t alt_boot = (boot_mode_user_reg >> 12) & 0x1;
+    uint32_t alt_boot = (boot_mode_user_reg >> CRL_APB_BOOT_MODE_USER_ALT_BOOT_MODE_SHIFT) & 0x1;
     iv_boot_sequence_t *seq_entry;
     u32 status;
 
-    XFsbl_Printf(DEBUG_PRINT_ALWAYS, "\r\nIVEIA SEQ BOOT MODE (0x%08x): %s, %s\r\n", 
+    XFsbl_Printf(DEBUG_PRINT_ALWAYS, "iVeia seq boot mode (0x%08x): %s, %s\r\n",
             boot_mode_user_reg, pr_boot_mode(boot_mode), alt_boot ? "ALT":"NORM");
 
     if ( alt_boot )
@@ -50,11 +50,24 @@ int iv_sequence_boot( void )
 
     for ( int boot_idx = 0; boot_idx < boot_dev_count; boot_idx++ )
     {
+        //
+        // Current multiboot code does not validate images, and just finds
+        // first available boot image (up to num_attempts).
+        //
+        // TODO: Possibly validate images XFsbl_PartitionLoad() mechanism.
+        //
         seq_entry = &boot_seq[boot_idx];
         for ( int multi_boot = 0; multi_boot < seq_entry->num_attempts; multi_boot++ )
         {
-            XFsbl_Printf(DEBUG_PRINT_ALWAYS, "Searching %s for valid boot image...%d\r\n", 
-                    pr_boot_mode(seq_entry->mode), multi_boot);
+            #define PRE_FMT "Searching %s for valid boot image..."
+            #define FMT_0 (PRE_FMT "\r\n")
+            #define FMT_N (PRE_FMT " (retry #%d)\r\n")
+            char *mode = pr_boot_mode(seq_entry->mode);
+            if (multi_boot == 0) {
+                XFsbl_Printf(DEBUG_PRINT_ALWAYS, FMT_0, mode);
+            } else {
+                XFsbl_Printf(DEBUG_PRINT_ALWAYS, FMT_N, mode, multi_boot);
+            }
             Xil_Out32(CSU_CSU_MULTI_BOOT, multi_boot);
 
             switch ( seq_entry->mode )
@@ -84,20 +97,28 @@ int iv_sequence_boot( void )
 
             if ( status == XFSBL_SUCCESS )
             {
-                XFsbl_Printf(DEBUG_PRINT_ALWAYS, "good image found, resetting\r\n");
+                //
+                // This is the last printf before reset.  Use poor-man's flush
+                // (i.e. sleep) to get string out.
+                // 30 millisecs @ 115200bps =~ 3500 bits - should be plenty (10x)!
+                //
+                XFsbl_Printf(DEBUG_PRINT_ALWAYS, "Good image found, resetting...\r\n\r\n");
+                usleep(100000);
+
                 Xil_Out32(CRL_APB_BOOT_MODE_USER, 
-                        (seq_entry->mode << 12) | (0x1 << 8) );
+                        (seq_entry->mode << CRL_APB_BOOT_MODE_USER_ALT_BOOT_MODE_SHIFT) |
+                        (0x1 << CRL_APB_BOOT_MODE_USER_USE_ALT_SHIFT));
                 soft_reset();
             }   
             else if ( status == XFSBL_ERROR_UNSUPPORTED_BOOT_MODE )
             {
-                XFsbl_Printf(DEBUG_PRINT_ALWAYS, "UNKNOWN/UNTESTED BOOT MODE, SKIPPING\r\n");
+                XFsbl_Printf(DEBUG_PRINT_ALWAYS, "Unsupported boot mode, skipping...\r\n");
                 continue;
             }
         }
     }
 
-    XFsbl_Printf(DEBUG_PRINT_ALWAYS, "CONTINUING WITH QSPI BOOT\r\n");
+    XFsbl_Printf(DEBUG_PRINT_ALWAYS, "Continuing with QSPI boot...\r\n");
     Xil_Out32(CSU_CSU_MULTI_BOOT, 0);
     return XFSBL_SUCCESS;
 }
