@@ -1,5 +1,8 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI += " file://iveia-version-banner.patch"
+SRC_URI += "\
+    file://banner-added-additional-CRLF.patch \
+    file://iveia-version-banner.patch \
+    "
 
 # These patches must be applied after configure because configure dynamically
 # creates some sources (based off of the XSA hardware def), and these patches
