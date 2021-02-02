@@ -1,7 +1,7 @@
 # meta-iveia
 
 The meta-iveia Yocto BSP layer provides support for iVeia Atlas SoMs and
-carriers.  meta-iveia uses the Yocto layered approach on top of the meta-xilinx
+IO boards.  meta-iveia uses the Yocto layered approach on top of the meta-xilinx
 layer, which itself is built on top of the Poky reference design.
 
 The Yocto build process is self contained, therefore Xilinx build tools do not
@@ -33,8 +33,7 @@ the full suite of software requires:
 
 See [Xilinx's instructions](https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18841862/Install+and+Build+with+Xilinx+Yocto) for more information about the meta-xilinx layer and build process.
 
-iVeia provides two primary targets `iveia-boot` and `iveia-image-*`, described
-in the next section.
+iVeia provides the primary target `iveia-image-*`, described in the next section.
 
 iVeia follows the Xilinx tools in regards to supported OS versions, currently
 including Ubuntu 16.04 and 18.04.
@@ -50,12 +49,8 @@ repo sync                                                                       
 git clone -b $IVEIA_TAG git://github.com/iVeia/meta-iveia.git sources/meta-iveia # clone meta-iveia
 source setupsdk                                                                  # Xilinx step
 bitbake-layers add-layer ../sources/meta-iveia                                   # add meta-iveia
-MACHINE=atlas-ii-z8-hp bitbake iveia-boot iveia-image-minimal                    # build iveia targets
+MACHINE=<CHOOSE FROM SUPPORTED MACHINES ABOVE> bitbake iveia-image-minimal       # build iveia target
 ```
-
-Note: the above versions for Xilinx and iVeia (defined in the `repo init` and
-`git clone` lines, respectively), and the `MACHINE` may de different for your
-board.
 
 After the first run, all future runs require `source setupsdk` to setup
 environment in a new shell, and then building with the last line above.
@@ -65,39 +60,34 @@ environment in a new shell, and then building with the last line above.
 Final build products are located under Yocto's build directory at:
 `build/tmp/deploy/images/${MACHINE}`. That directory includes both the final
 build products and some intermediates, in different formats. The important
-final build products for each targets are:
-
-- For `iveia-boot` target:
-    - **`boot2sd.bin`**: QSPI burnable FSBL-only, that jumps to secondary
-      boot device on SD0.  See "Booting" section.
-    - **`fsbl-${MACHINE}.elf`**: Needed for QSPI programming using Xilinx's
-      `program_flash` tool.
-    - **`boot.bin`**: Contains FSBL, ATF, PMUFW and U-Boot. Can sit on SD, or
-      be burned to QSPI.  See "Booting" section.
-    - **`uEnv.txt`**: REQUIRED boot script for U-Boot boot. Supports SD/eMMC
-      or tftp boot.
-    - **`devicetree/`**: directory containing devicetree files
-        - **`${MACHINE}.dtb`**: Mainboard (i.e. MACHINE) DTB
-        - **`${IVIO}_overlay.dtbo`**: IO board DT Overlays for all supported
-          IO boards
-        - **`${MACHINE}_{IVIO}_combo.dtb`**: Combined DT file that includes
-          the DT for both the Mainboard and IO board - only built when the
-          variable `IVIO` is set.
-- For `iveia-image-minimal` (or full):
-    - **`Image`**: Linux kernel image
-    - Root FS, in different formats:
-        - **`iveia-image-minimal-${MACHINE}.cpio.gz.u-boot`**: U-Boot initrd
-          format - uEnv.txt supports booting from this Root FS when renamed
-          `initrd` on device (or remotely downloaded, e.g. tftp)
-        - **`iveia-image-minimal-${MACHINE}.ext4`**: Could be useful to
-          manually flash to SD partition
-        - **`iveia-image-minimal-${MACHINE}.tar.xz`**: Format used by
-          iVeia's `sdformat` utility to populate SD card.
-    - **`startup.sh`**: User initialization shell script.  Empty by default.
-      Allows user to easily add startup apps that run at the end of the Linux
-      boot process.
-
-It is not necessary to build both targets - they are independent.
+final build products are:
+- **`boot2sd.bin`**: QSPI burnable FSBL-only, that jumps to secondary
+  boot device on SD0.  See "Booting" section.
+- **`fsbl-${MACHINE}.elf`**: Needed for QSPI programming using Xilinx's
+  `program_flash` tool.
+- **`boot.bin`**: Contains FSBL, ATF, PMUFW and U-Boot. Can sit on SD, or
+  be burned to QSPI.  See "Booting" section.
+- **`uEnv.txt`**: REQUIRED boot script for U-Boot boot. Supports SD/eMMC
+  or tftp boot.
+- **`devicetree/`**: directory containing devicetree files
+    - **`${MACHINE}.dtb`**: Mainboard (i.e. MACHINE) DTB
+    - **`${IVIO}_overlay.dtbo`**: IO board DT Overlays for all supported
+      IO boards
+    - **`${MACHINE}_{IVIO}_combo.dtb`**: Combined DT file that includes
+      the DT for both the Mainboard and IO board - only built when the
+      variable `IVIO` is set.
+- **`Image`**: Linux kernel image
+- Root FS, in different formats:
+    - **`iveia-image-minimal-${MACHINE}.cpio.gz.u-boot`**: U-Boot initrd
+      format - uEnv.txt supports booting from this Root FS when renamed
+      `initrd` on device (or remotely downloaded, e.g. tftp)
+    - **`iveia-image-minimal-${MACHINE}.ext4`**: Could be useful to
+      manually flash to SD partition
+    - **`iveia-image-minimal-${MACHINE}.tar.xz`**: Format used by
+      iVeia's `sdformat` utility to populate SD card.
+- **`startup.sh`**: User initialization shell script.  Empty by default.
+  Allows user to easily add startup apps that run at the end of the Linux
+  boot process.
 
 The `MACHINE` used above maps directly to an iVeia SoM. For example, the
 Atlas-II-Z8 HP (board 00122), with the canonical name "atlas-ii-z8-hp", is also
@@ -117,19 +107,25 @@ to build.  When set, two things change:
 For almost all iVeia Atlas SoMs, boot starts from QSPI (the exceptions being
 JTAG boot, or boards that support external bootmode pins).
 
-Xilinx bootgen supports a boot method where the FSBL can start in the primary
-boot device (QSPI) but them immediately jump to a boot.bin on a secondary boot
-device. The `boot2sd.bin` uses this method - it contains an FSBL only, and then
-jumps to boot.bin on SD0 as the secondary boot device.
+The meta-iveia layer adds an iVeia Boot Sequencer to the boot process:
+- On cold boot, the BootROM finds the boot image in QSPI, and loads the FSBL.
+- The FSBL runs the Boot Sequencer which will look for a valid Xilinx boot
+  image from a compiled-in list of devices.  The sequencer will continue
+  through all devices until an image is found, if no image is found, boot will
+  continue on from the current device (QSPI).
+- The default list of devices is as follows (but can be changed via the
+  `boot_seq` variable):
+    - SD0 (external ejectable SD slot on the IO board)
+    - SD1 (internal SoM eMMC)
+- Once a device is found with a valid boot image, the sequencer will specify
+  the device in the Zynq MP `CRL_APB_BOOT_MODE_USER` register.  This will
+  enable a soft reboot to jump to that specific device.  Then, the sequencer
+  will issue a soft reset.
+- On reboot, the FSBL will be loaded from the specified device.  The FSBL will
+  skip the Boot Sequencer, and instead continue the normal boot process.
 
-When the above method is used, only the first FSBL (in `boot2bin.sd`) is run.
-The FSBL in `boot.bin` is skipped.
-
-Therefore, there are two choices for boot:
-- Program `boot2sd.bin` to QSPI and put boot.bin on SD0.
-- Program `boot.bin` directly to QSPI.
-
-The above model also allows for other secondary devices, such as onboard eMMC.
+Note: Once booted, a soft reboot will NOT run the Boot Sequencer, and will
+instead continue to reboot from the same device.
 
 ## SD Card (or eMMC)
 

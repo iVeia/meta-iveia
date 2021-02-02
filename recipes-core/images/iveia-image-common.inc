@@ -1,4 +1,11 @@
+# Boot binaries (boot.bin and uEnv.txt)
+IMAGE_INSTALL += "u-boot-uenv"
+IMAGE_INSTALL += "xilinx-bootbin"
+
+# iVeia boot
 IMAGE_INSTALL += "ivstartup sdmount"
+
+# Add on packages
 IMAGE_INSTALL += "rsync parted coreutils"
 IMAGE_INSTALL += "e2fsprogs-e2fsck e2fsprogs-mke2fs e2fsprogs-tune2fs e2fsprogs-badblocks"
 IMAGE_INSTALL += "i2c-tools"
