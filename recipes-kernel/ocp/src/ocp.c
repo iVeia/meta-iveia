@@ -37,29 +37,33 @@
 struct ocp_mappings {
     unsigned int phys_start;
     unsigned int size;
+    uintptr_t virt;
+};
+#if 0
 } ocp_mappings[] = {
     { 0x80000000, 0x20000000 },
     { 0x90000000, 0x01000000 },
     { 0x94000000, 0x01000000 },
 };
 #define IV_OCP_NUM_ADDR_SPACES (ARRAY_SIZE(ocp_mappings))
+#endif
 
 struct ocp_dev {
-    struct {
-        char * virt;
-        unsigned int phys;
-        unsigned int size;
-    } mappings[IV_OCP_NUM_ADDR_SPACES];
     struct semaphore sem;
-    unsigned int ocp_instance_count;
+    unsigned int instance_count;
+
+    struct class *class;
+    struct device *dev;
     struct cdev cdev;
+
+    int num_addr_spaces;
+    struct ocp_mappings *mappings;
 };
 
 #define MODNAME "ocp"
 
 static dev_t ocp_dev_num;
 
-struct ocp_dev * ocp_devp;
 
 static unsigned int minor_to_mapping_index(unsigned int minor){
     if ( minor == 0 )
@@ -76,7 +80,7 @@ int ocp_open(struct inode *inode, struct file *filp)
     dev = container_of(inode->i_cdev, struct ocp_dev, cdev);
     filp->private_data = dev;
     if (down_interruptible(&dev->sem)) return -ERESTARTSYS;
-    dev->ocp_instance_count++;    
+    dev->instance_count++;    
     up(&dev->sem);
     return 0;
 }
@@ -88,7 +92,7 @@ int ocp_release(struct inode *inode, struct file *filp)
 {
     struct ocp_dev *dev = filp->private_data;  
     if (down_interruptible(&dev->sem)) return -ERESTARTSYS;
-    dev->ocp_instance_count--;
+    dev->instance_count--;
     up(&dev->sem);
     return 0;
 }
@@ -103,7 +107,7 @@ ssize_t ocp_read(struct file *filp, char __user *buf, size_t count,
     unsigned int minor = iminor(filp->f_path.dentry->d_inode);
     ssize_t retval = 0;
 
-    if (minor > IV_OCP_NUM_ADDR_SPACES) return -ENODEV;
+    if (minor > dev->num_addr_spaces) return -ENODEV;
 
 #if defined(CONFIG_ARCH_ZYNQMP)
     if (count == 8)
@@ -148,7 +152,7 @@ ssize_t ocp_write(struct file *filp, const char __user *buf, size_t count,
     unsigned int minor = iminor(filp->f_path.dentry->d_inode);
     ssize_t retval = 0;
 
-    if (minor > IV_OCP_NUM_ADDR_SPACES) return -ENODEV;
+    if (minor > dev->num_addr_spaces) return -ENODEV;
 
 #if defined(CONFIG_ARCH_ZYNQMP)
     if (count == 8)
@@ -213,7 +217,7 @@ long ocp_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
     if (down_interruptible(&dev->sem)) return -ERESTARTSYS;
     switch(cmd) {
         case OCP_IOC_R_INSTANCE_COUNT:          
-            __put_user(dev->ocp_instance_count,(unsigned long __user *)arg);            
+            __put_user(dev->instance_count,(unsigned long __user *)arg);            
             break;                      
 
         default:  /* redundant, as cmd was checked against MAXNR */
@@ -231,7 +235,7 @@ loff_t ocp_llseek(struct file *filp, loff_t off, int whence)
     unsigned int minor = iminor(filp->f_path.dentry->d_inode);
     loff_t newpos;
 
-    if (minor > IV_OCP_NUM_ADDR_SPACES) return -ENODEV;
+    if (minor > dev->num_addr_spaces) return -ENODEV;
 
     if (down_interruptible(&dev->sem)) return -ERESTARTSYS;
 
@@ -280,7 +284,7 @@ static int ocp_mmap(struct file *filp, struct vm_area_struct *vma)
     struct ocp_dev *dev = filp->private_data; 
     unsigned int minor = iminor(filp->f_path.dentry->d_inode);
 
-    if (minor > IV_OCP_NUM_ADDR_SPACES) return -ENODEV;
+    if (minor > dev->num_addr_spaces) return -ENODEV;
 
 
     ulPhysStart = dev->mappings[minor_to_mapping_index(minor)].phys;
@@ -317,16 +321,22 @@ struct file_operations ocp_fops = {
  * Thefore, it must be careful to work correctly even if some of the items
  * have not been initialized
  */
-void ocp_cleanup_module(void)
+static int ocp_remove(struct platform_device *pdev)
 {
+	struct ocp_dev *ocp_devp = platform_get_drvdata(pdev);
     int i;
 
-    for ( i = 0; i < IV_OCP_NUM_ADDR_SPACES; i++ ) {
+    pr_info("ocp: REMOVE\n");
+
+    for ( i = 0; i < dev->num_addr_spaces; i++ ) {
         if ( ocp_devp->mappings[i].virt ) {
             iounmap( ocp_devp->mappings[i].virt );
         }
         ocp_devp->mappings[i].virt = NULL;
     }
+
+    /* cleanup_module is never called if registering failed */
+    unregister_chrdev_region(ocp_dev_num, dev->num_addr_spaces);
 
     /* Get rid of our char dev entries */
     if (ocp_devp) {
@@ -334,38 +344,28 @@ void ocp_cleanup_module(void)
         kfree(ocp_devp);
     }
 
-    /* cleanup_module is never called if registering failed */
-    unregister_chrdev_region(ocp_dev_num, IV_OCP_NUM_ADDR_SPACES);
+    return 0;
 }
 
-static int __init ocp_init(void)
+static int ocp_probe(struct platform_device *pdev)
 {
     int err;
     int i;
-    static struct class * ocp_class;
+    ocp_dev *ocp_devp;
+    struct ocp_mapping *mapping;
 
-    /*
-     * Get a range of minor numbers to work with, using static major.
-     */
-    err = alloc_chrdev_region(&ocp_dev_num, 0, IV_OCP_NUM_ADDR_SPACES+1, MODNAME);
-    if (err) {
-        goto fail;
-    }
-    ocp_class = class_create(THIS_MODULE, "ocp");
-    if (IS_ERR(ocp_class))
-        return PTR_ERR(ocp_class);
+    pr_info("ocp: PROBE\n");
 
-    device_create(ocp_class, NULL, MKDEV(MAJOR(ocp_dev_num),0), NULL, "ocp");
-
-    ocp_devp = kmalloc(sizeof(struct ocp_dev), GFP_KERNEL);
+    ocp_devp = kzalloc(sizeof(struct ocp_dev), GFP_KERNEL);
     if (!ocp_devp) {
         err = -ENOMEM;
         goto fail;
     }
-    memset(ocp_devp, 0, sizeof(struct ocp_dev));
+	platform_set_drvdata(pdev, ocp_devp);
+	ocp_devp->dev = &pdev->dev;
     
     sema_init(&ocp_devp->sem, 1);
-    ocp_devp->ocp_instance_count = 0;
+    ocp_devp->instance_count = 0;
     cdev_init(&ocp_devp->cdev, &ocp_fops);
     ocp_devp->cdev.owner = THIS_MODULE;
     ocp_devp->cdev.ops = &ocp_fops;
@@ -375,6 +375,7 @@ static int __init ocp_init(void)
         goto fail;
     }
 
+#if 0
     for ( i = 0; i < IV_OCP_NUM_ADDR_SPACES; i++ ) {
         ocp_devp->mappings[i].phys = ocp_mappings[i].phys_start;
         ocp_devp->mappings[i].size = ocp_mappings[i].size;
@@ -388,23 +389,71 @@ static int __init ocp_init(void)
         }
 
         device_create(ocp_class, NULL, MKDEV(MAJOR(ocp_dev_num),i+1), NULL, "ocp%d",i);
-
     }
+#else
+#endif
+    //TODO: allocate mappings array here, free in remove()
+    ocp_devp->num_addr_spaces = of_property_count_elems_of_size(pdev->dev.of_node, "reg", sizeof(u64));
+    ocp_devp->num_addr_spaces /= 2;
+    ocp_devp->mappings = kzalloc(sizeof(struct mapping) * ocp_dev->num_addr_spaces, GFP_KERNEL);
 
+    /*
+     * Get a range of minor numbers to work with, using static major.
+     */
+    err = alloc_chrdev_region(&ocp_dev_num, 0, ocp_devp->num_addr_spaces + 1, MODNAME);
+    if (err) {
+        goto fail;
+    }
+    ocp_devp->class = class_create(THIS_MODULE, "ocp");
+    if (IS_ERR(ocp_devp->class))
+        return PTR_ERR(ocp_devp->class);
+
+    device_create(ocp_devp->class, NULL, MKDEV(MAJOR(ocp_dev_num),0), NULL, "ocp");
+
+    for ( i = 0; i < ocp_dev->num_addr_spaces * 2; i += 2 ) {
+        mapping = &ocp_dev->mappings[i];
+
+        if ( of_property_read_u64_index(pdev->dev.of_node, "reg", i, &mapping->phys ) != 0 ) {
+            break;
+        }
+        if ( of_property_read_u64_index(pdev->dev.of_node, "reg", i+1, &mapping->size ) != 0 ) {
+            break;
+        }
+
+        ocp_devp->mappings[i].virt = ioremap( mapping->phys, mapping->size );
+        if ( mapping->virt == NULL ) {
+            dev_err((ocp_devp->dev, ": Error mapping ocp space\n" );
+            err = -ENOMEM;
+            goto fail;
+        }
+
+        device_create(ocp_devp->class, NULL, MKDEV(MAJOR(ocp_dev_num),i+1), NULL, "ocp%d",i);
+    }
 
     return 0;
 
 fail:
-    ocp_cleanup_module();
+    ocp_remove( pdev );
     return err;
 }
-module_init(ocp_init);
 
-static void __exit ocp_exit(void)
-{
-    ocp_cleanup_module();
-}
-module_exit(ocp_exit);
+
+/* Match table for OF platform binding */
+static const struct of_device_id ocp_of_match[] = {
+	{ .compatible = "iv,ocp", },
+	{ /* end of list */ },
+};
+MODULE_DEVICE_TABLE(of, ocp_of_match);
+
+static struct platform_driver ocp_driver = {
+	.probe = ocp_probe,
+	.remove = ocp_remove,
+	.driver = {
+		.name = "ocp",
+		.of_match_table = ocp_of_match,
+	},
+};
+module_platform_driver(ocp_driver);
 
 MODULE_AUTHOR("iVeia, LLC");
 MODULE_DESCRIPTION("OCP char driver");
