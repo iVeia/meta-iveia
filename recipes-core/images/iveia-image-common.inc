@@ -13,6 +13,7 @@ IMAGE_INSTALL += "strace"
 IMAGE_INSTALL += "lmsensors-sensors"
 IMAGE_INSTALL += "lmsensors-libsensors"
 IMAGE_INSTALL += "bdevmem"
+IMAGE_INSTALL += "util-linux-lsblk"
 
 IMAGE_INSTALL += "opkg"
 IMAGE_REMOVE += "rpm"
