@@ -16,22 +16,31 @@ META_DIR := "${THISDIR}"
 #
 do_patch[prefuncs] += "do_post_patch_version"
 do_post_patch_version() {
-    GIT_REV=`cd ${S} && git describe --long --tags`
-    echo '#define SRC_BUILD_HASH "'${GIT_REV}$'"' > ${WORKDIR}/iveia_src_version
+    if (cd "${S}"; git describe --tags); then
+        GIT_REV=`cd "${S}" && git describe --long --tags`
+    else
+        GIT_REV="UNKNOWN"
+    fi
+    echo '#define SRC_BUILD_HASH "'${GIT_REV}'"' > ${WORKDIR}/iveia_src_version
 }
 
 do_compile[prefuncs] += "do_pre_compile_version"
 do_pre_compile_version () {
-    cp ${WORKDIR}/iveia_src_version ${IVEIA_VERSION_HEADER_FILE}
+    META_GIT_REV=`cd ${META_DIR} && git describe --long --tags --dirty`
 
-    TAINTED=""
-    ls ${STAMP}.*.taint 2>/dev/null && TAINTED="(tainted)"
-    echo '#define SRC_BUILD_TAINT "'${TAINTED}'"' >> ${IVEIA_VERSION_HEADER_FILE}
-    echo '#define IVEIA_SRC_BUILD_HASH (SRC_BUILD_HASH SRC_BUILD_TAINT)' >> ${IVEIA_VERSION_HEADER_FILE}
+    if [ -n "${IVEIA_VERSION_HEADER_FILE}" ]; then
+        cp ${WORKDIR}/iveia_src_version "${IVEIA_VERSION_HEADER_FILE}"
 
-    GIT_REV=`cd ${META_DIR} && git describe --long --tags --dirty`
-    echo '#define IVEIA_META_BUILD_HASH "'${GIT_REV}'"' >> ${IVEIA_VERSION_HEADER_FILE}
+        TAINTED=""
+        ls ${STAMP}.*.taint 2>/dev/null && TAINTED="(tainted)"
+        echo '#define SRC_BUILD_TAINT "'${TAINTED}'"' >> "${IVEIA_VERSION_HEADER_FILE}"
+        echo '#define IVEIA_SRC_BUILD_HASH (SRC_BUILD_HASH SRC_BUILD_TAINT)' >> "${IVEIA_VERSION_HEADER_FILE}"
+        echo '#define IVEIA_META_BUILD_HASH "'${META_GIT_REV}'"' >> "${IVEIA_VERSION_HEADER_FILE}"
+        echo '#define IVEIA_MACHINE "'${MACHINE}'"' >> "${IVEIA_VERSION_HEADER_FILE}"
+    fi
 
-    echo '#define IVEIA_MACHINE "'${MACHINE}'"' >> ${IVEIA_VERSION_HEADER_FILE}
+    if [ -n "${IVEIA_VERSION_META}" ]; then
+        echo ${META_GIT_REV} > "${IVEIA_VERSION_META}"
+    fi
 }
 
