@@ -40,11 +40,14 @@ int iv_sequence_boot( void )
     XFsbl_Printf(DEBUG_PRINT_ALWAYS, "iVeia seq boot mode (0x%08x): %s, %s\r\n",
             boot_mode_user_reg, pr_boot_mode(boot_mode), alt_boot ? "ALT":"NORM");
 
-    if ( alt_boot )
-    {
-        // alt_boot will be false for initial power up.  if alt_boot is true, that means 
-        //   that we got here after reset from successful completion of sequence boot below, 
-        //   so return success to continue on with boot
+    //
+    // alt_boot will be false for initial power up.  if alt_boot is true, that means
+    // that we got here after reset from successful completion of sequence boot below,
+    // so return success to continue on with boot
+    //
+    // Also, must do normal FSBL boot handling if in JTAG mode.
+    //
+    if ( alt_boot || boot_mode == XFSBL_JTAG_BOOT_MODE ) {
         return XFSBL_SUCCESS;
     }
 
