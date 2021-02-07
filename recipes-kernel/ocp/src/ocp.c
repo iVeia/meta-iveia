@@ -29,40 +29,36 @@
 #include <asm/io.h>
 #include <asm/uaccess.h>
 #include <linux/errno.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/of_reserved_mem.h>
+#include <linux/of_platform.h>
+#include <linux/platform_device.h>
+
 #include "ocp.h"
 
-/*
- * Fixed addresses for atlas-ii-z8.  Must be moved to DTS file.
- */
-struct ocp_mappings {
-    unsigned int phys_start;
-    unsigned int size;
-    uintptr_t virt;
+ 
+struct ocp_mapping {
+    u64 phys;
+    u64 size;
+    void *virt;
 };
-#if 0
-} ocp_mappings[] = {
-    { 0x80000000, 0x20000000 },
-    { 0x90000000, 0x01000000 },
-    { 0x94000000, 0x01000000 },
-};
-#define IV_OCP_NUM_ADDR_SPACES (ARRAY_SIZE(ocp_mappings))
-#endif
 
 struct ocp_dev {
     struct semaphore sem;
     unsigned int instance_count;
 
+    dev_t node;
     struct class *class;
     struct device *dev;
     struct cdev cdev;
 
     int num_addr_spaces;
-    struct ocp_mappings *mappings;
+    struct ocp_mapping *mappings;
 };
 
 #define MODNAME "ocp"
 
-static dev_t ocp_dev_num;
 
 
 static unsigned int minor_to_mapping_index(unsigned int minor){
@@ -128,7 +124,7 @@ ssize_t ocp_read(struct file *filp, char __user *buf, size_t count,
         goto out;
     }
 
-    if (copy_to_user(buf, dev->mappings[minor_to_mapping_index(minor)].virt + *f_pos, count)) {
+    if (copy_to_user(buf, (void *)((uintptr_t)dev->mappings[minor_to_mapping_index(minor)].virt + *f_pos), count)) {
         retval = -EFAULT;
         goto out;
     }
@@ -173,7 +169,7 @@ ssize_t ocp_write(struct file *filp, const char __user *buf, size_t count,
         goto out;
     }
 
-    if (copy_from_user(dev->mappings[minor_to_mapping_index(minor)].virt + *f_pos, buf, count)) {
+    if (copy_from_user((void *)(dev->mappings[minor_to_mapping_index(minor)].virt + *f_pos), buf, count)) {
         retval = -EFAULT;
         goto out;
     }
@@ -328,21 +324,24 @@ static int ocp_remove(struct platform_device *pdev)
 
     pr_info("ocp: REMOVE\n");
 
-    for ( i = 0; i < dev->num_addr_spaces; i++ ) {
-        if ( ocp_devp->mappings[i].virt ) {
-            iounmap( ocp_devp->mappings[i].virt );
+    if ( ocp_devp->mappings ) {
+        for ( i = 0; i < ocp_devp->num_addr_spaces; i++ ) {
+            if ( ocp_devp->mappings[i].virt ) {
+                iounmap( (void *)ocp_devp->mappings[i].virt );
+            }
+
+            device_destroy( ocp_devp->class, MKDEV(MAJOR(ocp_devp->node),i+1) );
         }
-        ocp_devp->mappings[i].virt = NULL;
+
+        kfree( ocp_devp->mappings );
     }
 
-    /* cleanup_module is never called if registering failed */
-    unregister_chrdev_region(ocp_dev_num, dev->num_addr_spaces);
+    device_destroy( ocp_devp->class, MKDEV(MAJOR(ocp_devp->node),0) );
+    class_destroy( ocp_devp->class );
+    cdev_del(&ocp_devp->cdev);
+    unregister_chrdev_region(ocp_devp->node, ocp_devp->num_addr_spaces);
 
-    /* Get rid of our char dev entries */
-    if (ocp_devp) {
-        cdev_del(&ocp_devp->cdev);
-        kfree(ocp_devp);
-    }
+    kfree(ocp_devp);
 
     return 0;
 }
@@ -351,7 +350,7 @@ static int ocp_probe(struct platform_device *pdev)
 {
     int err;
     int i;
-    ocp_dev *ocp_devp;
+    struct ocp_dev *ocp_devp;
     struct ocp_mapping *mapping;
 
     pr_info("ocp: PROBE\n");
@@ -363,71 +362,59 @@ static int ocp_probe(struct platform_device *pdev)
     }
 	platform_set_drvdata(pdev, ocp_devp);
 	ocp_devp->dev = &pdev->dev;
+
+    /*
+     * Get a range of minor numbers to work with, using static major.
+     */
+    err = alloc_chrdev_region(&ocp_devp->node, 0, ocp_devp->num_addr_spaces + 1, MODNAME);
+    if (err) {
+        goto fail;
+    }
     
-    sema_init(&ocp_devp->sem, 1);
-    ocp_devp->instance_count = 0;
+
     cdev_init(&ocp_devp->cdev, &ocp_fops);
     ocp_devp->cdev.owner = THIS_MODULE;
     ocp_devp->cdev.ops = &ocp_fops;
-    err = cdev_add (&ocp_devp->cdev, ocp_dev_num, IV_OCP_NUM_ADDR_SPACES + 1);
+    err = cdev_add (&ocp_devp->cdev, ocp_devp->node, ocp_devp->num_addr_spaces + 1);
     if (err) {
         printk(KERN_NOTICE MODNAME ": Error %d adding ocp\n", err);
         goto fail;
     }
 
-#if 0
-    for ( i = 0; i < IV_OCP_NUM_ADDR_SPACES; i++ ) {
-        ocp_devp->mappings[i].phys = ocp_mappings[i].phys_start;
-        ocp_devp->mappings[i].size = ocp_mappings[i].size;
-        ocp_devp->mappings[i].virt = ioremap( 
-            ocp_devp->mappings[i].phys, ocp_devp->mappings[i].size
-            );
-        if ( ocp_devp->mappings[i].virt == NULL ) {
-            printk(KERN_NOTICE MODNAME ": Error mapping ocp space\n" );
-            err = -ENOMEM;
-            goto fail;
-        }
-
-        device_create(ocp_class, NULL, MKDEV(MAJOR(ocp_dev_num),i+1), NULL, "ocp%d",i);
-    }
-#else
-#endif
     //TODO: allocate mappings array here, free in remove()
     ocp_devp->num_addr_spaces = of_property_count_elems_of_size(pdev->dev.of_node, "reg", sizeof(u64));
     ocp_devp->num_addr_spaces /= 2;
-    ocp_devp->mappings = kzalloc(sizeof(struct mapping) * ocp_dev->num_addr_spaces, GFP_KERNEL);
+    ocp_devp->mappings = kzalloc(sizeof(struct ocp_mapping) * ocp_devp->num_addr_spaces, GFP_KERNEL);
 
-    /*
-     * Get a range of minor numbers to work with, using static major.
-     */
-    err = alloc_chrdev_region(&ocp_dev_num, 0, ocp_devp->num_addr_spaces + 1, MODNAME);
-    if (err) {
-        goto fail;
-    }
     ocp_devp->class = class_create(THIS_MODULE, "ocp");
     if (IS_ERR(ocp_devp->class))
         return PTR_ERR(ocp_devp->class);
 
-    device_create(ocp_devp->class, NULL, MKDEV(MAJOR(ocp_dev_num),0), NULL, "ocp");
+    device_create(ocp_devp->class, NULL, MKDEV(MAJOR(ocp_devp->node),0), NULL, "ocp");
 
-    for ( i = 0; i < ocp_dev->num_addr_spaces * 2; i += 2 ) {
-        mapping = &ocp_dev->mappings[i];
+    sema_init(&ocp_devp->sem, 1);
+    ocp_devp->instance_count = 0;
 
-        if ( of_property_read_u64_index(pdev->dev.of_node, "reg", i, &mapping->phys ) != 0 ) {
+    for ( i = 0; i < ocp_devp->num_addr_spaces; i++ ) {
+        mapping = &ocp_devp->mappings[i];
+
+        if ( of_property_read_u64_index(pdev->dev.of_node, "reg", (i*2), &mapping->phys ) != 0 ) {
             break;
         }
-        if ( of_property_read_u64_index(pdev->dev.of_node, "reg", i+1, &mapping->size ) != 0 ) {
+        if ( of_property_read_u64_index(pdev->dev.of_node, "reg", (i*2)+1, &mapping->size ) != 0 ) {
             break;
         }
 
-        ocp_devp->mappings[i].virt = ioremap( mapping->phys, mapping->size );
+        mapping->virt = ioremap( mapping->phys, mapping->size );
         if ( mapping->virt == NULL ) {
-            dev_err((ocp_devp->dev, ": Error mapping ocp space\n" );
+            dev_err(ocp_devp->dev, ": Error mapping ocp space\n" );
             err = -ENOMEM;
             goto fail;
         }
 
-        device_create(ocp_devp->class, NULL, MKDEV(MAJOR(ocp_dev_num),i+1), NULL, "ocp%d",i);
+        dev_info(ocp_devp->dev, "map 0x%llx -> 0x%llx (0x%llx)\n", mapping->phys, mapping->virt, mapping->size);
+
+        device_create(ocp_devp->class, NULL, MKDEV(MAJOR(ocp_devp->node),i+1), NULL, "ocp%d",i);
     }
 
     return 0;

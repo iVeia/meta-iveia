@@ -128,5 +128,10 @@
                         <&xilinx_ams 24>, <&xilinx_ams 25>, <&xilinx_ams 26>, <&xilinx_ams 27>,
                         <&xilinx_ams 28>, <&xilinx_ams 29>, <&xilinx_ams 30>;
     };
+
+    iv_ocp {
+        compatible = "iv,ocp";
+        reg = <0x0 0x80000000 0x0 0x20000000 0x0 0x90000000 0x0 0x01000000 0x0 0x94000000 0x0 0x01000000>;
+    };
 };
 
