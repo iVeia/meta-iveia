@@ -3,8 +3,10 @@ LICENSE = "CLOSED"
 
 inherit deploy
 
+# ivinstall depends on the final iveia image - but it can't use DEPENDS, as it
+# depends on do_populate_sysroot, which ${IVIMG} doesn't have.
 IVIMG := "iveia-image-minimal"
-DEPENDS += "${IVIMG} xilinx-bootbin linux-xlnx device-tree"
+do_deploy[depends] = "${IVIMG}:do_build"
 
 LOCAL_FILES := "${THISDIR}/files"
 FILESEXTRAPATHS_prepend := "${LOCAL_FILES}:"
@@ -86,5 +88,5 @@ python do_deploy() {
     os.chmod(out_script, st.st_mode | stat.S_IEXEC)
 }
 
-addtask do_deploy after do_deploy
+addtask do_deploy after do_compile before do_build
 
