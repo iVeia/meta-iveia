@@ -427,8 +427,17 @@ elif [[ $MODE = sd ]]; then
         parted -s "$DEVICE" set 1 boot on || error "could not make partition 1 bootable"
     fi
 
-    # Get the partition list as an array (we want this even if we're not formatting)
-    PARTS=($(lsblk -nr "$DEVICE" | awk '{print $1}'))
+    # Get the partition list as an array (we want this even if we're not
+    # formatting).  Give up to a few seconds for partitions to appear.
+    SECS=5
+    for ((i = 0; i < SECS; i++)); do
+        (($(lsblk -n "$DEVICE" | wc -l) == 5)) && break;
+        sleep 1
+    done
+    ((i == SECS)) && error "failed to create all partitions"
+
+    PARTS=($(lsblk -nrx NAME "$DEVICE" | awk '{print $1}'))
+    ((${#PARTS[*]} == 5)) || error "INTERNAL ERROR: failed to create all partitions"
 
     if ((DO_FORMAT)); then
         #
@@ -440,7 +449,6 @@ elif [[ $MODE = sd ]]; then
         # to have a fix except for a sleep.
         #
         sleep 1 # Ensure parted done
-        ((${#PARTS[*]} == 5)) || error "failed to create all partitions"
         # Create array of partition names (including primary device first)
         info "Formatting partition 1 as FAT32"
         ((!MISSING_DEV)) || error "Some block devs did not complete partition"
