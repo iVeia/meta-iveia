@@ -94,9 +94,9 @@ MODE OPTIONS
         SD mode must run as root, e.g., "sudo ivinstall ..." to perform format
         or ext4 rootfs install.
 
-        For copy exluding ext4 (i.e. -k or -d options), sudo is not required.
+        For copying without ext4 (i.e. -k or -d options), sudo is not required.
         In this case, the DEVICE can refer to a block device (which must be
-        mounted) or a directory to install the boot files.  For this case,
+        mounted) or a directory to install the boot files.  In addition,
         macos is supported.
 
         Can be run on a Linux host or target, in both cases DEVICE refers to
@@ -160,18 +160,19 @@ OPTIONS
     -i IOBOARD
         Target io-board for which the SD card will be configured.  This will
         setup boot to use the correct device tree overlay file, which will
-        correctly configure all io-board interfaces.  See SUPPORTED BOARDS for
-        allows IOBOARDs.
+        correctly configure all io-board interfaces.  Implies -c.  See
+        SUPPORTED BOARDS for allowed IOBOARDs.
 
     -n NAME
         Optional volume name (label) for boot partition; default is main-board
-        name up to the first hyphen.
+        name up to the first hyphen.  Implies -f.
 
     -q
-        Reflash the QSPI.  Valid for all Mode Options.  For SD MODE, the QSPI
-        cannot be directly formatted.  However, this option adds a script that
-        will reflash the QSPI on first boot.  Using SD MODE implies -c (copy),
-        as a bootable system is required.
+        Reflash the QSPI.  Valid only for SSH and JTAG modes, as it must be run
+        on the target.  Runs the command "ivflash <boot.bin>" on the target to
+        do the reflash, where the boot.bin is the binary included with this
+        installer.  Implies -c, as the boot.bin is expected on the target.
+        Alternatively, "ivflash" can be run manually on the target.
 
     -v
         Report version from which images were built.
@@ -219,12 +220,12 @@ while getopts "B:b:cdfhi:jJ:k:n:qs:vxzZ" opt; do
         d) DO_COPY=1; USE_INITRD=1 ;;
         f) DO_FORMAT=1; ;;
         h) echo "$USAGE"; exit 0; ;;
-        i) IOBOARD=$OPTARG; ;;
+        i) DO_COPY=1; IOBOARD=$OPTARG; ;;
         j) MODE=jtag ;;
         J) JTAG_REMOTE=$OPTARG ;;
         k) DO_COPY=1; SKIP_ROOTFS=1 ;;
-        n) USER_LABEL=$OPTARG; ;;
-        q) DO_QSPI=1 ;;
+        n) DO_FORMAT=1; USER_LABEL=$OPTARG; ;;
+        q) DO_COPY=1; DO_QSPI=1 ;;
         s) MODE=ssh; SSH_TARGET=$OPTARG ;;
         v) DO_VERSION=1 ;;
         x) DO_EXTRACT=1 ;;
