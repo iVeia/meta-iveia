@@ -54,7 +54,7 @@ Note: the setupsdk script will end up changing the current working directory to
 Once completed, an image will be created in
 **tmp/deploy/images/${MACHINE}/ivinstall-${MACHINE}**.
 
-## Installation & boot
+## Installation
 
 To install the complete set of binaries (bootloaders, Linux OS, Rootfs, etc)
 use the installer image (ivinstall-${MACHINE}) created above.  For more
@@ -71,7 +71,7 @@ similar utility to find out the device name of your SD card.
 
 When installation finishes, safely eject your SD card.
 
-# Boot
+## Boot
 
 Insert the SD card into the iVeia IO board, and boot the device.  The serial console should
 display something similar to:
