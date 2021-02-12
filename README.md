@@ -19,151 +19,105 @@ iVeia IO boards (`IVIO`) supported by this layer:
 - a2io-blackwing (PN 00093)
 - a3io-aurora (PN 00100)
 
-# Building
+# Quick start
 
-The meta-iveia layer depends on the meta-xilinx layer:
+The sections details the fastest way to get started.
 
-> https://github.com/Xilinx/meta-xilinx
-
-and follows a similar approach for downloading and building sources.  To build
-the full suite of software requires:
-1. Using the `repo` tool to download a specific revision of Xilinx sources
-2. `git clone` the meta-iveia layer (this repo) and add it as a bitbake layer.
-3. Use bitbake to build iVeia specific targets
-
-See [Xilinx's instructions](https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18841862/Install+and+Build+with+Xilinx+Yocto) for more information about the meta-xilinx layer and build process.
-
-iVeia provides the primary target `iveia-image-*`, described in the next section.
+## Requirements
 
 iVeia follows the Xilinx tools in regards to supported OS versions, currently
 including Ubuntu 16.04 and 18.04.
 
-Tagged iVeia versions are based off of a specific Xilinx version included in
-the tag followed by an iVeia version number, e.g. `2019.2-1.0`.
+## Download & Build
 
-The first time download and build steps are as follows:
+For convenience, this layer includes a script to download all dependent Xilinx
+files.  For more information, see the [BUILD](BUILD.md) doc.
+
+To download this repo and the rest of the Xilinx sources (this step only needs
+to be run once):
 ```
 IVEIA_TAG=<CHOOSE THE LATEST TAGGED VERSION, I.E. 2019.2-M.N>
-repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-v2019.2          # Xilinx step
-repo sync                                                                        # Xilinx step
-git clone -b $IVEIA_TAG git://github.com/iVeia/meta-iveia.git sources/meta-iveia # clone meta-iveia
-source setupsdk                                                                  # Xilinx step
-bitbake-layers add-layer ../sources/meta-iveia                                   # add meta-iveia
-MACHINE=<CHOOSE FROM SUPPORTED MACHINES ABOVE> bitbake iveia-image-minimal       # build iveia target
+git clone -b $IVEIA_TAG git://github.com/iVeia/meta-iveia.git sources/meta-iveia
+meta-iveia/download
 ```
+Note: the **download** script will move the meta-iveia layer directory into the
+sources directory, which is where Xilinx stores layer directories.
 
-After the first run, all future runs require `source setupsdk` to setup
-environment in a new shell, and then building with the last line above.
+Once downloaded, to build a single installable image:
+```
+source setupsdk
+MACHINE=<CHOOSE FROM SUPPORTED MACHINES ABOVE> bitbake ivinstall
+```
+Note: the setupsdk script will end up changing the current working directory to
+**build**.
 
-# Build targets and products
+Once completed, an image will be created in
+**tmp/deploy/images/${MACHINE}/ivinstall-${MACHINE}**.
 
-Final build products are located under Yocto's build directory at:
-`build/tmp/deploy/images/${MACHINE}`. That directory includes both the final
-build products and some intermediates, in different formats. The important
-final build products are:
-- **`boot2sd.bin`**: QSPI burnable FSBL-only, that jumps to secondary
-  boot device on SD0.  See "Booting" section.
-- **`fsbl-${MACHINE}.elf`**: Needed for QSPI programming using Xilinx's
-  `program_flash` tool.
-- **`boot.bin`**: Contains FSBL, ATF, PMUFW and U-Boot. Can sit on SD, or
-  be burned to QSPI.  See "Booting" section.
-- **`uEnv.txt`**: REQUIRED boot script for U-Boot boot. Supports SD/eMMC
-  or tftp boot.
-- **`devicetree/`**: directory containing devicetree files
-    - **`${MACHINE}.dtb`**: Mainboard (i.e. MACHINE) DTB
-    - **`${IVIO}_overlay.dtbo`**: IO board DT Overlays for all supported
-      IO boards
-    - **`${MACHINE}_{IVIO}_combo.dtb`**: Combined DT file that includes
-      the DT for both the Mainboard and IO board - only built when the
-      variable `IVIO` is set.
-- **`Image`**: Linux kernel image
-- Root FS, in different formats:
-    - **`iveia-image-minimal-${MACHINE}.cpio.gz.u-boot`**: U-Boot initrd
-      format - uEnv.txt supports booting from this Root FS when renamed
-      `initrd` on device (or remotely downloaded, e.g. tftp)
-    - **`iveia-image-minimal-${MACHINE}.ext4`**: Could be useful to
-      manually flash to SD partition
-    - **`iveia-image-minimal-${MACHINE}.tar.xz`**: Format used by
-      iVeia's `sdformat` utility to populate SD card.
-- **`startup.sh`**: User initialization shell script.  Empty by default.
-  Allows user to easily add startup apps that run at the end of the Linux
-  boot process.
+## Installation & boot
 
-The `MACHINE` used above maps directly to an iVeia SoM. For example, the
-Atlas-II-Z8 HP (board 00122), with the canonical name "atlas-ii-z8-hp", is also
-used as the `MACHINE`.
+To install the complete set of binaries (bootloaders, Linux OS, Rootfs, etc)
+use the installer image (ivinstall-${MACHINE}) created above.  For more
+information, see the [INSTALL](INSTALL.md) doc.
 
-The `IVIO` variable is optional, and can be specified as a command line
-environment variable or a configuration setting.  It defines an iVeia IO board
-to build.  When set, two things change:
-- The **`devicetree/${MACHINE}_{IVIO}_combo.dtb`** will be built (in addition
-  to the other DTB files).
-- U-Boot will use the above DTB, instead of the default **`${MACHINE}.dtb`**.
-  This allows U-Boot, which does not support using internal DT overlay files,
-  to include both mainboard *and* IO board specific features.
+To install to an SD card mounted on a host machine, run:
+```
+./ivinstall-${MACHINE} -fc /dev/sdX
+```
+Note: the **MACHINE** should reflect the one used during the build process.
+Also, the device name **/dev/sdX** should correspond to the SD card on your
+host machine.  This is often **/dev/sdb** but will vary - use **lsblk** or a
+similar utility to find out the device name of your SD card.
 
-# Booting
+When installation finishes, safely eject your SD card.
 
-For almost all iVeia Atlas SoMs, boot starts from QSPI (the exceptions being
-JTAG boot, or boards that support external bootmode pins).
+# Boot
 
-The meta-iveia layer adds an iVeia Boot Sequencer to the boot process:
-- On cold boot, the BootROM finds the boot image in QSPI, and loads the FSBL.
-- The FSBL runs the Boot Sequencer which will look for a valid Xilinx boot
-  image from a compiled-in list of devices.  The sequencer will continue
-  through all devices until an image is found, if no image is found, boot will
-  continue on from the current device (QSPI).
-- The default list of devices is as follows (but can be changed via the
-  `boot_seq` variable):
-    - SD0 (external ejectable SD slot on the IO board)
-    - SD1 (internal SoM eMMC)
-- Once a device is found with a valid boot image, the sequencer will specify
-  the device in the Zynq MP `CRL_APB_BOOT_MODE_USER` register.  This will
-  enable a soft reboot to jump to that specific device.  Then, the sequencer
-  will issue a soft reset.
-- On reboot, the FSBL will be loaded from the specified device.  The FSBL will
-  skip the Boot Sequencer, and instead continue the normal boot process.
-
-Note: Once booted, a soft reboot will NOT run the Boot Sequencer, and will
-instead continue to reboot from the same device.
-
-## SD Card (or eMMC)
-
-When using the `boot2sd.bin` as defined above, the rest of the boot (excluding
-the FSBL), run from the SD card (this process can also be used with eMMC, but
-it is not built by default).
-
-The boot process from SD requires the following files on the first partition of
-the SD card (FAT32 formatted).  The files are listed in the order that they are
-loaded:
-- **`boot.bin`** (REQUIRED): Boot's bootloaders up to U-Boot.
-- **`uEnv.txt`** (REQUIRED): boot script loaded by U-Boot.
-- **`xilinx.bit`** (OPTIONAL): FPGA bitfile.
-- **`Image`** (REQUIRED): Linux kernel image
-- **`${MACHINE}.dtb`** (REQUIRED): Device tree for the SoM.
-- **`overlay.dtbo`** (OPTIONAL): Device tree for IO board specific features.
-  This file must be renamed from **`${IVIO}_overlay.dtbo`** in the Yocto build
-  directory (see Build targets and products section above).
-- ROOTFS (REQUIRED): either of the following images found in the Yocto build
-  directory (see Build targets and products section above):
-    - **`initrd`**: Linux inital RAM disk, renamed from
-      **`iveia-image-minimal-${MACHINE}.cpio.gz.u-boot`**.
-    - Partition 3 of the SD card with the
-      **`iveia-image-minimal-${MACHINE}.ext4`** image directly copied to it
-      (`dd` recommended).
-- **`startup.sh`** (OPTIONAL): User initialization shell script.
-
-## Programming Flash
-
-QSPI flash can be programmed using the Xilinx `program_flash` utility with:
+Insert the SD card into the iVeia IO board, and boot the device.  The serial console should
+display something similar to:
 
 ```
-program_flash -f $FSBL_BIN -offset 0 -flash_type qspi_single -fsbl $FSBL_ELF -cable type xilinx_tcf url TCP:127.0.0.1:3121
-```
+Xilinx Zynq MP First Stage Boot Loader
+Release 2019.2   Feb  1 2021  -  21:34:26
+Machine:     iVeia atlas-ii-z8ev
+Src commit:  xilinx-v2019.2-0-ge8db5fb(tainted)
+Meta commit: 2019.2-1.5-16-g5df9c39-dirty
+iVeia seq boot mode (0x00000001): QSPI24, NORM
+Searching SD0 for valid boot image...
+Good image found, resetting...
 
-where `FSBL_BIN` is the file to be flashed (can be either `boot2sd.bin` or
-`boot.bin)` and `FSBL_ELF` is the FSBL program in elf format
-(`fsbl-${MACHINE}.elf`).
+�Xilinx Zynq MP First Stage Boot Loader
+Release 2019.2   Feb  2 2021  -  16:23:31
+Machine:     iVeia atlas-ii-z8ev
+Src commit:  xilinx-v2019.2-0-ge8db5fb
+Meta commit: 2019.2-1.5-12-gd3a39a3
+
+IVEIA SEQ BOOT MODE (0x00003103): SD0, ALT
+PMU Firmware 2019.2     Feb  2 2021   16:24:47
+PMU_ROM Version: xpbr-v8.1.0-0
+
+...
+
+U-Boot 2019.01 (Feb 02 2021 - 16:23:28 +0000)
+
+Model: Atlas-II Z8
+Board: Xilinx ZynqMP
+DRAM:  4 GiB
+
+...
+
+Starting kernel ...
+
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x410fd034]
+[    0.000000] Linux version 4.19.0-xilinx-v2019.2 (oe-user@oe-host) (gcc version 8.2.0 (GCC)) #1 SMP Tue Feb 2 16:06:40 UTC 2021
+[    0.000000] Src commit:  xlnx_rebase_v4.19_2019.2-0-gb983d5f
+[    0.000000] Meta commit: 2019.2-1.5-12-gd3a39a3
+
+...
+
+root@atlas-ii-z8ev:~#
+
+```
 
 # Package support
 

@@ -10,19 +10,27 @@ do_deploy[depends] = "${IVIMG}:do_build"
 
 LOCAL_FILES := "${THISDIR}/files"
 FILESEXTRAPATHS_prepend := "${LOCAL_FILES}:"
+HEADER_DOC = "ivinstall-doc"
 HEADER_ORIG = "ivinstall-header.sh"
 HEADER = "ivinstall-header-final.sh"
-SRC_URI = "file://${HEADER_ORIG}"
+SRC_URI = "\
+    file://${HEADER_ORIG} \
+    file://${HEADER_DOC} \
+    "
+
 S = "${WORKDIR}"
 B = "${S}"
 
-INSERTION_STRING = "__INSERT_YOCTO_VARS_HERE_DO_NOT_REMOVE_THIS_LINE__"
+VARS_INSERT_STR = "__INSERT_YOCTO_VARS_HERE_DO_NOT_REMOVE_THIS_LINE__"
+DOC_INSERT_STR = "__INSERT_YOCTO_DOC_HERE_DO_NOT_REMOVE_THIS_LINE__"
 
 inherit iveia-version-header
 IVEIA_VERSION_META = "${S}/version"
 
 do_compile() {
     INSERT_VARS="MACHINE='${MACHINE}'\n"
+
+    # Extract IOBOARD names from devicetree/*.dtbo files.
     IOBOARDS=""
     for i in ${DEPLOY_DIR_IMAGE}/devicetree/*.dtbo; do
         IOBOARD=$(basename "$i")
@@ -30,9 +38,14 @@ do_compile() {
         IOBOARDS+="${IOBOARD} "
     done
     INSERT_VARS+="IOBOARDS='${IOBOARDS}'\n"
+
     INSERT_VARS+="VERSION='"$(echo $(cat version))"'\n"
 
-    sed "s/.*${INSERTION_STRING}.*/${INSERT_VARS}/" ${B}/${HEADER_ORIG} > ${B}/${HEADER}
+    # Insert variables defs, and then the header doc into the named lines of
+    # the ivinstall-header
+    sed "s/.*${VARS_INSERT_STR}.*/${INSERT_VARS}/" ${B}/${HEADER_ORIG} > ${B}/header.tmp
+    sed "/${DOC_INSERT_STR}/r ${HEADER_DOC}" ${B}/header.tmp | grep -v "${DOC_INSERT_STR}" \
+        > ${B}/${HEADER}
 }
 
 python do_deploy() {

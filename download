@@ -1,0 +1,15 @@
+CMD=$(readlink -f "$0")
+LAYER_DIR=$(dirname "$CMD")
+if [ "$LAYER_DIR" = "$PWD" ]; then
+    echo "ERROR: Cannot run from within the meta-iveia layer directory"
+    exit 1
+fi
+if [ $(basename "$LAYER_DIR") != meta-iveia ]; then
+    echo "ERROR: layer dir must be named meta-iveia"
+fi
+
+repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-v2019.2
+repo sync
+mv "$LAYER_DIR" sources
+source setupsdk
+bitbake-layers add-layer ../sources/meta-iveia
