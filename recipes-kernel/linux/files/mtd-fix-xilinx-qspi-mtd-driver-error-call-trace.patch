@@ -1,0 +1,129 @@
+From 358b39914c3c7ffd43426861e5ecffc5237489b9 Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Sun, 14 Feb 2021 12:21:21 -0500
+Subject: [PATCH] mtd: fix xilinx qspi mtd driver error (call trace)
+
+Wihtout this fix, when using QSPI MTD driver, I get the following error:
+
+zynqmp-qspi ff0f0000.spi: rx bus width not found
+zynqmp-qspi ff0f0000.spi: tx bus width not found
+m25p80 spi0.0: mt25ql02g (262144 Kbytes)
+1 fixed-partitions partitions found on MTD device spi0.0
+Creating 1 MTD partitions on "spi0.0":
+0x000000000000-0x000001000000 : "qspi-fsbl-uboot"
+OF: ERROR: Bad of_node_put() on /amba/spi@ff0f0000/flash@0
+CPU: 1 PID: 17 Comm: kworker/1:0 Not tainted 4.19.0-xilinx-v2019.2 #1
+Hardware name: Atlas-II Z8ev (DT)
+Workqueue: events deferred_probe_work_func
+Call trace:
+ dump_backtrace+0x0/0x148
+ show_stack+0x14/0x20
+ dump_stack+0x90/0xb4
+ of_node_release+0x74/0x78
+ kobject_put+0x74/0xe8
+ of_node_put+0x14/0x20
+ of_get_next_available_child+0x88/0xd0
+ spi_register_controller+0x2a4/0x618
+ zynqmp_qspi_probe+0x3f4/0x530
+ platform_drv_probe+0x50/0xa0
+ really_probe+0x1c8/0x280
+ driver_probe_device+0x54/0xe8
+ __device_attach_driver+0xb8/0xe8
+ bus_for_each_drv+0x78/0xc8
+ __device_attach+0xd4/0x130
+ device_initial_probe+0x10/0x18
+ bus_probe_device+0x90/0x98
+ deferred_probe_work_func+0x6c/0xa0
+ process_one_work+0x1e4/0x340
+ worker_thread+0x248/0x488
+ kthread+0x124/0x128
+ ret_from_fork+0x10/0x18
+
+Note: the error is potentially benign, as I am still able to access (erase,
+read, and write) the flash.  However, it appears to be the result of incorrect
+of_node_get/put() usage, which could potentially cause a fault.
+
+The issue appears to be that the function spi_nor_scan() in
+drivers/mtd/spi-nor/spi-nor.c improperly uses of_get_next_parent() 3 times.
+Specifically, as noted in the of_get_next_parent() header comments:
+
+/**
+ *	of_get_next_parent - Iterate to a node's parent
+ *	@node:	Node to get parent of
+ *
+ *	This is like of_get_parent() except that it drops the
+ *	refcount on the passed node, making it suitable for iterating
+ *	through a node's parents.
+
+And, a cursory look through the other uses of this function in the Linux source
+(31 other instances) show that it is specifically used to iterate up the
+parents.
+
+As a quick fix, if of_get_next_parent() is changed to of_get_parent(), the
+issue is resolved.  However, that is not a full fix - the fix should include
+of_node_put() when the node no longer needed.  Also, it does not seem necessary
+to get the same parent node 3 times, as it would be cleaner and more efficient
+to do just one of_get_parent()/of_node_put().
+
+What is curious is that I am getting this error, and I have not seen it
+reported online anywhere.  I suspect that I have something subtly different in
+my DT that causes the problem to appear.  In addition, this code is still in
+the latest Xilinx source on github, so I suspect its occurrence is rare.
+
+Finally, here's my device tree snippet:
+
+&qspi {
+    status = "okay";
+    is-dual = <0>;
+
+    flash@0 {
+        /* Part is: MT25QL02G */
+        compatible = "jedec,spi-nor";
+        #address-cells = <1>;
+        #size-cells = <1>;
+        reg = <0x0>;
+        spi-max-frequency = <50000000>;
+        partition@0x00000000 {
+            label = "qspi-fsbl-uboot";
+            reg = <0x0 0x1000000>;
+        };
+    };
+};
+---
+ drivers/mtd/spi-nor/spi-nor.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c
+index a352c90..71a4a0c 100644
+--- a/drivers/mtd/spi-nor/spi-nor.c
++++ b/drivers/mtd/spi-nor/spi-nor.c
+@@ -3503,7 +3503,7 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
+ 	mtd->_erase = spi_nor_erase;
+ 	mtd->_read = spi_nor_read;
+ #ifdef CONFIG_OF
+-	np_spi = of_get_next_parent(np);
++	np_spi = of_get_parent(np);
+ 	if ((of_property_match_string(np_spi, "compatible",
+ 		    "xlnx,zynq-qspi-1.0") >= 0) ||
+ 			(of_property_match_string(np_spi, "compatible",
+@@ -3658,7 +3658,7 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
+ 		nor->addr_width = info->addr_width;
+ 	} else if (mtd->size > 0x1000000) {
+ #ifdef CONFIG_OF
+-		np_spi = of_get_next_parent(np);
++		np_spi = of_get_parent(np);
+ 		if (of_property_match_string(np_spi, "compatible",
+ 					     "xlnx,zynq-qspi-1.0") >= 0) {
+ 			int status;
+@@ -3681,7 +3681,7 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
+ 			    info->flags & SPI_NOR_4B_OPCODES)
+ 				spi_nor_set_4byte_opcodes(nor, info);
+ 			else {
+-				np_spi = of_get_next_parent(np);
++				np_spi = of_get_parent(np);
+ 				if (of_property_match_string(np_spi,
+ 						"compatible",
+ 						"xlnx,xps-spi-2.00.a") >= 0) {
+-- 
+2.7.4
+
