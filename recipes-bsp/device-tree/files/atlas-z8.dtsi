@@ -16,7 +16,21 @@
 };
 
 &qspi {
+    status = "okay";
     is-dual = <0>;
+
+    flash@0 {
+        /* Part is: MT25QL02G */
+        compatible = "jedec,spi-nor";
+        #address-cells = <1>;
+        #size-cells = <1>;
+        reg = <0x0>;
+        spi-max-frequency = <50000000>;
+        partition@0x00000000 {
+            label = "qspi-fsbl-uboot";
+            reg = <0x0 0x1000000>;
+        };
+    };
 };
 
 &sdhci1 {
