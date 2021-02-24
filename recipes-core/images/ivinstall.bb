@@ -7,6 +7,8 @@ inherit deploy
 # depends on do_populate_sysroot, which ${IVIMG} doesn't have.
 IVIMG := "iveia-image-minimal"
 do_deploy[depends] = "${IVIMG}:do_build"
+DEPENDS += "fsbl pmu-firmware arm-trusted-firmware u-boot-xlnx u-boot-uenv"
+DEPENDS += "xilinx-bootbin device-tree linux-xlnx ivstartup"
 
 LOCAL_FILES := "${THISDIR}/files"
 FILESEXTRAPATHS_prepend := "${LOCAL_FILES}:"
@@ -25,7 +27,6 @@ VARS_INSERT_STR = "__INSERT_YOCTO_VARS_HERE_DO_NOT_REMOVE_THIS_LINE__"
 DOC_INSERT_STR = "__INSERT_YOCTO_DOC_HERE_DO_NOT_REMOVE_THIS_LINE__"
 
 inherit iveia-version-header
-IVEIA_VERSION_META = "${S}/version"
 
 do_compile() {
     INSERT_VARS="MACHINE='${MACHINE}'\n"
@@ -39,7 +40,9 @@ do_compile() {
     done
     INSERT_VARS+="IOBOARDS='${IOBOARDS}'\n"
 
-    INSERT_VARS+="VERSION='"$(echo $(cat version))"'\n"
+    source "${B}/${PN}.versions"
+    INSERT_VARS+="IVEIA_META_BUILD_HASH='${IVEIA_META_BUILD_HASH}'\n"
+    INSERT_VARS+="IVEIA_BUILD_DATE='${IVEIA_BUILD_DATE}'\n"
 
     # Insert variables defs, and then the header doc into the named lines of
     # the ivinstall-header
