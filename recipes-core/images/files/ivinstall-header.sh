@@ -39,6 +39,16 @@ read -r -d '' USAGE <<EOF
 # __INSERT_YOCTO_DOC_HERE_DO_NOT_REMOVE_THIS_LINE__
 EOF
 
+help()
+{
+    if command -v less &> /dev/null; then
+        less <<<"$USAGE"
+    else
+        echo "$USAGE"
+    fi
+    exit 0
+}
+
 #
 # Process args
 #
@@ -50,13 +60,13 @@ unset USER_FAT_SIZE USER_ROOTFS_SIZE DO_COPY DO_COPY DO_FORMAT JTAG_REMOTE
 unset DO_COPY IOBOARD USER_LABEL DO_QSPI DO_VERSION DO_EXTRACT
 MODE=sd
 while getopts "B:b:cdfhi:jJ:k:n:qs:vxzZ" opt; do
-    case ${opt} in
+    case "${opt}" in
         b) USER_FAT_SIZE=$OPTARG; ;;
         B) USER_ROOTFS_SIZE=$OPTARG; ;;
         c) DO_COPY=1; ;;
         d) DO_COPY=1; USE_INITRD=1 ;;
         f) DO_FORMAT=1; ;;
-        h) echo "$USAGE"; exit 0; ;;
+        h) help ;;
         i) DO_COPY=1; IOBOARD=$OPTARG; ;;
         j) MODE=jtag ;;
         J) JTAG_REMOTE=$OPTARG ;;
@@ -79,6 +89,7 @@ shift
 
 # Environ
 PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
+SSH_OPTS="-o ConnectTimeout=5"
 
 # Find tarball start line at end of script
 verify awk
@@ -86,6 +97,16 @@ ARCHIVE=$(awk '/^__ARCHIVE_BELOW__/ {print NR + 1; exit 0; }' "$CMD")
 
 # We're running on the target if we can find a specfic /sys file.
 IS_TARGET=$([[ ! -d /sys/firmware/zynqmp ]]; echo $?)
+
+#
+# Validate arguments
+#
+[[ -z "$@" ]] || error "Extra invalid options were supplied"
+(($OPTIND <= 1)) && { echo "$USAGE"; exit 0; }
+[[ -n "$MACHINE" ]] || error "INTERNAL ERROR: mainboard not available"
+if [[ -n "$IOBOARD" ]]; then
+    grep -q "\<$IOBOARD\>" <<<"$IOBOARDS" || error 'invalid ioboard "'$IOBOARD'"'
+fi
 
 #
 # Handle simple args first
@@ -97,14 +118,80 @@ if ((FORCE_SD_MODE)); then
     MODE=sd
 fi
 if ((DO_VERSION)); then
-    [[ -n "$VERSION" ]] || error "INTERNAL ERROR: version not available"
-    echo $VERSION
-    exit 0
-fi
-if ((DO_EXTRACT)); then
-    info "Extracting Image Archive..."
+    [[ -n "$IVEIA_META_BUILD_HASH" || -n "$IVEIA_BUILD_DATE" ]] || \
+        error "INTERNAL ERROR: version not available"
+    echo "Meta commit: ${IVEIA_META_BUILD_HASH}"
+    echo "Build date: ${IVEIA_BUILD_DATE}"
+    echo
+
     TMPDIR=$(mktemp -d)
-    tail -n+$ARCHIVE "$CMD" | tar -xz -C $TMPDIR
+    on_exit() { rm -rf $TMPDIR; }
+    trap on_exit EXIT
+
+    echo "Archive MD5SUMs:"
+    tail -n+$ARCHIVE "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
+    (
+        cd $TMPDIR
+        if [[ $(uname) == Darwin ]]; then
+            verify md5 xargs
+            find . -depth +1 -type f | xargs -n1 md5 | \
+                awk -F"[() =]*" '{print $3 " " $2}' | sort > md5sums
+        else
+            verify md5sum xargs
+            find . -type f | xargs -n1 md5sum > md5sums
+        fi
+        while read MD5 FILE; do
+            echo "   ${MD5} ${FILE}"
+        done < md5sums
+
+        if [[ $MODE = ssh ]]; then
+            echo "Verifying MD5SUMs on target"
+
+            verify ssh
+            PROC_MMC=/proc/device-tree/chosen/iv_mmc
+            MMC=$(ssh ${SSH_OPTS} ${SSH_TARGET} cat ${PROC_MMC} 2>/dev/null) || \
+                error "Cannot determine target boot device"
+            [[ $MMC = 0 || $MMC = 1 ]] || error "Cannot determine target boot device ($MMC)"
+
+            # Create a map between target file names and the md5sum we expect
+            # for them.
+            while read MD5 FILE; do
+                if [[ "$FILE" =~ ^\./boot/ ]]; then
+                    TGT_FILE=/media/sd${MMC}/$(basename ${FILE})
+                elif [[ "$FILE" == "./devicetree/${MACHINE}.dtb" ]]; then
+                    TGT_FILE=/media/sd${MMC}/${MACHINE}.dtb
+                elif [[ -n "$IOBOARD" && "$FILE" == "./devicetree/${IOBOARD}_overlay.dtbo" ]]; then
+                    TGT_FILE=/media/sd${MMC}/overlay.dtbo
+                elif [[ "$FILE" == "./rootfs/initrd" ]]; then
+                    TGT_FILE=/media/sd${MMC}/initrd
+                else
+                    TGT_FILE=""
+                fi
+                if [[ -n $TGT_FILE ]]; then
+                    echo ${MD5} ${FILE} ${TGT_FILE}
+                fi
+            done < md5sums > expected_md5sums
+
+            # Get the actual md5sum via ssh for each EXPECTED_TGT_SUMS filename
+            # and compare.
+            TGT_FILES=$(awk '{print $3}' expected_md5sums)
+            ssh ${SSH_OPTS} ${SSH_TARGET} md5sum $TGT_FILES >target_md5sums 2>/dev/null
+            while read LOCAL_MD5 LOCAL_FILE TGT_FILE; do
+                TGT_MD5=$(awk -v F=$TGT_FILE '$2==F{print $1}' target_md5sums)
+                if [[ -z "$TGT_MD5" ]]; then
+                    EQ="?="
+                elif [[ $TGT_MD5 == $LOCAL_MD5 ]]; then
+                    EQ="=="
+                else
+                    EQ="!="
+                fi
+                printf "    %-35s%s %s\n" $TGT_FILE $EQ $LOCAL_FILE
+            done < expected_md5sums
+
+            echo "NOTE: ext4 rootfs is not verified"
+            echo "TBD: verify QSPI"
+        fi
+    )
 
     echo "Contents extracted to:"
     echo "    $TMPDIR"
@@ -112,17 +199,10 @@ if ((DO_EXTRACT)); then
 fi
 
 #
-# Validate arguments
+# From here on out, we're copying/formatting, and the device is required.
 #
 [[ -n "$DEVICE" ]] || error "DEVICE was not specified"
-[[ -z "$@" ]] || error "Extra invalid options were supplied"
 ((!DO_FORMAT && !DO_COPY)) && error "Either -f or -c (or both) required"
-(($OPTIND <= 1)) && { echo "$USAGE"; exit 0; }
-
-[[ -n "$MACHINE" ]] || error "INTERNAL ERROR: mainboard not available"
-if [[ -n "$IOBOARD" ]]; then
-    grep -q "\<$IOBOARD\>" <<<"$IOBOARDS" || error 'invalid ioboard "'$IOBOARD'"'
-fi
 
 #
 # For loading files via jtag, add a simple binary header that includes:
@@ -196,14 +276,14 @@ if [[ $MODE = jtag ]]; then
         scp startup.bin uEnv.bin ivinstall.bin jtag/uboot.tcl \
             elf/* boot/Image rootfs/initrd system.dtb \
             $JTAG_REMOTE: || error "scp to JTAG_REMOTE failed"
-        ssh $JTAG_REMOTE xsdb uboot.tcl
+        ssh ${SSH_OPTS} $JTAG_REMOTE xsdb uboot.tcl
     )
 
 elif [[ $MODE = ssh ]]; then
     verify ssh scp
     scp $CMD ${SSH_TARGET}:/tmp || error "scp failed"
     # Don't error() on ssh failure - let the error come from the remote
-    ssh ${SSH_TARGET} bash /tmp/$(basename ${CMD}) -Z $SAVEARGS
+    ssh ${SSH_OPTS} ${SSH_TARGET} bash /tmp/$(basename ${CMD}) -Z $SAVEARGS
 
 elif [[ $MODE = sd ]]; then
     if ((IS_TARGET)); then

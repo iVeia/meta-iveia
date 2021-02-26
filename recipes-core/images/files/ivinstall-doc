@@ -137,7 +137,9 @@ OPTIONS
         Alternatively, "ivflash" can be run manually on the target.
 
     -v
-        Report version from which images were built.
+        Report version from which images were built and md5sums of all images
+        in the archive.  If the -s (ssh) option is used, will also verify that
+        the md5sums on the target match the ones in the archive.
 
     -x
         Extract only.  Extracts contents of this installer to temp directory
