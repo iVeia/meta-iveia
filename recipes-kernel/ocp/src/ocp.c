@@ -427,7 +427,7 @@ fail:
 
 /* Match table for OF platform binding */
 static const struct of_device_id ocp_of_match[] = {
-	{ .compatible = "iv,ocp", },
+	{ .compatible = "iveia,ocp", },
 	{ /* end of list */ },
 };
 MODULE_DEVICE_TABLE(of, ocp_of_match);
