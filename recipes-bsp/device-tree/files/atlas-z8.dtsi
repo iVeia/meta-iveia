@@ -132,6 +132,7 @@
     iveia_ocp {
         compatible = "iveia,ocp";
         reg = <0x0 0x80000000 0x0 0x20000000 0x0 0x90000000 0x0 0x01000000 0x0 0x94000000 0x0 0x01000000>;
+        reg-names = "full", "events", "io-board";
     };
 };
 
