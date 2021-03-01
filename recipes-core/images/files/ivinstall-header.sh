@@ -360,9 +360,9 @@ elif ((MODE==SD_MODE)); then
             ROOTFS_SIZE=1024
         fi
         if [[ -n "$USER_LABEL" ]]; then
-            LABEL=$USER_LABEL
+            LABEL="$USER_LABEL-"
         else
-            LABEL=$(cut -d- -f1 <<<$MACHINE | tr a-z A-Z)
+            LABEL="$(cut -d- -f1 <<<$MACHINE | tr a-z A-Z)-"
         fi
 
         #
@@ -417,12 +417,13 @@ elif ((MODE==SD_MODE)); then
         # Create array of partition names (including primary device first)
         info "Formatting partition 1 as FAT32"
         ((!MISSING_DEV)) || error "Some block devs did not complete partition"
-        mkfs.vfat -F 32 -n "$LABEL" /dev/${PARTS[1]} || error "failed to format partition 1"
-        info "Formatting partition 2 as raw"
-        info "Formatting partition 3 as ext3"
-        mkfs.ext3 -q -F -L "ROOTFS" /dev/${PARTS[3]}   || error "failed to format partition 3"
-        info "Formatting partition 4 as ext3"
-        mkfs.ext3 -q -F -L "SDHOME" /dev/${PARTS[4]} || error "failed to format partition 4"
+        mkfs.vfat -F 32 -n "${LABEL}BOOT" /dev/${PARTS[1]} || error "failed to format partition 1"
+        info "Formatting partition 2 as raw"    
+        dd status=none if=/dev/zero of=/dev/${PARTS[2]}
+        info "Formatting partition 3 as ext4"
+        mkfs.ext4 -q -F -L "${LABEL}ROOTFS" /dev/${PARTS[3]}   || error "failed to format partition 3"
+        info "Formatting partition 4 as ext4"
+        mkfs.ext4 -q -F -L "${LABEL}SDHOME" /dev/${PARTS[4]} || error "failed to format partition 4"
     fi
 
     if ((DO_COPY || DO_QSPI)); then
@@ -473,6 +474,7 @@ elif ((MODE==SD_MODE)); then
             # NOTE: Can't use "bs=1m" - not cross-platform!
             dd if=$TMPDIR/rootfs/rootfs.ext4 of=/dev/${PARTS[3]} bs=$((1024*1024)) status=none || \
                 error "dd ext4 rootfs failed"
+            e2label /dev/${PARTS[3]} ${LABEL}ROOTFS
         fi
     fi
 
