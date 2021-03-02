@@ -31,11 +31,11 @@ inherit iveia-version-header
 do_compile() {
     INSERT_VARS="MACHINE='${MACHINE}'\n"
 
-    # Extract IOBOARD names from devicetree/*.dtbo files.
+    # Extract IOBOARD names from devicetree/*_overlay.dtbo files.
     IOBOARDS=""
-    for i in ${DEPLOY_DIR_IMAGE}/devicetree/*.dtbo; do
+    for i in ${DEPLOY_DIR_IMAGE}/devicetree/*_overlay.dtbo; do
         IOBOARD=$(basename "$i")
-        IOBOARD="${IOBOARD%.*}"
+        IOBOARD="${IOBOARD%_overlay.dtbo}"
         IOBOARDS+="${IOBOARD} "
     done
     INSERT_VARS+="IOBOARDS='${IOBOARDS}'\n"

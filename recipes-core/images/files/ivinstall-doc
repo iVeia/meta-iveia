@@ -16,7 +16,7 @@ DESCRIPTION
     See MODE OPTIONS for more details.
 
     It runs on either a Linux host or the Linux target.  A subset of features
-    are supported on other Unixes (e.g. macos).
+    are supported on other Unix hosts (e.g. macos).
 
     The files installed and used in the boot process are:
         - Xilinx bootloaders and firmware (e.g. FSBL)
@@ -37,6 +37,8 @@ DESCRIPTION
           rootfs, a reboot or alternate method is required.  When used, the
           ext3 image is required in partition 3.
 
+    The bootloader may optionally be burned to QSPI flash using the -q option.
+
 MODE OPTIONS
 
     -z
@@ -45,7 +47,7 @@ MODE OPTIONS
         The default install option.  Install images to the given DEVICE.
         Optionally partition and format device.  SD mode is fast when
         formatting is not required, but does require manually
-        ejecting/inserting SD cards.
+        ejecting/inserting SD cards when run on the host.
 
         The SD card will contain 4 partitions:
             1) FAT: boot files
@@ -53,8 +55,8 @@ MODE OPTIONS
             3) EXT: Linux root file system
             4) EXT: Linux user data partition
 
-        SD mode must run as root, e.g., "sudo ivinstall ..." to perform format
-        or ext4 rootfs install.
+        When using SD mode on the host, ivinstall must be run as root, e.g.,
+        "sudo ivinstall ..." to perform a format or ext4 rootfs install.
 
         For copying without ext4 (i.e. -k or -d options), sudo is not required.
         In this case, the DEVICE can refer to a block device (which must be
@@ -130,16 +132,15 @@ OPTIONS
         name up to the first hyphen.  Implies -f.
 
     -q
-        Reflash the QSPI.  Valid only for SSH and JTAG modes, as it must be run
-        on the target.  Runs the command "ivflash <boot.bin>" on the target to
-        do the reflash, where the boot.bin is the binary included with this
-        installer.  Implies -c, as the boot.bin is expected on the target.
-        Alternatively, "ivflash" can be run manually on the target.
+        Reflash the QSPI.  Only valid on target, or when run on host via SSH or
+        JTAG modes.
 
     -v
         Report version from which images were built and md5sums of all images
         in the archive.  If the -s (ssh) option is used, will also verify that
-        the md5sums on the target match the ones in the archive.
+        the md5sums on the target match the ones in the archive.  With -s and
+        -d, will also verify initrd.  With -s and -q, will also verify QSPI
+        flash.
 
     -x
         Extract only.  Extracts contents of this installer to temp directory

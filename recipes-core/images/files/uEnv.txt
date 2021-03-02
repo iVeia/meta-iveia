@@ -16,4 +16,5 @@ set_fdt_chosen=\
         echo Extracting ivinstall script...; \
         extract 0x20000000 /tmp/startup; \
         extract 0x20100000 /tmp/ivinstall; \
+        source /tmp/startup; \
         "

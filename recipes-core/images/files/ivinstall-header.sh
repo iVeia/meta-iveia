@@ -41,11 +41,7 @@ EOF
 
 help()
 {
-    if command -v less &> /dev/null; then
-        less <<<"$USAGE"
-    else
-        echo "$USAGE"
-    fi
+    echo "$USAGE"
     exit 0
 }
 
@@ -58,8 +54,11 @@ help()
 SAVEARGS="$*"
 unset USER_FAT_SIZE USER_ROOTFS_SIZE DO_COPY DO_COPY DO_FORMAT JTAG_REMOTE
 unset DO_COPY IOBOARD USER_LABEL DO_QSPI DO_VERSION DO_EXTRACT
-MODE=sd
-while getopts "B:b:cdfhi:jJ:k:n:qs:vxzZ" opt; do
+SD_MODE=0
+SSH_MODE=1
+JTAG_MODE=2
+MODE=$SD_MODE
+while getopts "B:b:cdfhi:jJ:kn:qs:vxzZ" opt; do
     case "${opt}" in
         b) USER_FAT_SIZE=$OPTARG; ;;
         B) USER_ROOTFS_SIZE=$OPTARG; ;;
@@ -68,15 +67,15 @@ while getopts "B:b:cdfhi:jJ:k:n:qs:vxzZ" opt; do
         f) DO_FORMAT=1; ;;
         h) help ;;
         i) DO_COPY=1; IOBOARD=$OPTARG; ;;
-        j) MODE=jtag ;;
+        j) MODE=$JTAG_MODE ;;
         J) JTAG_REMOTE=$OPTARG ;;
         k) DO_COPY=1; SKIP_ROOTFS=1 ;;
         n) DO_FORMAT=1; USER_LABEL=$OPTARG; ;;
-        q) DO_COPY=1; DO_QSPI=1 ;;
-        s) MODE=ssh; SSH_TARGET=$OPTARG ;;
+        q) DO_QSPI=1 ;;
+        s) MODE=$SSH_MODE; SSH_TARGET=$OPTARG ;;
         v) DO_VERSION=1 ;;
         x) DO_EXTRACT=1 ;;
-        z) MODE=sd ;;
+        z) MODE=$SD_MODE ;;
         Z) FORCE_SD_MODE=1 ;;   # Undocumented option
         \?) error "Invalid option: -$OPTARG" 1>&2; ;;
         :) error "Invalid option: -$OPTARG requires an argument" 1>&2; ;;
@@ -90,6 +89,8 @@ shift
 # Environ
 PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
 SSH_OPTS="-o ConnectTimeout=5"
+BOOTBIN="./boot/boot.bin"
+QSPI="/dev/mtd0"
 
 # Find tarball start line at end of script
 verify awk
@@ -109,15 +110,20 @@ if [[ -n "$IOBOARD" ]]; then
 fi
 
 #
-# Handle simple args first
+# FORCE_SD_MODE can be easily prepended to the arg list to use SD mode,
+# overiding user mode choice.
 #
-((DO_QSPI)) && error "QSPI reflash currently unimplemented"
 if ((FORCE_SD_MODE)); then
-    # FORCE_SD_MODE can be easily prepended to the arg list to use SD mode,
-    # overiding user mode choice.
-    MODE=sd
+    MODE=$SD_MODE
 fi
-if ((DO_VERSION)); then
+
+#
+# If requested, display version and md5sums (and also verify images if on target)
+#
+# DO_VERSION only runs in SD_MODE - if it's run in a remote mode (JTAG or SSH),
+# then it will end up running on the target.
+#
+if ((MODE==SD_MODE && DO_VERSION)); then
     [[ -n "$IVEIA_META_BUILD_HASH" || -n "$IVEIA_BUILD_DATE" ]] || \
         error "INTERNAL ERROR: version not available"
     echo "Meta commit: ${IVEIA_META_BUILD_HASH}"
@@ -135,63 +141,81 @@ if ((DO_VERSION)); then
         if [[ $(uname) == Darwin ]]; then
             verify md5 xargs
             find . -depth +1 -type f | xargs -n1 md5 | \
-                awk -F"[() =]*" '{print $3 " " $2}' | sort > md5sums
+                awk -F"[() =]*" '{print $3 " " $2}' | sort -k 2 > md5sums
         else
             verify md5sum xargs
-            find . -type f | xargs -n1 md5sum > md5sums
+            find . -type f | xargs -n1 md5sum | sort -k 2 > md5sums
         fi
-        while read MD5 FILE; do
-            echo "   ${MD5} ${FILE}"
+        while read ARCH_MD5 ARCH_FILE; do
+            echo "   ${ARCH_MD5} ${ARCH_FILE}"
         done < md5sums
 
-        if [[ $MODE = ssh ]]; then
-            echo "Verifying MD5SUMs on target"
+        if ((IS_TARGET)); then
+            echo "Verifying MD5SUMs"
 
-            verify ssh
-            PROC_MMC=/proc/device-tree/chosen/iv_mmc
-            MMC=$(ssh ${SSH_OPTS} ${SSH_TARGET} cat ${PROC_MMC} 2>/dev/null) || \
-                error "Cannot determine target boot device"
+            verify stat
+            read MMC </proc/device-tree/chosen/iv_mmc
             [[ $MMC = 0 || $MMC = 1 ]] || error "Cannot determine target boot device ($MMC)"
 
             # Create a map between target file names and the md5sum we expect
             # for them.
-            while read MD5 FILE; do
-                if [[ "$FILE" =~ ^\./boot/ ]]; then
-                    TGT_FILE=/media/sd${MMC}/$(basename ${FILE})
-                elif [[ "$FILE" == "./devicetree/${MACHINE}.dtb" ]]; then
+            while read ARCH_MD5 ARCH_FILE; do
+                TGT_FILE=""
+                if [[ "$ARCH_FILE" =~ ^\./boot/ ]]; then
+                    TGT_FILE=/media/sd${MMC}/$(basename ${ARCH_FILE})
+                elif [[ "$ARCH_FILE" == "./devicetree/${MACHINE}.dtb" ]]; then
                     TGT_FILE=/media/sd${MMC}/${MACHINE}.dtb
-                elif [[ -n "$IOBOARD" && "$FILE" == "./devicetree/${IOBOARD}_overlay.dtbo" ]]; then
+                elif [[
+                    -n "$IOBOARD" && "$ARCH_FILE" == "./devicetree/${IOBOARD}_overlay.dtbo" \
+                    ]]; then
                     TGT_FILE=/media/sd${MMC}/overlay.dtbo
-                elif [[ "$FILE" == "./rootfs/initrd" ]]; then
-                    TGT_FILE=/media/sd${MMC}/initrd
-                else
-                    TGT_FILE=""
+                elif [[ "$ARCH_FILE" == "./rootfs/initrd" ]]; then
+                    if ((USE_INITRD)); then
+                        TGT_FILE=/media/sd${MMC}/initrd
+                    fi
                 fi
                 if [[ -n $TGT_FILE ]]; then
-                    echo ${MD5} ${FILE} ${TGT_FILE}
+                    echo ${ARCH_MD5} ${ARCH_FILE} ${TGT_FILE}
                 fi
             done < md5sums > expected_md5sums
+            if ((DO_QSPI)); then
+                ARCH_MD5=$(awk '$2=="'$BOOTBIN'" {print $1}' md5sums)
+                echo ${ARCH_MD5} ${BOOTBIN} ${QSPI} >> expected_md5sums
+            fi
 
-            # Get the actual md5sum via ssh for each EXPECTED_TGT_SUMS filename
-            # and compare.
+            # Get the actual md5sum for each file and compare.
             TGT_FILES=$(awk '{print $3}' expected_md5sums)
-            ssh ${SSH_OPTS} ${SSH_TARGET} md5sum $TGT_FILES >target_md5sums 2>/dev/null
-            while read LOCAL_MD5 LOCAL_FILE TGT_FILE; do
-                TGT_MD5=$(awk -v F=$TGT_FILE '$2==F{print $1}' target_md5sums)
+            md5sum $TGT_FILES >target_md5sums 2>/dev/null
+            while read ARCH_MD5 ARCH_FILE TGT_FILE; do
+                if [[ $TGT_FILE = $QSPI ]]; then
+                    BOOTBIN_SIZE=$(stat --printf="%s" $ARCH_FILE)
+                    TGT_MD5=$(\
+                        dd if=$TGT_FILE bs=$BOOTBIN_SIZE count=1 status=none | \
+                            md5sum | awk '{print $1}' \
+                        )
+                else
+                    TGT_MD5=$(awk -v F=$TGT_FILE '$2==F{print $1}' target_md5sums)
+                fi
                 if [[ -z "$TGT_MD5" ]]; then
                     EQ="?="
-                elif [[ $TGT_MD5 == $LOCAL_MD5 ]]; then
+                elif [[ $TGT_MD5 == $ARCH_MD5 ]]; then
                     EQ="=="
                 else
                     EQ="!="
                 fi
-                printf "    %-35s%s %s\n" $TGT_FILE $EQ $LOCAL_FILE
+                printf "    %-35s%s %s\n" $TGT_FILE $EQ $ARCH_FILE
             done < expected_md5sums
 
             echo "NOTE: ext4 rootfs is not verified"
-            echo "TBD: verify QSPI"
         fi
     )
+    exit 0
+fi
+
+if ((DO_EXTRACT)); then
+    info "Extracting Image Archive..."
+    TMPDIR=$(mktemp -d)
+    tail -n+$ARCHIVE "$CMD" | tar -xz -C $TMPDIR
 
     echo "Contents extracted to:"
     echo "    $TMPDIR"
@@ -199,10 +223,19 @@ if ((DO_VERSION)); then
 fi
 
 #
-# From here on out, we're copying/formatting, and the device is required.
+# From here on out, we're copying/formatting, and the device is required (unless -q alone)
 #
-[[ -n "$DEVICE" ]] || error "DEVICE was not specified"
-((!DO_FORMAT && !DO_COPY)) && error "Either -f or -c (or both) required"
+# Exception: if getting the version remotely, we don't care about other options.
+#
+if ((!DO_VERSION)); then
+    if ((DO_FORMAT || DO_COPY)); then
+        [[ -n "$DEVICE" ]] || error "DEVICE was not specified"
+    fi
+    ((DO_FORMAT || DO_COPY || DO_QSPI)) || error "Either -f, -c, or -q required (or a combination)"
+    if ((MODE==SD_MODE)); then
+        ((DO_QSPI && !IS_TARGET)) && error "QSPI mode can only run on target"
+    fi
+fi
 
 #
 # For loading files via jtag, add a simple binary header that includes:
@@ -256,7 +289,7 @@ add_header()
 #       - run startup, which ivinstall with user's args
 #
 #
-if [[ $MODE = jtag ]]; then
+if ((MODE==JTAG_MODE)); then
     [[ -z "$JTAG_REMOTE" ]] && error "JTAG mode currently requires using remote (-J)"
     TMPDIR=$(mktemp -d)
     on_exit() { rm -rf $TMPDIR; }
@@ -271,42 +304,49 @@ if [[ $MODE = jtag ]]; then
         echo "bash /tmp/ivinstall -Z $SAVEARGS" > startup.sh
         add_header startup.sh startup.bin
         add_header jtag/uEnv.txt uEnv.bin
-        add_header $CMD ivinstall.bin
+        add_header "$BASECMD" ivinstall.bin
         cp devicetree/$MACHINE.dtb system.dtb
-        scp startup.bin uEnv.bin ivinstall.bin jtag/uboot.tcl \
+        scp ${SSH_OPTS} startup.bin uEnv.bin ivinstall.bin jtag/uboot.tcl \
             elf/* boot/Image rootfs/initrd system.dtb \
             $JTAG_REMOTE: || error "scp to JTAG_REMOTE failed"
         ssh ${SSH_OPTS} $JTAG_REMOTE xsdb uboot.tcl
     )
 
-elif [[ $MODE = ssh ]]; then
+elif ((MODE==SSH_MODE)); then
     verify ssh scp
-    scp $CMD ${SSH_TARGET}:/tmp || error "scp failed"
+    scp ${SSH_OPTS} $CMD ${SSH_TARGET}:/tmp || error "scp failed"
     # Don't error() on ssh failure - let the error come from the remote
     ssh ${SSH_OPTS} ${SSH_TARGET} bash /tmp/$(basename ${CMD}) -Z $SAVEARGS
 
-elif [[ $MODE = sd ]]; then
-    if ((IS_TARGET)); then
-        if [[ "$DEVICE" = sd0 || "$DEVICE" = sd ]]; then
-            DEVICE=/dev/mmcblk0
+elif ((MODE==SD_MODE)); then
+    ((DO_VERSION)) && error "INTERNAL ERROR: cannot get version in SD mode."
+
+    if ((DO_FORMAT || DO_COPY)); then
+        if ((IS_TARGET)); then
+            if [[ "$DEVICE" = sd0 || "$DEVICE" = sd ]]; then
+                DEVICE=/dev/mmcblk0
+            fi
+            if [[ "$DEVICE" = sd1 || "$DEVICE" = emmc ]]; then
+                DEVICE=/dev/mmcblk1
+            fi
         fi
-        if [[ "$DEVICE" = sd1 || "$DEVICE" = emmc ]]; then
-            DEVICE=/dev/mmcblk1
+        [[ -b "$DEVICE" || -d "$DEVICE" ]] || error "DEVICE must be a block device or directory"
+        if [[ -d "$DEVICE" ]]; then
+            ((!DO_FORMAT)) || error "DEVICE as directory not compatble with format (-f)"
+            SKIP_ROOTFS=1
         fi
-    fi
-    [[ -b "$DEVICE" || -d "$DEVICE" ]] || error "DEVICE must be a block device or directory"
-    if ((DO_FORMAT || (DO_COPY && (!SKIP_ROOTFS && !USE_INITRD)))); then
-        (("$(id -u)" == 0)) || error "must be run as root (e.g. from sudo)"
-        [[ $(uname) = Darwin ]] && error "macos only supports copy without ext4 rootfs"
+        if ((DO_FORMAT || (DO_COPY && (!SKIP_ROOTFS && !USE_INITRD)))); then
+            (("$(id -u)" == 0)) || error "must be run as root (e.g. from sudo)"
+            [[ $(uname) = Darwin ]] && error "macos only supports copy without ext4 rootfs"
+        fi
     fi
 
     verify lsblk awk
     if ((DO_FORMAT)); then
-        verify mount umount parted wipefs mkfs.vfat mkfs.ext3
+        verify mount umount parted mkfs.vfat mkfs.ext3 blockdev
 
         BLOCKDEV_BYTES=$(blockdev --getsize64 "$DEVICE")
         BLOCKDEV_MB=$((BLOCKDEV_BYTES/1024/1024))
-        [[ -n "$BLOCKDEV_MB" ]] || error "could not determine size of block device"
         if ((USER_FAT_SIZE)); then
             FAT_SIZE=$USER_FAT_SIZE
         elif ((BLOCKDEV_MB > 12000)); then
@@ -334,7 +374,13 @@ elif [[ $MODE = sd ]]; then
         P3_END=$((P2_END + ROOTFS_SIZE))
         umount "$DEVICE"[1-9] 2>/dev/null
         umount "$DEVICE"p[1-9] 2>/dev/null
-        wipefs -a "$DEVICE" >/dev/null || error "wipefs failed.  Is device in use?"
+        if command -v wipefs &> /dev/null; then
+            wipefs -a "$DEVICE" >/dev/null || error "wipefs failed.  Is device in use?"
+        else
+            # Use poor man's wipefs
+            dd if=/dev/zero of="$DEVICE" bs=1M count=16 status=none || \
+                error "Unable to wipe disk.  Is device in use?"
+        fi
         parted -s "$DEVICE" mklabel msdos || error "mklabel failed"
         MKPART="parted -s -a optimal "$DEVICE" mkpart primary"
         ${MKPART} fat32 0%              $((P1_END + 1)) || error "failed to create partition 1"
@@ -346,15 +392,17 @@ elif [[ $MODE = sd ]]; then
 
     # Get the partition list as an array (we want this even if we're not
     # formatting).  Give up to a few seconds for partitions to appear.
-    SECS=5
-    for ((i = 0; i < SECS; i++)); do
-        (($(lsblk -n "$DEVICE" | wc -l) == 5)) && break;
-        sleep 1
-    done
-    ((i == SECS)) && error "failed to create all partitions"
+    if [[ -b "$DEVICE" ]]; then
+        SECS=5
+        for ((i = 0; i < SECS; i++)); do
+            (($(lsblk -n "$DEVICE" | wc -l) == 5)) && break;
+            sleep 1
+        done
+        ((i == SECS)) && error "failed to create all partitions"
 
-    PARTS=($(lsblk -nrx NAME "$DEVICE" | awk '{print $1}'))
-    ((${#PARTS[*]} == 5)) || error "INTERNAL ERROR: failed to create all partitions"
+        PARTS=($(lsblk -nrx NAME "$DEVICE" | awk '{print $1}'))
+        ((${#PARTS[*]} == 5)) || error "INTERNAL ERROR: failed to create all partitions"
+    fi
 
     if ((DO_FORMAT)); then
         #
@@ -377,7 +425,7 @@ elif [[ $MODE = sd ]]; then
         mkfs.ext3 -q -F -L "SDHOME" /dev/${PARTS[4]} || error "failed to format partition 4"
     fi
 
-    if ((DO_COPY)); then
+    if ((DO_COPY || DO_QSPI)); then
         unset TMPMNT TMPDIR
         on_exit() {
             if [[ -n "$TMPMNT" ]]; then
@@ -389,6 +437,13 @@ elif [[ $MODE = sd ]]; then
             fi
         }
         trap on_exit EXIT
+
+        TMPDIR=$(mktemp -d)
+        info "Extracting Image Archive..."
+        tail -n+$ARCHIVE "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
+    fi
+
+    if ((DO_COPY)); then
         if [[ -b "$DEVICE" ]]; then
             verify mount
             [[ $(uname) = Darwin ]] && error "block devices not supported on macos"
@@ -401,9 +456,6 @@ elif [[ $MODE = sd ]]; then
             MNT="$DEVICE"
         fi
 
-        TMPDIR=$(mktemp -d)
-        info "Extracting Image Archive..."
-        tail -n+$ARCHIVE "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
         info "Copying boot files to DEVICE ($DEVICE)"
         cp -v $TMPDIR/boot/* "$MNT" || error "copy boot files failed"
         cp -v $TMPDIR/devicetree/$MACHINE.dtb "$MNT" || error "copy dtb failed"
@@ -422,6 +474,12 @@ elif [[ $MODE = sd ]]; then
             dd if=$TMPDIR/rootfs/rootfs.ext4 of=/dev/${PARTS[3]} bs=$((1024*1024)) status=none || \
                 error "dd ext4 rootfs failed"
         fi
+    fi
+
+    if ((DO_QSPI)); then
+        [[ -f $TMPDIR/boot/boot.bin ]] || error "boot.bin missing from archive"
+        flash_erase /dev/mtd0 0 0
+        flashcp $TMPDIR/boot/boot.bin /dev/mtd0
     fi
 
     # Sync just in case user does unsafe eject
