@@ -135,9 +135,10 @@ Available package recipes can be found at the OpenEmbedded Layer Index at:
 
 # Maintainers
 
-Please submit any patches against the meta-iveia layer to the maintainer:
+Please submit any patches against the meta-iveia layer to the maintainers:
 
-> Brian Silverman <brian.silverman@iveia.com>
+> Brian Silverman <bsilverman@iveia.com>
+> Rick Rogers <rrogers@iveia.com>
 
 
 
