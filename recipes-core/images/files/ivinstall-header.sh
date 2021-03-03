@@ -343,7 +343,7 @@ elif ((MODE==SD_MODE)); then
 
     verify lsblk awk
     if ((DO_FORMAT)); then
-        verify mount umount parted mkfs.vfat mkfs.ext3 blockdev
+        verify mount umount parted mkfs.vfat mkfs.ext4 blockdev
 
         BLOCKDEV_BYTES=$(blockdev --getsize64 "$DEVICE")
         BLOCKDEV_MB=$((BLOCKDEV_BYTES/1024/1024))
@@ -362,7 +362,7 @@ elif ((MODE==SD_MODE)); then
         if [[ -n "$USER_LABEL" ]]; then
             LABEL="$USER_LABEL-"
         else
-            LABEL="$(cut -d- -f1 <<<$MACHINE | tr a-z A-Z)-"
+            LABEL="IVEIA-"
         fi
 
         #
@@ -419,7 +419,7 @@ elif ((MODE==SD_MODE)); then
         ((!MISSING_DEV)) || error "Some block devs did not complete partition"
         mkfs.vfat -F 32 -n "${LABEL}BOOT" /dev/${PARTS[1]} || error "failed to format partition 1"
         info "Formatting partition 2 as raw"    
-        dd status=none if=/dev/zero of=/dev/${PARTS[2]}
+        dd status=none if=/dev/zero of=/dev/${PARTS[2]} 2>/dev/null
         info "Formatting partition 3 as ext4"
         mkfs.ext4 -q -F -L "${LABEL}ROOTFS" /dev/${PARTS[3]}   || error "failed to format partition 3"
         info "Formatting partition 4 as ext4"

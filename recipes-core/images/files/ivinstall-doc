@@ -49,11 +49,12 @@ MODE OPTIONS
         formatting is not required, but does require manually
         ejecting/inserting SD cards when run on the host.
 
-        The SD card will contain 4 partitions:
-            1) FAT: boot files
-            2) raw: small partition for optional data
-            3) EXT: Linux root file system
-            4) EXT: Linux user data partition
+        The SD card will contain 4 partitions (shown with default label and
+        type):
+            1) "IVEIA-BOOT", FAT32:     boot files
+            2) <unlabeled>, raw:        small partition for optional data
+            3) "IVEIA-ROOTFS", EXT4:    Linux root file system
+            4) "IVEIA-SDHOME", EXT4:    Linux user data partition
 
         When using SD mode on the host, ivinstall must be run as root, e.g.,
         "sudo ivinstall ..." to perform a format or ext4 rootfs install.
@@ -128,8 +129,9 @@ OPTIONS
         SUPPORTED BOARDS for allowed IOBOARDs.
 
     -n NAME
-        Optional volume name (label) for boot partition; default is main-board
-        name up to the first hyphen.  Implies -f.
+        Optional volume name (label) prefix for all partitions; default is
+        "IVEIA".  Full labels for each partition are shown in section MODE
+        OPTIONS.  Implies -f.
 
     -q
         Reflash the QSPI.  Only valid on target, or when run on host via SSH or
