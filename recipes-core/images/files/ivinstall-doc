@@ -139,10 +139,9 @@ OPTIONS
 
     -v
         Report version from which images were built and md5sums of all images
-        in the archive.  If the -s (ssh) option is used, will also verify that
-        the md5sums on the target match the ones in the archive.  With -s and
-        -d, will also verify initrd.  With -s and -q, will also verify QSPI
-        flash.
+        in the archive.  If running on target (via ssh or directly), will
+        verify that the md5sums on the target match the ones in the archive:
+        with -d will also verify initrd, with -q will also verify QSPI flash.
 
     -x
         Extract only.  Extracts contents of this installer to temp directory

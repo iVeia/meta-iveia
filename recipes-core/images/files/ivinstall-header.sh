@@ -390,18 +390,24 @@ elif ((MODE==SD_MODE)); then
         parted -s "$DEVICE" set 1 boot on || error "could not make partition 1 bootable"
     fi
 
-    # Get the partition list as an array (we want this even if we're not
-    # formatting).  Give up to a few seconds for partitions to appear.
+    # Get the partition list as an array.  Give up to a few seconds for
+    # partitions to appear.
+    #
+    # We need this info if we're formatting or copying to block device (i.e. we
+    # don't need it if this is only for QSPI, in which case it could fail if
+    # the card isn't formatted).
     if [[ -b "$DEVICE" ]]; then
-        SECS=5
-        for ((i = 0; i < SECS; i++)); do
-            (($(lsblk -n "$DEVICE" | wc -l) == 5)) && break;
-            sleep 1
-        done
-        ((i == SECS)) && error "failed to create all partitions"
+        if ((DO_FORMAT || DO_COPY)); then
+            SECS=5
+            for ((i = 0; i < SECS; i++)); do
+                (($(lsblk -n "$DEVICE" | wc -l) == 5)) && break;
+                sleep 1
+            done
+            ((i == SECS)) && error "all partitions were not created/exist on device"
 
-        PARTS=($(lsblk -nrx NAME "$DEVICE" | awk '{print $1}'))
-        ((${#PARTS[*]} == 5)) || error "INTERNAL ERROR: failed to create all partitions"
+            PARTS=($(lsblk -nrx NAME "$DEVICE" | awk '{print $1}'))
+            ((${#PARTS[*]} == 5)) || error "INTERNAL ERROR: failed to create all partitions"
+        fi
     fi
 
     if ((DO_FORMAT)); then
