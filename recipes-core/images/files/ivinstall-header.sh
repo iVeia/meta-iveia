@@ -45,6 +45,13 @@ help()
     exit 0
 }
 
+# getfilesize in a POSIX-compatible way
+verify awk
+getfilesize()
+{
+    wc -c "$1" | awk '{print $1}'
+}
+
 #
 # Process args
 #
@@ -153,7 +160,6 @@ if ((MODE==SD_MODE && DO_VERSION)); then
         if ((IS_TARGET)); then
             echo "Verifying MD5SUMs"
 
-            verify stat
             read MMC </proc/device-tree/chosen/iv_mmc
             [[ $MMC = 0 || $MMC = 1 ]] || error "Cannot determine target boot device ($MMC)"
 
@@ -188,7 +194,7 @@ if ((MODE==SD_MODE && DO_VERSION)); then
             md5sum $TGT_FILES >target_md5sums 2>/dev/null
             while read ARCH_MD5 ARCH_FILE TGT_FILE; do
                 if [[ $TGT_FILE = $QSPI ]]; then
-                    BOOTBIN_SIZE=$(stat --printf="%s" $ARCH_FILE)
+                    BOOTBIN_SIZE=$(getfilesize $ARCH_FILE)
                     TGT_MD5=$(\
                         dd if=$TGT_FILE bs=$BOOTBIN_SIZE count=1 status=none | \
                             md5sum | awk '{print $1}' \
@@ -255,9 +261,10 @@ fi
 #
 add_header()
 {
+    verify python3 crc32
     MAGIC=0x5d8b1a08c74bf3d7
     CRC32=0x$(crc32 <(cat "$1")) || error "add_header($1, $2) failure 1"
-    FILESIZE=$(printf "0x%016X" $(stat -f %z "$1")) || error "add_header($1, $2) failure 2"
+    FILESIZE=$(printf "0x%016X" $(getfilesize "$1")) || error "add_header($1, $2) failure 2"
     python3 -c "import sys,struct;\
         sys.stdout.buffer.write(struct.pack('<QQ',$MAGIC,$FILESIZE))" > "$2" || \
             error "add_header($1, $2) failure 3"
