@@ -9,6 +9,13 @@
 
 CMD="$0"
 
+endmsg()
+{
+    if [[ -n "$ENDMSG" ]]; then
+        echo "$ENDMSG"
+    fi
+}
+
 info()
 {
     echo "INFO: $1"
@@ -16,6 +23,7 @@ info()
 
 error()
 {
+    endmsg
     echo "ERROR: $1"
     echo "Run ""'""$CMD -h""'"" for usage"
     exit 1
@@ -59,27 +67,28 @@ getfilesize()
 # However, long opts not supported, SAD!
 #
 SAVEARGS="$*"
-unset USER_FAT_SIZE USER_ROOTFS_SIZE DO_COPY DO_COPY DO_FORMAT JTAG_REMOTE
-unset DO_COPY IOBOARD USER_LABEL DO_QSPI DO_VERSION DO_EXTRACT
+unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD JTAG_REMOTE
+unset MODE SKIP_ROOTFS SSH_TARGET USE_INITRD USER_FAT_SIZE USER_LABEL USER_ROOTFS_SIZE
 SD_MODE=0
 SSH_MODE=1
 JTAG_MODE=2
 MODE=$SD_MODE
-while getopts "B:b:cdfhi:jJ:kn:qs:vxzZ" opt; do
+while getopts "B:b:cde:fhi:jJ:kn:qs:vxzZ" opt; do
     case "${opt}" in
-        b) USER_FAT_SIZE=$OPTARG; ;;
-        B) USER_ROOTFS_SIZE=$OPTARG; ;;
+        b) USER_FAT_SIZE="$OPTARG"; ;;
+        B) USER_ROOTFS_SIZE="$OPTARG"; ;;
         c) DO_COPY=1; ;;
         d) DO_COPY=1; USE_INITRD=1 ;;
+        e) ENDMSG="$OPTARG"; ;;
         f) DO_FORMAT=1; ;;
         h) help ;;
-        i) DO_COPY=1; IOBOARD=$OPTARG; ;;
+        i) DO_COPY=1; IOBOARD="$OPTARG"; ;;
         j) MODE=$JTAG_MODE ;;
-        J) JTAG_REMOTE=$OPTARG ;;
+        J) JTAG_REMOTE="$OPTARG" ;;
         k) DO_COPY=1; SKIP_ROOTFS=1 ;;
-        n) DO_FORMAT=1; USER_LABEL=$OPTARG; ;;
+        n) DO_FORMAT=1; USER_LABEL="$OPTARG"; ;;
         q) DO_QSPI=1 ;;
-        s) MODE=$SSH_MODE; SSH_TARGET=$OPTARG ;;
+        s) MODE=$SSH_MODE; SSH_TARGET="$OPTARG" ;;
         v) DO_VERSION=1 ;;
         x) DO_EXTRACT=1 ;;
         z) MODE=$SD_MODE ;;
@@ -431,7 +440,7 @@ elif ((MODE==SD_MODE)); then
         info "Formatting partition 1 as FAT32"
         ((!MISSING_DEV)) || error "Some block devs did not complete partition"
         mkfs.vfat -F 32 -n "${LABEL}BOOT" /dev/${PARTS[1]} || error "failed to format partition 1"
-        info "Formatting partition 2 as raw"    
+        info "Formatting partition 2 as raw"
         dd status=none if=/dev/zero of=/dev/${PARTS[2]} 2>/dev/null
         info "Formatting partition 3 as ext4"
         mkfs.ext4 -q -F -L "${LABEL}ROOTFS" /dev/${PARTS[3]}   || error "failed to format partition 3"
@@ -500,6 +509,7 @@ elif ((MODE==SD_MODE)); then
     # Sync just in case user does unsafe eject
     sync
 
+    endmsg
     info "Done"
 fi
 

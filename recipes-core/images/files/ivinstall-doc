@@ -107,6 +107,9 @@ OPTIONS
     -d
         Copies the initrd instead of ext4 rootfs.  Implies -c (copy).
 
+    -e ENDMSG
+        Echo ENDMSG at end of running script.
+
     -f
         Partition and format the SD card.
 
