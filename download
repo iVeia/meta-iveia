@@ -6,6 +6,7 @@ if [ "$LAYER_DIR" = "$PWD" ]; then
 fi
 if [ $(basename "$LAYER_DIR") != meta-iveia ]; then
     echo "ERROR: layer dir must be named meta-iveia"
+    exit 1
 fi
 
 repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-v2019.2
