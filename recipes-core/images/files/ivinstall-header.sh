@@ -502,8 +502,8 @@ elif ((MODE==SD_MODE)); then
 
     if ((DO_QSPI)); then
         [[ -f $TMPDIR/boot/boot.bin ]] || error "boot.bin missing from archive"
-        flash_erase /dev/mtd0 0 0
-        flashcp $TMPDIR/boot/boot.bin /dev/mtd0
+        flash_erase /dev/mtd0 0 0 || error "flash_erase failed"
+        flashcp $TMPDIR/boot/boot.bin /dev/mtd0 || error "flashcp failed"
     fi
 
     # Sync just in case user does unsafe eject
