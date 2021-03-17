@@ -135,12 +135,9 @@ if ((FORCE_SD_MODE)); then
 fi
 
 #
-# If requested, display version and md5sums (and also verify images if on target)
+# If requested, display version and md5sums
 #
-# DO_VERSION only runs in SD_MODE - if it's run in a remote mode (JTAG or SSH),
-# then it will end up running on the target.
-#
-if ((MODE==SD_MODE && DO_VERSION)); then
+if ((DO_VERSION)); then
     [[ -n "$IVEIA_META_BUILD_HASH" || -n "$IVEIA_BUILD_DATE" ]] || \
         error "INTERNAL ERROR: version not available"
     echo "Meta commit: ${IVEIA_META_BUILD_HASH}"
@@ -166,64 +163,6 @@ if ((MODE==SD_MODE && DO_VERSION)); then
         while read ARCH_MD5 ARCH_FILE; do
             echo "   ${ARCH_MD5} ${ARCH_FILE}"
         done < md5sums
-
-        if ((IS_TARGET)); then
-            echo "Verifying MD5SUMs"
-
-            read MMC </proc/device-tree/chosen/iv_mmc
-            [[ $MMC = 0 || $MMC = 1 ]] || error "Cannot determine target boot device ($MMC)"
-
-            # Create a map between target file names and the md5sum we expect
-            # for them.
-            while read ARCH_MD5 ARCH_FILE; do
-                TGT_FILE=""
-                if [[ "$ARCH_FILE" =~ ^\./boot/ ]]; then
-                    TGT_FILE=/media/sd${MMC}/$(basename ${ARCH_FILE})
-                elif [[ "$ARCH_FILE" == "./devicetree/${MACHINE}.dtb" ]]; then
-                    TGT_FILE=/media/sd${MMC}/${MACHINE}.dtb
-                elif [[
-                    -n "$IOBOARD" && "$ARCH_FILE" == "./devicetree/${IOBOARD}_overlay.dtbo" \
-                    ]]; then
-                    TGT_FILE=/media/sd${MMC}/overlay.dtbo
-                elif [[ "$ARCH_FILE" == "./rootfs/initrd" ]]; then
-                    if ((USE_INITRD)); then
-                        TGT_FILE=/media/sd${MMC}/initrd
-                    fi
-                fi
-                if [[ -n $TGT_FILE ]]; then
-                    echo ${ARCH_MD5} ${ARCH_FILE} ${TGT_FILE}
-                fi
-            done < md5sums > expected_md5sums
-            if ((DO_QSPI)); then
-                ARCH_MD5=$(awk '$2=="'$BOOTBIN'" {print $1}' md5sums)
-                echo ${ARCH_MD5} ${BOOTBIN} ${QSPI} >> expected_md5sums
-            fi
-
-            # Get the actual md5sum for each file and compare.
-            TGT_FILES=$(awk '{print $3}' expected_md5sums)
-            md5sum $TGT_FILES >target_md5sums 2>/dev/null
-            while read ARCH_MD5 ARCH_FILE TGT_FILE; do
-                if [[ $TGT_FILE = $QSPI ]]; then
-                    BOOTBIN_SIZE=$(getfilesize $ARCH_FILE)
-                    TGT_MD5=$(\
-                        dd if=$TGT_FILE bs=$BOOTBIN_SIZE count=1 status=none | \
-                            md5sum | awk '{print $1}' \
-                        )
-                else
-                    TGT_MD5=$(awk -v F=$TGT_FILE '$2==F{print $1}' target_md5sums)
-                fi
-                if [[ -z "$TGT_MD5" ]]; then
-                    EQ="?="
-                elif [[ $TGT_MD5 == $ARCH_MD5 ]]; then
-                    EQ="=="
-                else
-                    EQ="!="
-                fi
-                printf "    %-35s%s %s\n" $TGT_FILE $EQ $ARCH_FILE
-            done < expected_md5sums
-
-            echo "NOTE: ext4 rootfs is not verified"
-        fi
     )
     exit 0
 fi
@@ -241,16 +180,12 @@ fi
 #
 # From here on out, we're copying/formatting, and the device is required (unless -q alone)
 #
-# Exception: if getting the version remotely, we don't care about other options.
-#
-if ((!DO_VERSION)); then
-    if ((DO_FORMAT || DO_COPY)); then
-        [[ -n "$DEVICE" ]] || error "DEVICE was not specified"
-    fi
-    ((DO_FORMAT || DO_COPY || DO_QSPI)) || error "Either -f, -c, or -q required (or a combination)"
-    if ((MODE==SD_MODE)); then
-        ((DO_QSPI && !IS_TARGET)) && error "QSPI mode can only run on target"
-    fi
+if ((DO_FORMAT || DO_COPY)); then
+    [[ -n "$DEVICE" ]] || error "DEVICE was not specified"
+fi
+((DO_FORMAT || DO_COPY || DO_QSPI)) || error "Either -f, -c, or -q required (or a combination)"
+if ((MODE==SD_MODE)); then
+    ((DO_QSPI && !IS_TARGET)) && error "QSPI mode can only run on target"
 fi
 
 #
@@ -303,7 +238,7 @@ add_header()
 #       - runs ivstartup init.d script which finds chosen/startup
 #       - chosen/startup loads/validates startup
 #       - chosen/startup loads/validates ivinstall
-#       - run startup, which ivinstall with user's args
+#       - run startup, which ivinstalls with user's args
 #
 #
 if ((MODE==JTAG_MODE)); then
@@ -336,8 +271,6 @@ elif ((MODE==SSH_MODE)); then
     ssh ${SSH_OPTS} ${SSH_TARGET} bash /tmp/$(basename ${CMD}) -Z $SAVEARGS
 
 elif ((MODE==SD_MODE)); then
-    ((DO_VERSION)) && error "INTERNAL ERROR: cannot get version in SD mode."
-
     if ((DO_FORMAT || DO_COPY)); then
         if ((IS_TARGET)); then
             if [[ "$DEVICE" = sd0 || "$DEVICE" = sd ]]; then
