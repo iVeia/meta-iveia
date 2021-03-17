@@ -23,6 +23,7 @@ info()
 
 error()
 {
+    sync
     endmsg
     echo "ERROR: $1"
     echo "Run ""'""$CMD -h""'"" for usage"
@@ -491,10 +492,12 @@ elif ((MODE==SD_MODE)); then
             info "Copying initrd rootfs to DEVICE ($DEVICE)"
             cp -v $TMPDIR/rootfs/initrd "$MNT" || error "copy initrd failed"
         elif ((!SKIP_ROOTFS)); then
+            verify e2label findmnt
             info "Copying ext4 rootfs to DEVICE ($DEVICE) partition 3"
             ((${#PARTS[*]} > 3)) || error "partition 3 of $DEVICE does not exist"
-            # NOTE: Can't use "bs=1m" - not cross-platform!
-            dd if=$TMPDIR/rootfs/rootfs.ext4 of=/dev/${PARTS[3]} bs=$((1024*1024)) status=none || \
+            umount /dev/${PARTS[3]} 2>/dev/null
+            findmnt /dev/${PARTS[3]} && error "partition 3 already mounted, cannot install rootfs"
+            dd if=$TMPDIR/rootfs/rootfs.ext4 of=/dev/${PARTS[3]} bs=1M status=none || \
                 error "dd ext4 rootfs failed"
             e2label /dev/${PARTS[3]} ${LABEL}ROOTFS
         fi
