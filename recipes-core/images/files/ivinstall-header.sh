@@ -358,7 +358,6 @@ elif ((MODE==SD_MODE)); then
         fi
     fi
 
-    verify lsblk awk
     if ((DO_FORMAT)); then
         verify mount umount parted mkfs.vfat mkfs.ext4 blockdev
 
@@ -415,6 +414,7 @@ elif ((MODE==SD_MODE)); then
     # the card isn't formatted).
     if [[ -b "$DEVICE" ]]; then
         if ((DO_FORMAT || DO_COPY)); then
+            verify lsblk
             SECS=5
             for ((i = 0; i < SECS; i++)); do
                 (($(lsblk -n "$DEVICE" | wc -l) == 5)) && break;
