@@ -34,7 +34,7 @@ do_pre_compile_version () {
     BUILD_DATE=$(date -u "+%F_%T")
 
     if [ -f ${WORKDIR}/src_build_hash ]; then
-        source ${WORKDIR}/src_build_hash
+        . ${WORKDIR}/src_build_hash
     fi
     if [ -z "${SRC_BUILD_HASH}" ]; then
         SRC_BUILD_HASH="NA"

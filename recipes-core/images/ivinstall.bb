@@ -40,7 +40,7 @@ do_compile() {
     done
     INSERT_VARS+="IOBOARDS='${IOBOARDS}'\n"
 
-    source "${B}/${PN}.versions"
+    . "${B}/${PN}.versions"
     INSERT_VARS+="IVEIA_META_BUILD_HASH='${IVEIA_META_BUILD_HASH}'\n"
     INSERT_VARS+="IVEIA_BUILD_DATE='${IVEIA_BUILD_DATE}'\n"
 
