@@ -5,16 +5,15 @@
 Each subdirectory corresponds to a MACHINE (iVeia mainboard) that contains two
 files:
 - design.tcl: An block design exported from Vivado
+    - File -> Export -> Export Block Design...
+    - This file is not used by Yocto.  It is only used to recreate system.xsa
 - system.xsa: The hardware description file exported from Vivado
-
-The design.tcl file is not used by Yocto.  However, the system.xsa can be
-recreated from design.tcl:
-- Run "vivado -mode batch -source design.tcl"
-- Open the resulting project: "vivado myproj/project_1.xpr"
-- Create an HDL wrapper for the block design:
-    - From the Sources window
-    - Under "Design Sources"
-    - Right click "design_1" -> Create HDL Wrapper...
-- Flow Navigator -> IP INTEGRATOR -> Generate Block Design
-- File -> Export -> Export Hardware...
+    - Run "vivado -mode batch -source design.tcl"
+    - Open the resulting project: "vivado myproj/project_1.xpr"
+    - Create an HDL wrapper for the block design:
+        - From the Sources window
+        - Under "Design Sources"
+        - Right click "design_1" -> Create HDL Wrapper...
+    - Flow Navigator -> IP INTEGRATOR -> Generate Block Design
+    - File -> Export -> Export Hardware...
 
