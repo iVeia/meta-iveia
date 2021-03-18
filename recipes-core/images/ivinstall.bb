@@ -89,6 +89,8 @@ python do_deploy() {
         dep_dir("startup.sh") :                    {"arcname" : "boot/startup.sh"},
         loc_dir("uboot.tcl") :                     {"arcname" : "jtag/uboot.tcl"},
         loc_dir("uEnv.txt") :                      {"arcname" : "jtag/uEnv.txt"},
+        loc_dir("qspi.tcl") :                      {"arcname" : "jtag/qspi.tcl"},
+        loc_dir("uEnv.qspi.txt") :                 {"arcname" : "jtag/uEnv.qspi.txt"},
     }
 
     with tarfile.open(tarball, "w:gz", dereference=True) as tar:

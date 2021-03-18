@@ -68,13 +68,13 @@ getfilesize()
 # However, long opts not supported, SAD!
 #
 SAVEARGS="$*"
-unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD JTAG_REMOTE
-unset MODE SKIP_ROOTFS SSH_TARGET USE_INITRD USER_FAT_SIZE USER_LABEL USER_ROOTFS_SIZE
+unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_QSPI_ONLY DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD
+unset JTAG_REMOTE MODE SKIP_ROOTFS SSH_TARGET USE_INITRD USER_FAT_SIZE USER_LABEL USER_ROOTFS_SIZE
 SD_MODE=0
 SSH_MODE=1
 JTAG_MODE=2
 MODE=$SD_MODE
-while getopts "B:b:cde:fhi:jJ:kn:qs:vxzZ" opt; do
+while getopts "B:b:cde:fhi:jJ:kn:qQs:vxzZ" opt; do
     case "${opt}" in
         b) USER_FAT_SIZE="$OPTARG"; ;;
         B) USER_ROOTFS_SIZE="$OPTARG"; ;;
@@ -89,6 +89,7 @@ while getopts "B:b:cde:fhi:jJ:kn:qs:vxzZ" opt; do
         k) DO_COPY=1; SKIP_ROOTFS=1 ;;
         n) DO_FORMAT=1; USER_LABEL="$OPTARG"; ;;
         q) DO_QSPI=1 ;;
+        Q) DO_QSPI_ONLY=1 ;;
         s) MODE=$SSH_MODE; SSH_TARGET="$OPTARG" ;;
         v) DO_VERSION=1 ;;
         x) DO_EXTRACT=1 ;;
@@ -104,10 +105,8 @@ DEVICE="$1"
 shift
 
 # Environ
-PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
+PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin:"$PATH"
 SSH_OPTS="-o ConnectTimeout=5"
-BOOTBIN="./boot/boot.bin"
-QSPI="/dev/mtd0"
 
 # Find tarball start line at end of script
 verify awk
@@ -134,6 +133,14 @@ if ((FORCE_SD_MODE)); then
     MODE=$SD_MODE
 fi
 
+extract_archive_to_TMPDIR()
+{
+    TMPDIR=$(mktemp -d)
+    on_exit() { rm -rf $TMPDIR; }
+    trap on_exit EXIT
+    tail -n+$ARCHIVE "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
+}
+
 #
 # If requested, display version and md5sums
 #
@@ -144,12 +151,8 @@ if ((DO_VERSION)); then
     echo "Build date: ${IVEIA_BUILD_DATE}"
     echo
 
-    TMPDIR=$(mktemp -d)
-    on_exit() { rm -rf $TMPDIR; }
-    trap on_exit EXIT
-
     echo "Archive MD5SUMs:"
-    tail -n+$ARCHIVE "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
+    extract_archive_to_TMPDIR
     (
         cd $TMPDIR
         if [[ $(uname) == Darwin ]]; then
@@ -175,17 +178,6 @@ if ((DO_EXTRACT)); then
     echo "Contents extracted to:"
     echo "    $TMPDIR"
     exit 0
-fi
-
-#
-# From here on out, we're copying/formatting, and the device is required (unless -q alone)
-#
-if ((DO_FORMAT || DO_COPY)); then
-    [[ -n "$DEVICE" ]] || error "DEVICE was not specified"
-fi
-((DO_FORMAT || DO_COPY || DO_QSPI)) || error "Either -f, -c, or -q required (or a combination)"
-if ((MODE==SD_MODE)); then
-    ((DO_QSPI && !IS_TARGET)) && error "QSPI mode can only run on target"
 fi
 
 #
@@ -220,6 +212,41 @@ add_header()
 }
 
 #
+# Direct QSPI programming.  Replaces Xilinx's program_flash:
+#   - Loads uEnv.qspi.txt into RAM for load via JTAG (similar to JTAG_MODE)
+#   - Loads boot.bin to RAM
+#   - Runs a QSPI script that boots to U-Boot
+#   - Commands in uEnv.qspi.txt reflash QSPI and halt.
+# Note: we use this process instead of program_flash because program_flash
+# relies on the device being in JTAG mode, and can often fail if the device has
+# booted into Linux.  iVeia boards all (mostly) boot from QSPI mode, so the TCL
+# script resets the processor into JTAG mode.
+#
+if ((DO_QSPI_ONLY)); then
+    verify xsdb
+    info "Extracting archive..."
+    extract_archive_to_TMPDIR
+    (
+        cd $TMPDIR
+        add_header jtag/uEnv.qspi.txt uEnv.bin
+        add_header boot/boot.bin boot.bin.bin
+        xsdb jtag/qspi.tcl
+    )
+    exit 0
+fi
+
+#
+# From here on out, we're copying/formatting, and the device is required (unless -q alone)
+#
+if ((DO_FORMAT || DO_COPY)); then
+    [[ -n "$DEVICE" ]] || error "DEVICE was not specified"
+fi
+((DO_FORMAT || DO_COPY || DO_QSPI)) || error "Either -f, -c, or -q required (or a combination)"
+if ((MODE==SD_MODE)); then
+    ((DO_QSPI && !IS_TARGET)) && error "QSPI mode can only run on target"
+fi
+
+#
 # JTAG is used to fully load Linux and the run the ivinstall script.
 # The process in brief:
 #   - Using xsdb (via uboot.tcl) load and run images to RAM:
@@ -243,16 +270,12 @@ add_header()
 #
 if ((MODE==JTAG_MODE)); then
     [[ -z "$JTAG_REMOTE" ]] && error "JTAG mode currently requires using remote (-J)"
-    TMPDIR=$(mktemp -d)
-    on_exit() { rm -rf $TMPDIR; }
-    trap on_exit EXIT
-
     info "Extracting Image Archive for JTAG mode..."
+    extract_archive_to_TMPDIR
     cp "$CMD" $TMPDIR
     (
         cd $TMPDIR
         BASECMD=$(basename "$CMD")
-        tail -n+$ARCHIVE "$BASECMD" | tar -xz || error "untar archive failed"
         echo "bash /tmp/ivinstall -Z $SAVEARGS" > startup.sh
         add_header startup.sh startup.bin
         add_header jtag/uEnv.txt uEnv.bin

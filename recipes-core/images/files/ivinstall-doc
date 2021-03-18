@@ -137,18 +137,23 @@ OPTIONS
         OPTIONS.  Implies -f.
 
     -q
-        Reflash the QSPI.  Only valid on target, or when run on host via SSH or
-        JTAG modes.
+        Reflash the QSPI from Linux on target.  Only valid on target, or when
+        run on host via SSH or JTAG modes.  Can be used in conjunction with
+        format/copy options.
+
+    -Q
+        Reflash the QSPI only, directly from a JTAG connected target and then
+        exit.  Xilinx's xsdb must be available for programming via TCL script.
+        This method is prefered over Xilinx's program_flash, which can
+        sometimes fail on boards that are hardwired to always boot from QSPI.
 
     -v
         Report version from which images were built and md5sums of all images
-        in the archive.  If running on target (via ssh or directly), will
-        verify that the md5sums on the target match the ones in the archive:
-        with -d will also verify initrd, with -q will also verify QSPI flash.
+        in the archive and then exit.
 
     -x
-        Extract only.  Extracts contents of this installer to temp directory
-        and exits.
+        Extract only.  Extract contents of this installer to temp directory
+        and then exit.
 
 SUPPORTED BOARDS
 

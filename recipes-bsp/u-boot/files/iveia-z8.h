@@ -24,17 +24,16 @@
     "load_mmc1=setenv tgt mmc1; run loadtgt\0"\
     "load_dhcp=setenv tgt dhcp; run loadtgt\0"\
     "load_jtag=setenv tgt jtag; run loadtgt\0"\
-    "trybootenv_cmd=test -n ${bootenv_cmd} && run bootenv_cmd\0"\
     "loadtgt=\\\n" \
     "    if run loadenv_${tgt}; then \\\n" \
     "        run importenv; \\\n" \
     "        setenv loadmode ${tgt}; \\\n" \
     "    fi\0"\
-    "boottgt=run loadtgt trybootenv_cmd\0"\
     "bootseq=\\\n" \
     "    for tgt in ${boot_targets}; do \\\n" \
     "        echo Attempting load of ${bootenv_file} from ${tgt}...; \\\n" \
-    "        run boottgt; \\\n" \
+    "        run loadtgt; \\\n" \
+    "        test -n ${bootenv_cmd} && run bootenv_cmd; \\\n" \
     "    done; \\\n" \
     "    echo No boot images found.  Aborting to prompt...\0" \
 
