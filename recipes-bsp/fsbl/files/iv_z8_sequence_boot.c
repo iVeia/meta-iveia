@@ -21,6 +21,13 @@
 
 #include "iv_z8_sequence_boot.h"
 
+// Missing defs from xfsbl_hw.h
+#define CRL_APB_BOOT_MODE_USER_ALT_BOOT_MODE_SHIFT   12
+#define CRL_APB_BOOT_MODE_USER_ALT_BOOT_MODE_MASK    ((u32)0X0000F000U)
+#define CRL_APB_BOOT_MODE_USER_USE_ALT_SHIFT   8
+#define CRL_APB_BOOT_MODE_USER_USE_ALT_MASK    ((u32)0X00000100U)
+#define CRL_APB_BOOT_MODE_USER_BOOT_MODE_SHIFT   0
+#define CRL_APB_BOOT_MODE_USER_BOOT_MODE_MASK    ((u32)0X0000000FU)
 
 extern iv_boot_sequence_t boot_seq[];
 extern int boot_dev_count;
@@ -32,8 +39,10 @@ static void soft_reset( void );
 int iv_sequence_boot( void )
 {
     uint32_t boot_mode_user_reg = Xil_In32(CRL_APB_BOOT_MODE_USER);
-    uint32_t boot_mode = boot_mode_user_reg & CRL_APB_BOOT_MODE_USER_BOOT_MODE_MASK;
-    uint32_t alt_boot = (boot_mode_user_reg >> CRL_APB_BOOT_MODE_USER_ALT_BOOT_MODE_SHIFT) & 0x1;
+    uint32_t boot_mode = (boot_mode_user_reg & CRL_APB_BOOT_MODE_USER_BOOT_MODE_MASK) >>
+                            CRL_APB_BOOT_MODE_USER_BOOT_MODE_SHIFT;
+    uint32_t alt_boot = (boot_mode_user_reg & CRL_APB_BOOT_MODE_USER_USE_ALT_MASK) >>
+                            CRL_APB_BOOT_MODE_USER_USE_ALT_SHIFT;
     iv_boot_sequence_t *seq_entry;
     u32 status;
 
@@ -83,6 +92,15 @@ int iv_sequence_boot( void )
 #endif
                     status = XFsbl_SdInit( seq_entry->mode );
                     break;
+
+                case XFSBL_QSPI24_BOOT_MODE:
+                    status = XFsbl_Qspi24Init( seq_entry->mode );
+                    break;
+
+                case XFSBL_QSPI32_BOOT_MODE:
+                    status = XFsbl_Qspi32Init( seq_entry->mode );
+                    break;
+
 #if 0  // untested
                 case XFSBL_NAND_BOOT_MODE:
                     status = XFsbl_NandInit( seq_entry->mode );
