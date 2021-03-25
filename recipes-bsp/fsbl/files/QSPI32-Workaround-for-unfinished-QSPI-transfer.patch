@@ -1,0 +1,63 @@
+From 9f3c7df25b97f974e8236b90f536cbcb9e483dbf Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Thu, 25 Mar 2021 15:19:02 -0400
+Subject: [PATCH] QSPI32: Workaround for unfinished QSPI transfer
+
+In some cases, XFsbl_Qspi32Copy() returns before the transfer is complete.
+
+Reason unknown, but specific case was when cold booting via QSPI24, and then
+using the CRL_APB_BOOT_MODE_USER register to soft reboot in QSPI32 mode.  The
+XFsbl_Qspi32Copy() was called multiple times to read the bootgen image header
+and partitions, and one of the copies would fail (always the same one).
+
+This is a workaround, not a clean fix - but even a negligible usleep(0)
+resolves the issue.  We sleep a bit longer to be safe.  This adds a negligible
+time to the total boot time.
+---
+ lib/sw_apps/zynqmp_fsbl/src/xfsbl_qspi.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/lib/sw_apps/zynqmp_fsbl/src/xfsbl_qspi.c b/lib/sw_apps/zynqmp_fsbl/src/xfsbl_qspi.c
+index f9770af..e531dea 100644
+--- a/lib/sw_apps/zynqmp_fsbl/src/xfsbl_qspi.c
++++ b/lib/sw_apps/zynqmp_fsbl/src/xfsbl_qspi.c
+@@ -54,6 +54,7 @@
+ #include "xfsbl_hw.h"
+ #include "xparameters.h"
+ #include "xil_cache.h"
++#include "sleep.h"
+ 
+ #ifdef XFSBL_QSPI
+ #include "xqspipsu.h"
+@@ -876,6 +877,13 @@ u32 XFsbl_Qspi24Copy(u32 SrcAddress, PTRSIZE DestAddress, u32 Length)
+ 		Status = XFSBL_SUCCESS;
+ 	}
+ 
++	/*
++	 * Workaround for unfinished QSPI transfer above.  See note at end of
++	 * XFsbl_Qspi32Copy().  Issue has not been seen here, but sleep added to be
++	 * safe.
++	 */
++	usleep(100);
++
+ END:
+ 	return (u32)Status;
+ }
+@@ -1409,6 +1417,14 @@ u32 XFsbl_Qspi32Copy(u32 SrcAddress, PTRSIZE DestAddress, u32 Length)
+ 
+ 	}
+ 	UStatus = XFSBL_SUCCESS;
++
++	/*
++	 * Workaround for unfinished QSPI transfer above.  In some cases, this
++	 * function returns before the transfer is complete.  This is a workaround,
++	 * not a clean fix - but even a negligible usleep(0) resolves the issue.
++	 * We sleep a bit longer to be safe.
++	 */
++	usleep(100);
+ END:
+ 	return UStatus;
+ }
+-- 
+2.7.4
+

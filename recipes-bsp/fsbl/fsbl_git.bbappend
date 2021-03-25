@@ -2,6 +2,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "\
     file://banner-added-additional-CRLF.patch \
     file://iveia-version-banner.patch \
+    file://QSPI32-Workaround-for-unfinished-QSPI-transfer.patch \
     "
 
 # These patches must be applied after configure because configure dynamically
