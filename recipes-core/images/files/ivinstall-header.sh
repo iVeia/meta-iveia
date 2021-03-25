@@ -232,6 +232,10 @@ if ((DO_QSPI_ONLY)); then
         add_header boot/boot.bin boot.bin.bin
         xsdb jtag/qspi.tcl
     )
+    info "JTAG load complete, device will now reflash QSPI."
+    info "Watch the serial console to confirm reflash completion."
+    echo
+
     exit 0
 fi
 
