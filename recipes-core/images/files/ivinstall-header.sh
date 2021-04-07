@@ -16,6 +16,11 @@ endmsg()
     fi
 }
 
+warn()
+{
+    echo "WARNING: $1"
+}
+
 info()
 {
     echo "INFO: $1"
@@ -459,7 +464,9 @@ elif ((MODE==SD_MODE)); then
             findmnt /dev/${PARTS[3]} && error "partition 3 already mounted, cannot install rootfs"
             dd if=$TMPDIR/rootfs/rootfs.ext4 of=/dev/${PARTS[3]} bs=1M status=none || \
                 error "dd ext4 rootfs failed"
-            e2label /dev/${PARTS[3]} ${LABEL}ROOTFS
+            e2label /dev/${PARTS[3]} ${LABEL}ROOTFS || \
+                (warn "ROOTFS label failed, disk label not set."; \
+                warn "Label failure may be due to incompatible e2fsprogs tools.")
         fi
     fi
 
