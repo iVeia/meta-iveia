@@ -380,13 +380,20 @@ elif ((MODE==SD_MODE)); then
     if [[ -b "$DEVICE" ]]; then
         if ((DO_FORMAT || DO_COPY)); then
             verify lsblk
+
+            # Wait for partitions.  However, even when we get conformation
+            # (via lsblk) that the partitions are available, it is possible to
+            # have lsblk fail on a second call.  Therefore, we always sleep
+            # and try again even on success.
             SECS=5
-            for ((i = 0; i < SECS; i++)); do
-                (($(lsblk -n "$DEVICE" | wc -l) == 5)) && break;
+            for ((i = 0; i < 2; i++)); do
+                for ((j = 0; j < SECS; j++)); do
+                    (($(lsblk -n "$DEVICE" 2>/dev/null | wc -l) == 5)) && break;
+                    sleep 1
+                done
+                ((j == SECS)) && error "all partitions were not created/exist on device"
                 sleep 1
             done
-            ((i == SECS)) && error "all partitions were not created/exist on device"
-
             PARTS=($(lsblk -nrx NAME "$DEVICE" | awk '{print $1}'))
             ((${#PARTS[*]} == 5)) || error "INTERNAL ERROR: failed to create all partitions"
         fi
