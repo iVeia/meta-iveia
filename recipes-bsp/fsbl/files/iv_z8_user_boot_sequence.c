@@ -18,11 +18,18 @@
 
  #include "iv_z8_sequence_boot.h"
 
-
+/*
+ * Boot sequence.  Can be modified to alter the sequence.
+ *
+ * Note that the last mode is QSPI32 - this is the fallback mode to run
+ * directly out of QSPI.  However, because QSPI24 is the setting of the boot
+ * mode pins for Atlas boards, a restart in QSPI32 is required to correctly
+ * access devices over 16MB in size.
+ */
 iv_boot_sequence_t boot_seq[] = {
     { .mode = XFSBL_SD0_BOOT_MODE, .num_attempts = 1 },
     { .mode = XFSBL_SD1_BOOT_MODE, .num_attempts = 1 },
-    // Final fallback mode is always QSPI
+    { .mode = XFSBL_QSPI32_BOOT_MODE, .num_attempts = 1 },
 };
 int boot_dev_count = sizeof(boot_seq) / sizeof(boot_seq[0]);
 
