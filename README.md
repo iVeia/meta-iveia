@@ -13,6 +13,7 @@ iVeia Mainboard SoMs (`MACHINE`) supported by this layer:
 - atlas-iii-z8 (PN 00104)
 - atlas-ii-z8-hp (PN 00122)
 - atlas-ii-z8ev (PN 00127)
+- atlas-iii-z8e (PN 00114) (bare-metal only)
 
 iVeia IO boards (`IVIO`) supported by this layer:
 - io-captiva (PN 00074)
@@ -21,7 +22,7 @@ iVeia IO boards (`IVIO`) supported by this layer:
 
 # Quick start
 
-The sections details the fastest way to get started.
+This section details the fastest way to get started.
 
 ## Requirements
 
@@ -132,6 +133,13 @@ To build and add a package:
 Available package recipes can be found at the OpenEmbedded Layer Index at:
 
 > https://layers.openembedded.org/
+
+# Other information
+
+Other information can be found in the docs in this repo, e.g.:
+- [INSTALL](INSTALL.md)
+- [BUILD](BUILD.md)
+- [BOOTGEN](BOOTGEN.md)
 
 # Maintainers
 
