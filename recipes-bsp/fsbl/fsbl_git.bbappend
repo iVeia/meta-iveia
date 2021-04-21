@@ -22,6 +22,7 @@ FSBL_SRCS := "\
     ${THISDIR}/files/iv_z8_sequence_boot.h \
     ${THISDIR}/files/iv_z8_user_boot_sequence.c \
     "
+FSBL_SRCS_append_atlas-iii-z8e := " ${THISDIR}/files/${MACHINE}.c"
 FSBL_SRCS_append_atlas-iii-z8 := " ${THISDIR}/files/${MACHINE}.c"
 FSBL_SRCS_append_atlas-ii-z8ev := " ${THISDIR}/files/${MACHINE}.c"
 
