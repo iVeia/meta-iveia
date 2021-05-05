@@ -5,6 +5,8 @@ SRC_URI += "\
     file://QSPI32-Workaround-for-unfinished-QSPI-transfer.patch \
     "
 
+SRC_URI_append_atlas-i-z8 = " file://eMMC-HS200-speed-workaround.patch"
+
 # These patches must be applied after configure because configure dynamically
 # creates some sources (based off of the XSA hardware def), and these patches
 # are applied to them.
