@@ -744,7 +744,7 @@ static void init_gt_clks(unsigned char ucDev){
 #define IOU_SLCR_MIO_PIN_8_OFFSET 0xff180020
 #define IOU_SLCR_MIO_PIN_9_OFFSET 0xff180024
 
-void __attribute__((weak)) iv_z8_init_before_hook() 
+void __attribute__((weak)) iv_z8_init_before_hook()
 {
     PSU_Mask_Write (0XFF180208, 0x0003DFC3, 0x00000082);
     PSU_Mask_Write (0XFF5E0238, 0x00100000, 0x00000000);
@@ -757,12 +757,19 @@ void __attribute__((weak)) iv_z8_init_before_hook()
     jsm_clrbits_le32(0xff5e0238, 1 << 10);
 }
 
-void __attribute__((weak)) iv_z8_init_after_hook() 
+void __attribute__((weak)) iv_z8_init_after_hook()
 {
+}
+
+int __attribute__((weak)) iv_z8_has_clock_chip()
+{
+    return 1;
 }
 
 void iv_z8_init(){
     iv_z8_init_before_hook();
-    init_gt_clks(0x70);
+    if (iv_z8_has_clock_chip()) {
+        init_gt_clks(0x70);
+    }
     iv_z8_init_after_hook();
 }

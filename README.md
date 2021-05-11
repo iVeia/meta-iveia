@@ -14,6 +14,7 @@ iVeia Mainboard SoMs (`MACHINE`) supported by this layer:
 - atlas-ii-z8-hp (PN 00122)
 - atlas-ii-z8ev (PN 00127)
 - atlas-iii-z8e (PN 00114) (bare-metal only)
+- atlas-i-z8 (PN 00108) (bare-metal only)
 
 iVeia IO boards (`IVIO`) supported by this layer:
 - io-captiva (PN 00074)
