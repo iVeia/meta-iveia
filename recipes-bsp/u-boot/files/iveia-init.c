@@ -61,12 +61,15 @@ typedef enum {
     IV_BOARD_SUBFIELD_PN_REVISION,
 } IV_BOARD_SUBFIELD;
 
-#define IV_MB_I2C_BUS       1
-#define IV_IO_I2C_BUS       0
-#define IV_BP_I2C_BUS       0
-#define IV_MB_EEPROM_ADDR   0x52
-#define IV_IO_EEPROM_ADDR   0x53
-#define IV_BP_EEPROM_ADDR   0x54
+#define IV_MB_I2C_BUS           (1)
+#define IV_MB_ALT_I2C_BUS       (0)
+#define IV_IO_I2C_BUS           (0)
+#define IV_IO_ALT_I2C_BUS       (-1)
+#define IV_BP_I2C_BUS           (0)
+#define IV_BP_ALT_I2C_BUS       (-1)
+#define IV_MB_EEPROM_ADDR       0x52
+#define IV_IO_EEPROM_ADDR       0x53
+#define IV_BP_EEPROM_ADDR       0x54
 
 #define MAX_KERN_CMDLINE_FIELD_LEN 64
 #define DEFAULT_IPMI_STRING "none,none,Unknown"
@@ -325,17 +328,18 @@ static void print_board_info(IV_BOARD_CLASS class, char * realname)
 /*
  * set_ipmi_env() - Read the IPMI struct, and env_set() based on part/serial read.
  */
-static void set_ipmi_env(int bus, int addr, IV_BOARD_CLASS class)
+static void set_ipmi_env(int bus, int altbus, int addr, IV_BOARD_CLASS class)
 {
     char pn[MAX_KERN_CMDLINE_FIELD_LEN];
     char sn[MAX_KERN_CMDLINE_FIELD_LEN];
     char name[MAX_KERN_CMDLINE_FIELD_LEN];
     char ipmi_string_buf[MAX_KERN_CMDLINE_FIELD_LEN];
     char * varname = class2string(class);
-    char extended_varname[64];
+    char forced_varname[64];
     struct iv_ipmi iv_ipmi;
     char * ipmi_string;
     int ret;
+    int failed = 0;
 
     /*
      * If env vars were saved (i.e. saveenv), we don't want that old info here
@@ -350,23 +354,25 @@ static void set_ipmi_env(int bus, int addr, IV_BOARD_CLASS class)
      * Otherwise, read and parse the IPMI info.  If unreadable, use the default
      * env var.
      */
-    sprintf(extended_varname, "%s_forced", varname);
-    ipmi_string = env_get(extended_varname);
+    sprintf(forced_varname, "%s_forced", varname);
+    ipmi_string = env_get(forced_varname);
     if (ipmi_string == NULL || strlen(ipmi_string) == 0) {
         ret = read_ipmi(bus, addr, &iv_ipmi);
         if (ret < 0) {
+            printf("Cannot read %s IPMI EEPROM. \n", varname);
+            failed = 1;
+        }
 
-            sprintf(extended_varname, "%s_default", varname);
-            ipmi_string = env_get(extended_varname);
-            if (ipmi_string == NULL || strlen(ipmi_string) == 0) {
-                printf("No default iVeia Board env var exists.  "
-                        "Using hardcoded defaults.\n");
-                ipmi_string = DEFAULT_IPMI_STRING;
-            } else {
-                printf("Cannot read %s IPMI EEPROM, "
-                        "using defaults environment defaults.\n", varname);
+        if (failed && altbus >= 0) {
+            printf("Reading %s IPMI EEPROM from alternate bus. \n", varname);
+            ret = read_ipmi(altbus, addr, &iv_ipmi);
+            failed = ret < 0;
+            if (failed) {
+                printf("Cannot read %s IPMI EEPROM from alternate bus. \n", varname);
             }
-        } else {
+        }
+
+        if (!failed) {
             strcpy_ipmi_field(pn, iv_ipmi.board_area.board_part_number,
                 sizeof(iv_ipmi.board_area.board_part_number));
             strcpy_ipmi_field(sn, iv_ipmi.board_area.board_serial_number,
@@ -377,13 +383,16 @@ static void set_ipmi_env(int bus, int addr, IV_BOARD_CLASS class)
 
             ipmi_string = ipmi_string_buf;
         }
+
+    } else {
+        printf("Using 'forced' values for board information.\n");
     }
 
     /*
      * Verify string seems valid (has exactly 2 commas), and is printable.
      * Convert spaces to underscores.
      */
-    {
+    if (!failed) {
         int commas = 0;
         int space = 0;
         int nonprintable = 0;
@@ -403,15 +412,18 @@ static void set_ipmi_env(int bus, int addr, IV_BOARD_CLASS class)
                     "to underscores.\n");
         }
         if (nonprintable > 0) {
-            printf("iVeia Board string contains non-printable characters.  "
-                    "Using hardcoded defaults.\n");
-            ipmi_string = DEFAULT_IPMI_STRING;
+            printf("iVeia Board string contains non-printable characters.\n");
+            failed = 1;
         }
         if (commas != 2) {
-            printf("iVeia Board string '%s' is invalid.  "
-                    "Using hardcoded defaults.\n", ipmi_string);
-            ipmi_string = DEFAULT_IPMI_STRING;
+            printf("iVeia Board string '%s' is invalid (needs exactly 2 commas).\n", ipmi_string);
+            failed = 1;
         }
+    }
+
+    if (failed) {
+        ipmi_string = DEFAULT_IPMI_STRING;
+        printf("ERROR: Using hardcoded defaults for %s board information.\n", varname);
     }
 
     env_set(varname, ipmi_string);
@@ -434,15 +446,15 @@ static void board_scan(void)
 {
     int i;
 
-    set_ipmi_env(IV_MB_I2C_BUS, IV_MB_EEPROM_ADDR, IV_BOARD_CLASS_MB);
+    set_ipmi_env(IV_MB_I2C_BUS, IV_MB_ALT_I2C_BUS, IV_MB_EEPROM_ADDR, IV_BOARD_CLASS_MB);
     print_board_info(IV_BOARD_CLASS_MB, "Main Board");
 
-    set_ipmi_env(IV_IO_I2C_BUS, IV_IO_EEPROM_ADDR, IV_BOARD_CLASS_IO);
+    set_ipmi_env(IV_IO_I2C_BUS, IV_IO_ALT_I2C_BUS, IV_IO_EEPROM_ADDR, IV_BOARD_CLASS_IO);
     print_board_info(IV_BOARD_CLASS_IO, "IO Board");
 
     for (i = 0; i < ARRAY_SIZE(boards_with_backplanes); i++) {
         if (iv_io_board_ord_match(boards_with_backplanes[i])) {
-            set_ipmi_env(IV_BP_I2C_BUS, IV_BP_EEPROM_ADDR, IV_BOARD_CLASS_BP);
+            set_ipmi_env(IV_BP_I2C_BUS, IV_BP_ALT_I2C_BUS, IV_BP_EEPROM_ADDR, IV_BOARD_CLASS_BP);
             print_board_info(IV_BOARD_CLASS_BP, "Backplane");
         }
     }
