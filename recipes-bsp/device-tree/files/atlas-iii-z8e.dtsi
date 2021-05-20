@@ -5,4 +5,7 @@
     compatible = "iveia,atlas-iii-z8e", "iveia,atlas-z8", "xlnx,zynqmp";
 };
 
+&dwc3_0 {
+	phys = <&lane0 PHY_TYPE_USB3 0 0 100000000>;
+};
 

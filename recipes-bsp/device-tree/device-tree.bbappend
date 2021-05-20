@@ -2,7 +2,7 @@
 # Create several DTB files:
 #   ${MACHINE}.dtb
 #       iVeia mainboard DTB.  Created by combining the Xilinx DTG generated
-#       syste-top.dts with the iVeia mainboard DTS file added as a "#include"
+#       system-top.dts with the iVeia mainboard DTS file added as a "#include"
 #       at the end.
 #   ${MACHINE}_${IVIO}_combo.dtb
 #       Combination of mainboard and ioboard DTSs.  Like the above DTB, but
