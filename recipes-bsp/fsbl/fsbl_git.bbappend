@@ -1,5 +1,5 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI += "\
+SRC_URI_append_zynqmp = "\
     file://banner-added-additional-CRLF.patch \
     file://iveia-version-banner.patch \
     file://QSPI32-Workaround-for-unfinished-QSPI-transfer.patch \
@@ -12,17 +12,19 @@ SRC_URI_append_atlas-i-z8 = " file://eMMC-HS200-speed-workaround.patch"
 # are applied to them.
 do_configure[postfuncs] += "do_post_configure_copy"
 do_post_configure_copy () {
-    cp ${FSBL_SRCS} ${B}/fsbl
+    if [ -n "${FSBL_SRCS}" ]; then
+        cp ${FSBL_SRCS} ${B}/fsbl
+    fi
 }
 inherit post-configure-patches
-POST_CONFIGURE_PATCHES := "\
+POST_CONFIGURE_PATCHES_zynqmp := "\
     ${THISDIR}/files/add-iveia-init-hook.patch \
     ${THISDIR}/files/set-secondary-boot-mode-register.patch \
     ${THISDIR}/files/add_sequence_boot.patch \
     "
 FSBL_DIR := "${THISDIR}"
 
-FSBL_SRCS := "\
+FSBL_SRCS_zynqmp := "\
     ${THISDIR}/files/iv_z8_init.c \
     ${THISDIR}/files/iv_z8_sequence_boot.c \
     ${THISDIR}/files/iv_z8_sequence_boot.h \

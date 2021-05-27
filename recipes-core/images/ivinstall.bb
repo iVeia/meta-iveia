@@ -7,8 +7,8 @@ inherit deploy
 # depends on do_populate_sysroot, which ${IVIMG} doesn't have.
 IVIMG := "iveia-image-minimal"
 do_deploy[depends] = "${IVIMG}:do_build"
-DEPENDS += "fsbl pmu-firmware arm-trusted-firmware u-boot-xlnx u-boot-uenv"
-DEPENDS += "xilinx-bootbin device-tree linux-xlnx ivstartup"
+DEPENDS_append = " fsbl u-boot-xlnx u-boot-uenv xilinx-bootbin device-tree linux-xlnx ivstartup"
+DEPENDS_append_zynqmp = " pmu-firmware arm-trusted-firmware"
 
 LOCAL_FILES := "${THISDIR}/files"
 FILESEXTRAPATHS_prepend := "${LOCAL_FILES}:"
@@ -51,6 +51,9 @@ do_compile() {
         > ${B}/${HEADER}
 }
 
+IS_ZYNQMP = "0"
+IS_ZYNQMP_zynqmp = "1"
+
 python do_deploy() {
     from functools import partial
     import shutil
@@ -64,6 +67,7 @@ python do_deploy() {
     deploy_dir = d.getVar("DEPLOY_DIR_IMAGE")
     local_files_dir = d.getVar("LOCAL_FILES")
     ivimg = d.getVar("IVIMG")
+    is_zynqmp = int(d.getVar("IS_ZYNQMP"))
 
     tarball = os.path.join(deploy_dir, "ivinstall-image.tgz")
     ivinstall_header = os.path.join(build_dir, header)
@@ -77,8 +81,6 @@ python do_deploy() {
     loc_dir = partial(os.path.join, local_files_dir)
     tar_files = {
         dep_dir("fsbl-" + machine + ".elf") :      {"arcname" : "elf/fsbl.elf"},
-        dep_dir("pmu-" + machine + ".elf") :       {"arcname" : "elf/pmu.elf"},
-        dep_dir("arm-trusted-firmware.elf") :      {"arcname" : "elf/atf.elf"},
         dep_dir("u-boot.elf") :                    {"arcname" : "elf/u-boot.elf"},
         dep_dir("boot.bin") :                      {"arcname" : "boot/boot.bin"},
         dep_dir("uEnv.txt") :                      {"arcname" : "boot/uEnv.txt"},
@@ -92,6 +94,13 @@ python do_deploy() {
         loc_dir("qspi.tcl") :                      {"arcname" : "jtag/qspi.tcl"},
         loc_dir("uEnv.qspi.txt") :                 {"arcname" : "jtag/uEnv.qspi.txt"},
     }
+
+    if is_zynqmp:
+        addtional_tar_files = {
+            dep_dir("pmu-" + machine + ".elf") :       {"arcname" : "elf/pmu.elf"},
+            dep_dir("arm-trusted-firmware.elf") :      {"arcname" : "elf/atf.elf"},
+        }
+        tar_files.update(addtional_tar_files)
 
     with tarfile.open(tarball, "w:gz", dereference=True) as tar:
         for f in tar_files:

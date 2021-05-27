@@ -1,0 +1,8 @@
+/ {
+    aliases {
+        /* uart1 is console */
+        serial0 = &uart1;
+        serial1 = &uart0;
+    };
+};
+
