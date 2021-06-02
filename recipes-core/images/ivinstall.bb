@@ -91,14 +91,19 @@ python do_deploy() {
         dep_dir("startup.sh") :                    {"arcname" : "boot/startup.sh"},
         loc_dir("uboot.tcl") :                     {"arcname" : "jtag/uboot.tcl"},
         loc_dir("uEnv.txt") :                      {"arcname" : "jtag/uEnv.txt"},
-        loc_dir("qspi.tcl") :                      {"arcname" : "jtag/qspi.tcl"},
         loc_dir("uEnv.qspi.txt") :                 {"arcname" : "jtag/uEnv.qspi.txt"},
     }
 
     if is_zynqmp:
         addtional_tar_files = {
-            dep_dir("pmu-" + machine + ".elf") :       {"arcname" : "elf/pmu.elf"},
-            dep_dir("arm-trusted-firmware.elf") :      {"arcname" : "elf/atf.elf"},
+            loc_dir("qspi-zynqmp.tcl") :           {"arcname" : "jtag/qspi.tcl"},
+            dep_dir("pmu-" + machine + ".elf") :   {"arcname" : "elf/pmu.elf"},
+            dep_dir("arm-trusted-firmware.elf") :  {"arcname" : "elf/atf.elf"},
+        }
+        tar_files.update(addtional_tar_files)
+    else:
+        addtional_tar_files = {
+            loc_dir("qspi-zynq.tcl") :             {"arcname" : "jtag/qspi.tcl"},
         }
         tar_files.update(addtional_tar_files)
 

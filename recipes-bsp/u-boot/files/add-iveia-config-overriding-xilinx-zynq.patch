@@ -1,0 +1,27 @@
+From cfbc16629c2827ab744d27d6b46a8d72d92a0740 Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Wed, 2 Jun 2021 13:27:09 -0400
+Subject: [PATCH] add iveia config overriding xilinx zynq
+
+This disables the default Xilinx method of including config_distro_bootcmd.h,
+and allows iveia specific environment setup.
+---
+ include/configs/zynq-common.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/configs/zynq-common.h b/include/configs/zynq-common.h
+index 9494267..7e4d477 100644
+--- a/include/configs/zynq-common.h
++++ b/include/configs/zynq-common.h
+@@ -214,7 +214,7 @@
+ 	BOOT_TARGET_DEVICES_DHCP(func) \
+ 	func(XILINX, xilinx, na)
+ 
+-#include <config_distro_bootcmd.h>
++#include <configs/iveia-config.h>
+ #endif /* CONFIG_SPL_BUILD */
+ 
+ /* Default environment */
+-- 
+2.7.4
+

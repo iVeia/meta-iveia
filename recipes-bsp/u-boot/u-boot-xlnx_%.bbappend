@@ -1,12 +1,16 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI += " \
+SRC_URI_append = "\
     file://iveia-init.c;subdir=git/board/xilinx/common \
     file://Makefile;subdir=git/board/xilinx/common \
-    file://iveia-z8.h;subdir=git/include/configs \
-    file://add-iveia-z8-config-overriding-xilinx-zynqmp.patch \
-    file://zynqmp-blank-out-repeated-boot_targets.patch \
+    file://iveia-config.h;subdir=git/include/configs \
     file://Fix-saveenv-causes-next-boot-to-skip-board_late_init.patch \
     file://fragment.cfg \
+    "
+SRC_URI_append_zynq = "\
+    file://add-iveia-config-overriding-xilinx-zynq.patch \
+    "
+SRC_URI_append_zynqmp = "\
+    file://add-iveia-config-overriding-xilinx-zynqmp.patch \
     "
 
 inherit iveia-version-header

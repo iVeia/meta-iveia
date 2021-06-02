@@ -30,7 +30,9 @@
     "        setenv loadmode ${tgt}; \\\n" \
     "    fi\0"\
     "bootseq=\\\n" \
-    "    for tgt in ${boot_targets}; do \\\n" \
+    "    setexpr first_target sub ' .*' '' \"${boot_targets} \" \\\n" \
+    "    setexpr other_targets gsub \" ${first_target} \" ' ' \" ${boot_targets} \" \\\n" \
+    "    for tgt in ${first_target} ${other_targets}; do \\\n" \
     "        echo Attempting load of ${bootenv_file} from ${tgt}...; \\\n" \
     "        run loadtgt; \\\n" \
     "        test -n ${bootenv_cmd} && run bootenv_cmd; \\\n" \
