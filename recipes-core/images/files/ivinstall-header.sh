@@ -233,10 +233,11 @@ if ((DO_QSPI_ONLY)); then
     extract_archive_to_TMPDIR
     (
         cd $TMPDIR
-        add_header jtag/uEnv.qspi.txt uEnv.bin
-        add_header boot/boot.bin boot.bin.bin
-        xsdb jtag/qspi.tcl
-    )
+        add_header jtag/uEnv.qspi.txt uEnv.bin || exit 1
+        add_header boot/boot.bin boot.bin.bin || exit 1
+        xsdb jtag/qspi.tcl || exit 1
+    ) || error "Failed running TCL script to program QSPI flash"
+
     info "JTAG load complete, device will now reflash QSPI."
     info "Watch the serial console to confirm reflash completion."
     echo
