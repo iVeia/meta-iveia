@@ -18,17 +18,13 @@ con
 
 # Zynq-7000 doesn't support restart in JTAG mode (Zynqmp does).  So we hardcode
 # a magic number in memory to force U-Boot to act as if it is booting in JTAG
-# mode.
-mwr 0x500000 {0x1dbf7679 0xc9ffdfa0 0x5da792eb 0xeb3051b9}
+# mode.  (Even if this happened to match, it's doesn't affect boot unless the
+# uEnv.txt file/crc matches).
+mwr 0x500000 0x4a544147
 
-# Load Images
-#
-# These image locations must match those used by U-Boot and uEnv.txt.
-# Note: *.bin files are images modified with a 3*64-bit header, and must be
-# placed shifted earlier in mem by the header amount.  See the ivinstall script
-# for more info.
-dow -data uEnv.bin 0x5fffe8
-dow -data boot.bin.bin 0x6fffe8
+# Load Images - see ivinstall script for details on image locations
+dow -data uEnv.bin 0x5ffff4
+dow -data boot.bin.bin 0x6ffff4
 
 # Other SW...
 dow elf/u-boot.elf

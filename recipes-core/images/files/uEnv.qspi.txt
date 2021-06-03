@@ -1,8 +1,8 @@
 bootenv_cmd=run reflash
 img_addr=0x700000
 reflash=\
-    setexpr imgsize_addr ${img_addr} - 0x10; \
-    setexpr imgsize *${imgsize_addr}; \
+    setexpr imgsize_addr ${img_addr} - 0x08; \
+    setexpr.l imgsize *${imgsize_addr}; \
     setexpr erase_size ${imgsize}; \
     setexpr erase_size ${erase_size} + 0x10000; \
     setexpr erase_size ${erase_size} \\& 0xffff0000; \

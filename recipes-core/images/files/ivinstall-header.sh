@@ -187,16 +187,14 @@ fi
 
 #
 # For loading files via jtag, add a simple binary header that includes:
-#   - 64-bit magic number
-#   - 64-bit filesize
-#   - 64-bit CRC32 (big endian)
+#   - 32-bit magic number (little endian)
+#   - 32-bit filesize (little endian)
+#   - 32-bit CRC32 (big endian)
 # iVeia U-Boot environ vars understand the above format, and can verify and
 # extract the file.
 #
-# Note: U-Boot crc32 function generates crc in big-endian format (even on
-# little-endian machines).  In addition, U-Boot's setexpr can't handle reading
-# in 32-bit numbers (it's broken), so we have to swap the longs in the 64bit
-# number.  So we fix that here for easy matching during U-Boot.
+# Note: Zynq targets are little endian.  However, U-Boot crc32 function 
+# generates crc in big-endian format, even on little-endian machines.
 #
 # Usage:
 #   add_header <input_file> <output_file>
@@ -204,16 +202,14 @@ fi
 add_header()
 {
     verify python3 crc32
-    MAGIC=0x5d8b1a08c74bf3d7
+    MAGIC=0x4a544147
     CRC32=0x$(crc32 <(cat "$1")) || error "add_header($1, $2) failure 1"
-    FILESIZE=$(printf "0x%016X" $(getfilesize "$1")) || error "add_header($1, $2) failure 2"
-    python3 -c "import sys,struct;\
-        sys.stdout.buffer.write(struct.pack('<QQ',$MAGIC,$FILESIZE))" > "$2" || \
-            error "add_header($1, $2) failure 3"
-    python3 -c "import sys,struct;\
-        sys.stdout.buffer.write(struct.pack('>LL',$CRC32,0))" >> "$2" || \
-            error "add_header($1, $2) failure 4"
-    cat "$1" >> "$2" || error "add_header($1, $2) failure 5"
+    FILESIZE=$(printf "0x%08X" $(getfilesize "$1")) || error "add_header($1, $2) failure 2"
+    PACK_PREFIX="import sys,struct;sys.stdout.buffer.write(struct.pack"
+    python3 -c "$PACK_PREFIX('<L',$MAGIC))" > "$2" || error "add_header($1, $2) failure 3"
+    python3 -c "$PACK_PREFIX('<L',$FILESIZE))" >> "$2" || error "add_header($1, $2) failure 4"
+    python3 -c "$PACK_PREFIX('>L',$CRC32))" >> "$2" || error "add_header($1, $2) failure 5"
+    cat "$1" >> "$2" || error "add_header($1, $2) failure 6"
 }
 
 #

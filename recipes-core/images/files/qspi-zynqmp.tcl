@@ -38,14 +38,9 @@ con
 after 5000
 stop
 
-# Load Images
-#
-# These image locations must match those used by U-Boot and uEnv.txt.
-# Note: *.bin files are images modified with a 3*64-bit header, and must be
-# placed shifted earlier in mem by the header amount.  See the ivinstall script
-# for more info.
-dow -data uEnv.bin 0x5fffe8
-dow -data boot.bin.bin 0x6fffe8
+# Load Images - see ivinstall script for details on image locations
+dow -data uEnv.bin 0x5ffff4
+dow -data boot.bin.bin 0x6ffff4
 
 # Other SW...
 dow elf/u-boot.elf

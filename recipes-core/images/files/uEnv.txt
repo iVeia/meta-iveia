@@ -8,10 +8,11 @@ set_fdt_chosen=\
     fdt addr ${fdt_addr}; \
     fdt set /chosen startup "\
         extract() { \
-            LEN=$((0x$(bdevmem $1 24 | \
-                dd skip=1 bs=8 count=1 status=none | od -An -tx8 | sed s/[[:space:]]//g))); \
-            bdevmem $1 $((LEN+24)) | \
-                dd skip=24 iflag=skip_bytes bs=1M status=none >$2; \
+            # Extract a file from a RAM that includes a 3 word header.  See ivinstall script. \
+            LEN=$((0x$(bdevmem $1 12 | \
+                dd skip=1 bs=4 count=1 status=none | od -An -tx4 | sed s/[[:space:]]//g))); \
+            bdevmem $1 $((LEN+12)) | \
+                dd skip=12 iflag=skip_bytes bs=1M status=none >$2; \
         } \
         echo Extracting ivinstall script...; \
         extract 0x20000000 /tmp/startup; \

@@ -38,13 +38,8 @@ con
 after 5000
 stop
 
-# Load Images
-#
-# These image locations must match those used by U-Boot, uEnv.txt, and the
-# Linux startup script.  Note: *.bin files are images modified with a 3*64-bit
-# header, and must be placed shifted earlier in mem by the header amount.  See
-# the ivinstall script for more info.
-dow -data uEnv.bin 0x5fffe8
+# Load Images - see ivinstall script for details on image locations
+dow -data uEnv.bin 0x5ffff4
 dow -data system.dtb 0x700000
 dow -data Image 0x800000
 dow -data initrd 0x10000000
