@@ -11,8 +11,6 @@ MACHINE_FEATURES = "rtc ext2 ext3 vfat usbhost"
 #
 UBOOT_MACHINE = "zynq_zc702_config"
 
-KERNEL_IMAGETYPE = "Image"
-
 SERIAL_CONSOLE = "115200 ttyPS0"
 SERIAL_CONSOLES_CHECK = "${SERIAL_CONSOLES}"
 

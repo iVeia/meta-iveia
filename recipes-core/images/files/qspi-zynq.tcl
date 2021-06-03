@@ -1,8 +1,6 @@
 #
 # Boot to U-Boot/Linux for ivinstall
 #
-# Some parts from Xilinx's AR# 68657
-#
 connect
 
 # Set jtag freq to a super high number (it will be adjusted to max)
@@ -11,7 +9,7 @@ jtag frequency 10000000000
 
 # Reset A53, load and run FSBL
 targets -set -filter {name =~ "ARM Cortex-A9 MPCore #0"}
-rst -processor
+rst -system
 dow elf/fsbl.elf
 bpadd LoadBootImage
 con

@@ -54,7 +54,7 @@ final build products are:
     - **`${MACHINE}_{IVIO}_combo.dtb`**: Combined DT file that includes
       the DT for both the Mainboard and IO board - only built when the
       variable `IVIO` is set.
-- **`Image`**: Linux kernel image
+- **`Image`**: Linux kernel image (**`uImage`** on Zynq-7000 platforms)
 - Root FS, in different formats:
     - **`iveia-image-minimal-${MACHINE}.cpio.gz.u-boot`**: U-Boot initrd
       format - uEnv.txt supports booting from this Root FS when renamed

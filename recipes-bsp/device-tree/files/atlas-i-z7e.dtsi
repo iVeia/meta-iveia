@@ -2,6 +2,6 @@
 
 / {
     model = "Atlas-I Z7e";
-    compatible = "iveia,atlas-i-z7e", "iveia,atlas-z7", "xlnx,zynqmp";
+    compatible = "iveia,atlas-i-z7e", "iveia,atlas-z7", "xlnx,zynq-7000";
 };
 

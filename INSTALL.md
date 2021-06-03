@@ -44,7 +44,7 @@ that they are loaded:
 - **`boot.bin`** (REQUIRED): Boots bootloaders up to U-Boot.
 - **`uEnv.txt`** (REQUIRED): Boot script loaded by U-Boot.
 - **`xilinx.bit`** (OPTIONAL): FPGA bitfile.
-- **`Image`** (REQUIRED): Linux kernel image
+- **`Image`** (REQUIRED): Linux kernel image (**`uImage`** on Zynq-7000 platforms)
 - **`${MACHINE}.dtb`** (REQUIRED): Device tree for the SoM.
 - **`overlay.dtbo`** (OPTIONAL): Device tree for IO board specific features.
   This file must be renamed from **`${IVIO}_overlay.dtbo`** in the Yocto build

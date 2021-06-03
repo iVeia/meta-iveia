@@ -1,5 +1,8 @@
-bootenv_cmd=run set_loader load_fpga load_kernel load_fdt load_fdto load_initrd && run defargs set_fdt_chosen boot_kernel
-set_loader=run set_loader${loadmode}
+bootenv_cmd=\
+    run set_loader${loadmode}; \
+    if run load_fpga load_kernel load_fdt load_fdto load_initrd_else_sdrootfs; then \
+        run defargs set_fdt_chosen boot_kernel; \
+    fi
 set_loaderdhcp=setenv loader tftpboot
 set_loadermmc0=setenv loader load mmc 0
 set_loadermmc1=setenv loader load mmc 1
@@ -9,21 +12,47 @@ set_fdt_file=setenv fdt_file ${machine}.dtb
 fdt_addr=0x600000
 fdto_file=overlay.dtbo
 fdto_addr=0x700000
-kernel_file=Image
 kernel_addr=0x800000
 initrd_file=initrd
 initrd_addr=0x10000000
-load_fpga=echo Loading FPGA if exists...; ${loader} ${fpga_addr} ${fpga_file} && fpga loadb 0 ${fpga_addr} ${filesize}; true
-load_kernel=echo Loading Linux...; ${loader} ${kernel_addr} ${kernel_file};
-load_fdt=echo Loading FDT...; run set_fdt_file; ${loader} ${fdt_addr} ${fdt_file}
-load_fdto=echo Loading FDT Overlay...; ${loader} ${fdto_addr} ${fdto_file} && fdt addr ${fdt_addr} && fdt apply ${fdto_addr}; true
-load_initrd=echo Loading initrd if exists...; run set_initrd; ${loader} ${initrd_addr} ${initrd_file} || run use_sdrootfs;
-set_initrd=setenv initrd_optional_addr ${initrd_addr}
-use_sdrootfs=setenv initrd_optional_addr -; setenv sdrootfs root=/dev/mmcblk${sdbootdev}p3
+load_fpga=\
+    echo Loading FPGA if exists...; \
+    ${loader} ${fpga_addr} ${fpga_file} && fpga loadb 0 ${fpga_addr} ${filesize}; \
+    true
+load_kernel=\
+    echo Loading Linux...; \
+    if test ${board} = zynq; then \
+        setenv kernel_file uImage; \
+        setenv kernel_bootcmd bootm; \
+    else \
+        setenv kernel_file Image; \
+        setenv kernel_bootcmd booti; \
+    fi; \
+    ${loader} ${kernel_addr} ${kernel_file}
+load_fdt=\
+    echo Loading FDT...; \
+    run set_fdt_file; \
+    ${loader} ${fdt_addr} ${fdt_file}
+load_fdto=\
+    echo Loading FDT Overlay if exists...; \
+    ${loader} ${fdto_addr} ${fdto_file} && fdt addr ${fdt_addr} && fdt apply ${fdto_addr}; \
+    true
+load_initrd_else_sdrootfs=\
+    echo Loading initrd if exists...; \
+    setenv initrd_optional_addr ${initrd_addr}; \
+    if ${loader} ${initrd_addr} ${initrd_file}; then else \
+        setenv initrd_optional_addr -; \
+        setenv sdrootfs root=/dev/mmcblk${sdbootdev}p3; \
+    fi
+boot_kernel=\
+    echo Booting kernel...; \
+    ${kernel_bootcmd} ${kernel_addr} ${initrd_optional_addr} ${fdt_addr}
 defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon ${sdrootfs}
-set_fdt_chosen=fdt addr ${fdt_addr}; run set_fdt_iv_mb set_fdt_iv_io set_iv_mmc set_iv_boot
-set_fdt_iv_io=fdt set /chosen iv_io ${iv_io}; fdt set /chosen iv_io_ord ${iv_io_ord}
-set_fdt_iv_mb=fdt set /chosen iv_mb ${iv_mb}; fdt set /chosen iv_mb_ord ${iv_mb_ord}
-set_iv_mmc=fdt set /chosen iv_mmc ${sdbootdev}
-set_iv_boot=fdt set /chosen iv_boot ${modeboot}
-boot_kernel=echo Booting kernel...; booti ${kernel_addr} ${initrd_optional_addr} ${fdt_addr}
+set_fdt_chosen=\
+    fdt addr ${fdt_addr}; \
+    fdt set /chosen iv_mb ${iv_mb}; \
+    fdt set /chosen iv_mb_ord ${iv_mb_ord}; \
+    fdt set /chosen iv_io ${iv_io}; \
+    fdt set /chosen iv_io_ord ${iv_io_ord}; \
+    fdt set /chosen iv_mmc ${sdbootdev}; \
+    fdt set /chosen iv_boot ${modeboot}

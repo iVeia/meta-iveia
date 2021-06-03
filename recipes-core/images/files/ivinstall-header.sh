@@ -288,7 +288,7 @@ if ((MODE==JTAG_MODE)); then
         add_header "$BASECMD" ivinstall.bin
         cp devicetree/$MACHINE.dtb system.dtb
         scp ${SSH_OPTS} startup.bin uEnv.bin ivinstall.bin jtag/uboot.tcl \
-            elf/* boot/Image rootfs/initrd system.dtb \
+            elf/* boot/*Image rootfs/initrd system.dtb \
             $JTAG_REMOTE: || error "scp to JTAG_REMOTE failed"
         ssh ${SSH_OPTS} $JTAG_REMOTE xsdb uboot.tcl
     )
