@@ -39,7 +39,7 @@ after 5000
 stop
 
 # Load Images - see ivinstall script for details on image locations
-dow -data uEnv.bin 0x5ffff4
+dow -data uEnv.qspi.txt.bin 0x5ffff4
 dow -data boot.bin.bin 0x6ffff4
 
 # Other SW...

@@ -229,7 +229,7 @@ if ((DO_QSPI_ONLY)); then
     extract_archive_to_TMPDIR
     (
         cd $TMPDIR
-        add_header jtag/uEnv.qspi.txt uEnv.bin || exit 1
+        add_header jtag/uEnv.qspi.txt uEnv.qspi.txt.bin || exit 1
         add_header boot/boot.bin boot.bin.bin || exit 1
         xsdb jtag/qspi.tcl || exit 1
     ) || error "Failed running TCL script to program QSPI flash"
@@ -255,10 +255,10 @@ fi
 #
 # JTAG is used to fully load Linux and the run the ivinstall script.
 # The process in brief:
-#   - Using xsdb (via uboot.tcl) load and run images to RAM:
+#   - Using xsdb (via ivinstall.tcl) load and run images to RAM:
 #       - A startup.sh script that runs ivinstall with user's arguments ($*)
 #       - ivinstall script (with a header added) in memory above Linux (via mem=xxx)
-#       - A special uEnv.txt (with a header added)
+#       - A special uEnv.txt (with a header added) (named uEnv.ivinstall.txt)
 #       - Linux images (Image, DTB, initrd)
 #       - bootloader elf files (fsbl, ..., u-boot)
 #   - xsdb will get boot running up to U-Boot:
@@ -283,14 +283,14 @@ if ((MODE==JTAG_MODE)); then
         cd $TMPDIR
         BASECMD=$(basename "$CMD")
         echo "bash /tmp/ivinstall -Z $SAVEARGS" > startup.sh
-        add_header startup.sh startup.bin
-        add_header jtag/uEnv.txt uEnv.bin
+        add_header startup.sh startup.sh.bin
+        add_header jtag/uEnv.ivinstall.txt uEnv.ivinstall.txt.bin
         add_header "$BASECMD" ivinstall.bin
         cp devicetree/$MACHINE.dtb system.dtb
-        scp ${SSH_OPTS} startup.bin uEnv.bin ivinstall.bin jtag/uboot.tcl \
+        scp ${SSH_OPTS} startup.sh.bin uEnv.ivinstall.txt.bin ivinstall.bin jtag/ivinstall.tcl \
             elf/* boot/*Image rootfs/initrd system.dtb \
             $JTAG_REMOTE: || error "scp to JTAG_REMOTE failed"
-        ssh ${SSH_OPTS} $JTAG_REMOTE xsdb uboot.tcl
+        ssh ${SSH_OPTS} $JTAG_REMOTE xsdb ivinstall.tcl
     )
 
 elif ((MODE==SSH_MODE)); then

@@ -88,8 +88,8 @@ python do_deploy() {
         dep_dir(rootfs_base + ".cpio.gz.u-boot") : {"arcname" : "rootfs/initrd"},
         dep_dir(rootfs_base + ".ext4") :           {"arcname" : "rootfs/rootfs.ext4"},
         dep_dir("startup.sh") :                    {"arcname" : "boot/startup.sh"},
-        loc_dir("uboot.tcl") :                     {"arcname" : "jtag/uboot.tcl"},
-        loc_dir("uEnv.txt") :                      {"arcname" : "jtag/uEnv.txt"},
+        loc_dir("ivinstall.tcl") :                 {"arcname" : "jtag/ivinstall.tcl"},
+        loc_dir("uEnv.ivinstall.txt") :            {"arcname" : "jtag/uEnv.ivinstall.txt"},
         loc_dir("uEnv.qspi.txt") :                 {"arcname" : "jtag/uEnv.qspi.txt"},
     }
 
