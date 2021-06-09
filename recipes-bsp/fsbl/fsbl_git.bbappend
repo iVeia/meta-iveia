@@ -4,6 +4,9 @@ SRC_URI_append_zynqmp = "\
     file://iveia-version-banner.patch \
     file://QSPI32-Workaround-for-unfinished-QSPI-transfer.patch \
     "
+SRC_URI_append_zynq = "\
+    file://iveia-version-banner-zynq.patch \
+    "
 
 SRC_URI_append_atlas-i-z8 = " file://eMMC-HS200-speed-workaround.patch"
 
