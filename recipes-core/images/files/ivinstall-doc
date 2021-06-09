@@ -41,6 +41,8 @@ DESCRIPTION
 
 MODE OPTIONS
 
+    The mode selects the method of installation (SD (default), JTAG, or SSH).
+
     -z
         SD MODE
 
@@ -91,7 +93,12 @@ MODE OPTIONS
         Can only be run on a host.  The DEVICE refers to the device name on the
         target (see DESCRIPTION).
 
-OPTIONS
+FILES/FORMAT OPTIONS
+
+    These options modify the formatting of the DEVICE and the files to be
+    installed.  The DEVICE will only be formatted if -f is specified (or an
+    option that implies -f).  Files will only be copied if -c is specified (or
+    an option that implies -c).
 
     -b SIZE
         Size in MB of FAT boot partition, default 4GB (or 512MB for SD cards
@@ -107,23 +114,11 @@ OPTIONS
     -d
         Copies the initrd instead of ext4 rootfs.  Implies -c (copy).
 
-    -e ENDMSG
-        Echo ENDMSG at end of running script.
-
     -f
         Partition and format the SD card.
 
-    -J JTAG_REMOTE
-        Run JTAG commands from a remote host that is connected via JTAG to a
-        target.  JTAG_REMOTE is of the same form used by ssh, i.e.
-        [user@]ip_address.  JTAG_REMOTE machine can be Linux or Windows.  Only
-        valid in JTAG MODE.
-
     -k
         Skip copying rootfs for faster install.  Implies -c (copy).
-
-    -h
-        Show this help message and exit.
 
     -i IOBOARD
         Target io-board for which the SD card will be configured.  This will
@@ -140,6 +135,25 @@ OPTIONS
         Reflash the QSPI from Linux on target.  Only valid on target, or when
         run on host via SSH or JTAG modes.  Can be used in conjunction with
         format/copy options.
+
+OTHER OPTIONS
+
+    -e ENDMSG
+        Echo ENDMSG at end of running script.
+
+    -h
+        Show this help message and exit.
+
+    -J JTAG_REMOTE
+        Run JTAG commands from a remote host that is connected via JTAG to a
+        target.  JTAG_REMOTE is of the same form used by ssh, i.e.
+        [user@]ip_address.  JTAG_REMOTE machine can be Linux or Windows.  Only
+        valid in JTAG MODE.
+
+    -o
+        Only boot, do not install.  Only valid in JTAG mode.  With this option,
+        the target will be booted into Linux using JTAG, but ivinstall will not
+        be loaded or run.
 
     -Q
         Reflash the QSPI only, directly from a JTAG connected target and then

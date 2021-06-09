@@ -88,7 +88,6 @@ python do_deploy() {
         dep_dir(rootfs_base + ".cpio.gz.u-boot") : {"arcname" : "rootfs/initrd"},
         dep_dir(rootfs_base + ".ext4") :           {"arcname" : "rootfs/rootfs.ext4"},
         dep_dir("startup.sh") :                    {"arcname" : "boot/startup.sh"},
-        loc_dir("ivinstall.tcl") :                 {"arcname" : "jtag/ivinstall.tcl"},
         loc_dir("uEnv.ivinstall.txt") :            {"arcname" : "jtag/uEnv.ivinstall.txt"},
         loc_dir("uEnv.qspi.txt") :                 {"arcname" : "jtag/uEnv.qspi.txt"},
     }
@@ -97,6 +96,7 @@ python do_deploy() {
         addtional_tar_files = {
             dep_dir("Image") :                     {"arcname" : "boot/Image"},
             loc_dir("qspi-zynqmp.tcl") :           {"arcname" : "jtag/qspi.tcl"},
+            loc_dir("ivinstall-zynqmp.tcl") :      {"arcname" : "jtag/ivinstall.tcl"},
             dep_dir("pmu-" + machine + ".elf") :   {"arcname" : "elf/pmu.elf"},
             dep_dir("arm-trusted-firmware.elf") :  {"arcname" : "elf/atf.elf"},
         }
@@ -105,6 +105,7 @@ python do_deploy() {
         addtional_tar_files = {
             dep_dir("uImage") :                    {"arcname" : "boot/uImage"},
             loc_dir("qspi-zynq.tcl") :             {"arcname" : "jtag/qspi.tcl"},
+            loc_dir("ivinstall-zynq.tcl") :        {"arcname" : "jtag/ivinstall.tcl"},
         }
         tar_files.update(addtional_tar_files)
 

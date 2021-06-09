@@ -75,11 +75,12 @@ getfilesize()
 SAVEARGS="$*"
 unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_QSPI_ONLY DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD
 unset JTAG_REMOTE MODE SKIP_ROOTFS SSH_TARGET USE_INITRD USER_FAT_SIZE USER_LABEL USER_ROOTFS_SIZE
+unset ONLY_BOOT
 SD_MODE=0
 SSH_MODE=1
 JTAG_MODE=2
 MODE=$SD_MODE
-while getopts "B:b:cde:fhi:jJ:kn:qQs:vxzZ" opt; do
+while getopts "B:b:cde:fhi:jJ:kn:oqQs:vxzZ" opt; do
     case "${opt}" in
         b) USER_FAT_SIZE="$OPTARG"; ;;
         B) USER_ROOTFS_SIZE="$OPTARG"; ;;
@@ -93,6 +94,7 @@ while getopts "B:b:cde:fhi:jJ:kn:qQs:vxzZ" opt; do
         J) JTAG_REMOTE="$OPTARG" ;;
         k) DO_COPY=1; SKIP_ROOTFS=1 ;;
         n) DO_FORMAT=1; USER_LABEL="$OPTARG"; ;;
+        o) ONLY_BOOT=1 ;;
         q) DO_QSPI=1 ;;
         Q) DO_QSPI_ONLY=1 ;;
         s) MODE=$SSH_MODE; SSH_TARGET="$OPTARG" ;;
@@ -242,12 +244,20 @@ if ((DO_QSPI_ONLY)); then
 fi
 
 #
-# From here on out, we're copying/formatting, and the device is required (unless -q alone)
+# From here on out, we're copying/formatting, and the device is required
+# (unless -q alone)
+#
+# Another exception: if ONLY_BOOT, then we don't care about other options
+# (excpet that it is JTAG mode)
 #
 if ((DO_FORMAT || DO_COPY)); then
     [[ -n "$DEVICE" ]] || error "DEVICE was not specified"
 fi
-((DO_FORMAT || DO_COPY || DO_QSPI)) || error "Either -f, -c, or -q required (or a combination)"
+if ((ONLY_BOOT)); then
+    ((MODE==JTAG_MODE)) || error "The -o option can only be used in JTAG mode (-j)"
+else
+    ((DO_FORMAT || DO_COPY || DO_QSPI)) || error "Either -f, -c, or -q required (or a combination)"
+fi
 if ((MODE==SD_MODE)); then
     ((DO_QSPI && !IS_TARGET)) && error "QSPI mode can only run on target"
 fi
@@ -281,11 +291,17 @@ if ((MODE==JTAG_MODE)); then
     cp "$CMD" $TMPDIR
     (
         cd $TMPDIR
-        BASECMD=$(basename "$CMD")
-        echo "bash /tmp/ivinstall -Z $SAVEARGS" > startup.sh
-        add_header startup.sh startup.sh.bin
+        if ((ONLY_BOOT)); then
+            echo > empty_file
+            add_header empty_file startup.sh.bin
+            add_header empty_file ivinstall.bin
+        else
+            BASECMD=$(basename "$CMD")
+            echo "bash /tmp/ivinstall -Z $SAVEARGS" > startup.sh
+            add_header startup.sh startup.sh.bin
+            add_header "$BASECMD" ivinstall.bin
+        fi
         add_header jtag/uEnv.ivinstall.txt uEnv.ivinstall.txt.bin
-        add_header "$BASECMD" ivinstall.bin
         cp devicetree/$MACHINE.dtb system.dtb
         scp ${SSH_OPTS} startup.sh.bin uEnv.ivinstall.txt.bin ivinstall.bin jtag/ivinstall.tcl \
             elf/* boot/*Image rootfs/initrd system.dtb \

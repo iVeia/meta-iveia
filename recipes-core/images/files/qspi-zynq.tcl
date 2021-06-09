@@ -7,7 +7,7 @@ connect
 jtag targets 1
 jtag frequency 10000000000
 
-# Reset A53, load and run FSBL
+# Reset ARM, load and run FSBL
 targets -set -filter {name =~ "ARM Cortex-A9 MPCore #0"}
 rst -system
 dow elf/fsbl.elf
