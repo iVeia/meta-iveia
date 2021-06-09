@@ -1,0 +1,12 @@
+#include <atlas-z7.dtsi>
+
+/ {
+    model = "Helios Z7 PCIe";
+    compatible = "iveia,helios-z7-pcie", "iveia,atlas-z7", "xlnx,zynq-7000";
+
+    aliases {
+        serial0 = &uart0;
+        serial1 = &uart1;
+    };
+};
+
