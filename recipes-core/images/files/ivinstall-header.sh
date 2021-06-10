@@ -188,7 +188,7 @@ if ((DO_EXTRACT)); then
 fi
 
 #
-# For loading files via jtag, add a simple binary header that includes:
+# For loading files via JTAG, add a simple binary header that includes:
 #   - 32-bit magic number (little endian)
 #   - 32-bit filesize (little endian)
 #   - 32-bit CRC32 (big endian)
@@ -264,6 +264,12 @@ fi
 
 #
 # JTAG is used to fully load Linux and the run the ivinstall script.
+#
+# The concept is to load all images to RAM via JTAG, and then boot.  Images are
+# then found during boot at the specific locations where they were stored.
+# Some images need to encode their length, and so have a header added (via
+# add_header()) that includes the image len and CRC.
+#
 # The process in brief:
 #   - Using xsdb (via ivinstall.tcl) load and run images to RAM:
 #       - A startup.sh script that runs ivinstall with user's arguments ($*)
@@ -271,18 +277,34 @@ fi
 #       - A special uEnv.txt (with a header added) (named uEnv.ivinstall.txt)
 #       - Linux images (Image, DTB, initrd)
 #       - bootloader elf files (fsbl, ..., u-boot)
-#   - xsdb will get boot running up to U-Boot:
+#   - xsdb will get boot running up to U-Boot, which then:
 #       - runs the default boot command
 #       - runs loadenv_jtag, which finds/validates special uEnv.txt in RAM via JTAG
 #       - runs uEnv.txt's bootenv_cmd
 #       - insert a special startup script into device-tree/chosen
 #       - boot Linux from images already loaded in RAM via JTAG
-#   - Linux boots:
+#   - Linux boots, and then:
 #       - runs ivstartup init.d script which finds chosen/startup
 #       - chosen/startup loads/validates startup
 #       - chosen/startup loads/validates ivinstall
 #       - run startup, which ivinstalls with user's args
 #
+# Rough mem layout (in MBs):
+#   0       Mem bottom
+#   5       JTAG magic flag (zynq only)
+#   6       uEnv.txt (with pre-header)
+#   7       DTB
+#   8       Kernel
+#   128     initrd
+#   <255    Relocated initrd
+#   <256    Relocated DTB
+#   256     startup.sh (with header)
+#   257     ivinstall script (with header)
+#   ...
+#   >=512   Mem top (at least 512MB, up to 4GB on some boards).
+# The items with the pre-header above are shifted down by the header amount.
+# See add_header().  Also, see the tcl scripts and uEnv.txt for the exact
+# values used.
 #
 if ((MODE==JTAG_MODE)); then
     [[ -z "$JTAG_REMOTE" ]] && error "JTAG mode currently requires using remote (-J)"
@@ -306,7 +328,18 @@ if ((MODE==JTAG_MODE)); then
         scp ${SSH_OPTS} startup.sh.bin uEnv.ivinstall.txt.bin ivinstall.bin jtag/ivinstall.tcl \
             elf/* boot/*Image rootfs/initrd system.dtb \
             $JTAG_REMOTE: || error "scp to JTAG_REMOTE failed"
-        ssh ${SSH_OPTS} $JTAG_REMOTE xsdb ivinstall.tcl
+        # On Windows, if the ivinstall.tcl script is run via ssh and
+        # immediately exits, the JTAG connection becomes hung (process is
+        # halted).  As a workaround, we test for Linux/Windows, and run a short
+        # sleep after running the script.  The sleep must be run AFTER xsdb
+        # exits, but before ssh exits.
+        if ssh ${SSH_OPTS} $JTAG_REMOTE uname &> /dev/null; then
+            # This is Unix - NOTE UNTESTED
+            ssh ${SSH_OPTS} $JTAG_REMOTE xsdb ivinstall.tcl
+        else
+            # This is Windows - note '&' in Windows is equiv to ';' in Unix
+            ssh ${SSH_OPTS} $JTAG_REMOTE 'xsdb ivinstall.tcl & xsdb -eval "after 1000"'
+        fi
     )
 
 elif ((MODE==SSH_MODE)); then
