@@ -19,9 +19,11 @@
 fdt_addr=0x700000
 kernel_addr=0x800000
 initrd_addr=0x8000000
-fdt_high=0x10000000
-initrd_high=0x0ff00000
-kernel_mem_mb=256
+initrd_high=0x17f00000
+fdt_high=0x18000000
+kernel_mem_mb=384
+startup_script_addr=0x18000000
+initrd_script_addr=0x18100000
 bootenv_cmd=run defargs set_fdt_chosen boot_kernel
 defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon mem=${kernel_mem_mb}M
 boot_kernel=\
@@ -40,9 +42,9 @@ set_fdt_chosen=\
                 dd skip=1 bs=4 count=1 status=none | od -An -tx4 | sed s/[[:space:]]//g))); \
             bdevmem $1 $((LEN+12)) | \
                 dd skip=12 iflag=skip_bytes bs=1M status=none >$2; \
-        } \
+        }; \
         echo Extracting ivinstall script...; \
-        extract 0x10000000 /tmp/startup; \
-        extract 0x10100000 /tmp/ivinstall; \
+        extract ${startup_script_addr} /tmp/startup; \
+        extract ${initrd_script_addr} /tmp/ivinstall; \
         source /tmp/startup; \
         "

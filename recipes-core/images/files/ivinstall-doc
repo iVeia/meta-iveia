@@ -11,9 +11,10 @@ DESCRIPTION
     Images are installed onto DEVICE, which is a top-level block device.  The
     DEVICE refers to the actual block device name, so this will vary on the
     host.  On the target, as a convenience an alias can be used for the DEVICE:
-        - /dev/mmcblk0 or sd0 or sd refer to the io-board SD card.
-        - /dev/mmcblk1 or sd1 or emmc refer to the SoM eMMC.
-    See MODE OPTIONS for more details.
+        - /dev/mmcblk0 or sd0 generally refers to the io-board SD card.
+        - /dev/mmcblk1 or sd1 generally refers to the SoM eMMC/SD.
+    On SoMs that do not support an external SD card slot, both /dev/mmcblk0 and
+    sd0 refer to the SoM eMMC/SD.  See MODE OPTIONS for more details.
 
     It runs on either a Linux host or the Linux target.  A subset of features
     are supported on other Unix hosts (e.g. macos).

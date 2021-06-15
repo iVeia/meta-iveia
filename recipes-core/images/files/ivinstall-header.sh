@@ -292,16 +292,16 @@ fi
 #       - run startup, which ivinstalls with user's args
 #
 # Rough mem layout (in MBs):
-#   0       Mem bottom
-#   5       JTAG magic flag (zynq only)
-#   6       uEnv.txt (with pre-header)
-#   7       DTB
-#   8       Kernel
-#   128     initrd
-#   <255    Relocated initrd
-#   <256    Relocated DTB
-#   256     startup.sh (with header)
-#   257     ivinstall script (with header)
+#   0       0x00000000  Mem bottom
+#   5       0x00500000  JTAG magic flag (zynq only)
+#   6       0x00600000  uEnv.txt (with pre-header)
+#   7       0x00700000  DTB
+#   8       0x00800000  Kernel
+#   128     0x08000000  initrd
+#   <383    0x17f00000  Relocated initrd by U-Boot using fdt_high
+#   <384    0x18000000  Relocated DTB by U-Boot using initrd_high
+#   384     0x18000000  startup.sh (with header)
+#   385     0x18100000  ivinstall script (with header)
 #   ...
 #   >=512   Mem top (at least 512MB, up to 4GB on some boards).
 # The items with the pre-header above are shifted down by the header amount.
