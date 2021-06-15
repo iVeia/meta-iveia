@@ -120,7 +120,9 @@ verify awk
 ARCHIVE=$(awk '/^__ARCHIVE_BELOW__/ {print NR + 1; exit 0; }' "$CMD")
 
 # We're running on the target if we can find a specfic /sys file.
-IS_TARGET=$([[ ! -d /sys/firmware/zynqmp ]]; echo $?)
+IS_ZYNQMP_TARGET=$([[ ! -d /sys/firmware/zynqmp ]]; echo $?)
+IS_ZYNQ_TARGET=$([[ ! -d /sys/devices/platform/cpuidle-zynq.0 ]]; echo $?)
+IS_TARGET=$((IS_ZYNQMP_TARGET || IS_ZYNQ_TARGET))
 
 #
 # Validate arguments
