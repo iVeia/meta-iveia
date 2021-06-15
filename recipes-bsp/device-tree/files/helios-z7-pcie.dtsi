@@ -10,3 +10,32 @@
     };
 };
 
+&sdhci0 {
+    status = "disabled";
+};
+
+&sdhci1 {
+    status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_sdhci1_default>;
+};
+
+&pinctrl0 {
+	pinctrl_sdhci1_default: sdhci1-default {
+		mux {
+			groups = "sdio1_3_grp";
+			function = "sdio1";
+		};
+
+		conf {
+			groups = "sdio1_3_grp";
+			slew-rate = <0>;
+			io-standard = <1>;
+			bias-disable;
+		};
+	};
+};
+
+&usb1 {
+	status = "disabled";
+};
