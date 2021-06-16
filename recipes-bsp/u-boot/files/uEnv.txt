@@ -43,7 +43,7 @@ load_initrd_else_sdrootfs=\
     setenv initrd_optional_addr ${initrd_addr}; \
     if ${loader} ${initrd_addr} ${initrd_file}; then else \
         setenv initrd_optional_addr -; \
-        setenv sdrootfs root=/dev/mmcblk${sdbootdev}p3; \
+        setenv sdrootfs root=/dev/mmcblk${sdbootdev}p3 rootwait; \
     fi
 boot_kernel=\
     echo Booting kernel...; \
