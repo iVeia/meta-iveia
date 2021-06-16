@@ -38,14 +38,24 @@
     "        echo JTAG Magic found - forcing JTAG boot; \\\n" \
     "        setenv boot_targets jtag ${boot_targets}; \\\n" \
     "    fi;\0" \
+    "pauseboot=setenv pauseboot_on 1; boot\0" \
     "bootseq=\\\n" \
     "    run zynq_test_forced_jtag \\\n" \
     "    setexpr first_target sub ' .*' '' \"${boot_targets} \" \\\n" \
     "    setexpr other_targets gsub \" ${first_target} \" ' ' \" ${boot_targets} \" \\\n" \
+    "    setenv break \\\n" \
     "    for tgt in ${first_target} ${other_targets}; do \\\n" \
-    "        echo Attempting load of ${bootenv_file} from ${tgt}...; \\\n" \
-    "        run loadtgt; \\\n" \
-    "        test -n ${bootenv_cmd} && run bootenv_cmd; \\\n" \
+    "        if test -z \"${break}\"; then \\\n" \
+    "            echo Attempting load of ${bootenv_file} from ${tgt}...; \\\n" \
+    "            run loadtgt; \\\n" \
+    "            if test -n \"${bootenv_cmd}\"; then \\\n" \
+    "                run bootenv_cmd; \\\n" \
+    "                if test -n \"${pauseboot_on}\"; then \\\n" \
+    "                    echo Pausing boot. \\\n" \
+    "                    setenv break 1 \\\n" \
+    "                fi; \\\n" \
+    "            fi; \\\n" \
+    "        fi; \\\n" \
     "    done; \\\n" \
     "    echo No boot images found.  Aborting to prompt...\0" \
 

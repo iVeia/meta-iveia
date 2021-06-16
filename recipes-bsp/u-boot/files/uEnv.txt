@@ -1,7 +1,8 @@
 bootenv_cmd=\
     run set_loader${loadmode}; \
     if run load_fpga load_kernel load_fdt load_fdto load_initrd_else_sdrootfs; then \
-        run defargs set_fdt_chosen boot_kernel; \
+        run defargs set_fdt_chosen; \
+        test -n "${pauseboot_on}" || run boot_kernel; \
     fi
 set_loaderdhcp=setenv loader tftpboot
 set_loadermmc0=setenv loader load mmc 0
