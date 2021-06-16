@@ -5,8 +5,8 @@ bootenv_cmd=\
         test -n "${pauseboot_on}" || run boot_kernel; \
     fi
 set_loaderdhcp=setenv loader tftpboot
-set_loadermmc0=setenv loader load mmc 0
-set_loadermmc1=setenv loader load mmc 1
+set_loadermmc0=setenv loader load mmc 0; setenv sdbootdev 0
+set_loadermmc1=setenv loader load mmc 1; setenv sdbootdev 1
 fpga_file=xilinx.bit
 fpga_addr=0x800000
 set_fdt_file=setenv fdt_file ${machine}.dtb
