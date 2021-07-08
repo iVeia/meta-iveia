@@ -5,7 +5,9 @@ SRC_URI += " \
     file://mtd-fix-xilinx-qspi-mtd-driver-error-call-trace.patch \
     file://rtc.cfg \
     file://hwmon.cfg \
+    file://usb-gadget.cfg \
     "
+
 
 inherit iveia-version-header
 IVEIA_VERSION_HEADER_FILE = "${S}/include/iveia_version.h"
