@@ -528,6 +528,7 @@ elif ((MODE==SD_MODE)); then
             e2label /dev/${PARTS[3]} ${LABEL}ROOTFS || \
                 (warn "ROOTFS label failed, disk label not set."; \
                 warn "Label failure may be due to incompatible e2fsprogs tools.")
+            resize2fs -f /dev/${PARTS[3]}
         fi
     fi
 

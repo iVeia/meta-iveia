@@ -7,7 +7,7 @@ IMAGE_INSTALL += "ivstartup sdmount"
 
 # Add on packages
 IMAGE_INSTALL += "rsync parted coreutils"
-IMAGE_INSTALL += "e2fsprogs-e2fsck e2fsprogs-mke2fs e2fsprogs-tune2fs e2fsprogs-badblocks"
+IMAGE_INSTALL += "e2fsprogs-e2fsck e2fsprogs-mke2fs e2fsprogs-tune2fs e2fsprogs-badblocks e2fsprogs-resize2fs"
 IMAGE_INSTALL += "i2c-tools"
 IMAGE_INSTALL += "strace"
 IMAGE_INSTALL += "lmsensors-sensors"
