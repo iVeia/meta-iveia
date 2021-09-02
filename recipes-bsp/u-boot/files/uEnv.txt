@@ -33,7 +33,9 @@ load_kernel=\
 load_fdt=\
     echo Loading FDT...; \
     run set_fdt_file; \
-    ${loader} ${fdt_addr} ${fdt_file}
+    ${loader} ${fdt_addr} ${fdt_file} \
+    fdt addr ${fdt_addr}; \            
+    fdt resize 0x1000;    
 load_fdto=\
     echo Loading FDT Overlay if exists...; \
     ${loader} ${fdto_addr} ${fdto_file} && fdt addr ${fdt_addr} && fdt apply ${fdto_addr}; \
