@@ -312,43 +312,41 @@ if ((MODE==JTAG_MODE)); then
     info "Extracting Image Archive for JTAG mode..."
     extract_archive_to_TMPDIR
     cp "$CMD" $TMPDIR
-    (
-        cd $TMPDIR
-        if ((ONLY_BOOT)); then
-            echo > empty_file
-            add_header empty_file startup.sh.bin
-            add_header empty_file ivinstall.bin
+    cd $TMPDIR
+    if ((ONLY_BOOT)); then
+        echo > empty_file
+        add_header empty_file startup.sh.bin
+        add_header empty_file ivinstall.bin
+    else
+        BASECMD=$(basename "$CMD")
+        echo "bash /tmp/ivinstall -Z $SAVEARGS" > startup.sh
+        add_header startup.sh startup.sh.bin
+        add_header "$BASECMD" ivinstall.bin
+    fi
+    add_header jtag/uEnv.ivinstall.txt uEnv.ivinstall.txt.bin
+    cp devicetree/$MACHINE.dtb system.dtb
+    JTAG_FILES="startup.sh.bin uEnv.ivinstall.txt.bin ivinstall.bin jtag/ivinstall.tcl"
+    JTAG_FILES+=" elf/* boot/*Image rootfs/initrd system.dtb"
+    if [ -n "$JTAG_REMOTE" ]; then
+        scp ${SSH_OPTS} $JTAG_FILES $JTAG_REMOTE: || error "scp to JTAG_REMOTE failed"
+        # On Windows, if the ivinstall.tcl script is run via ssh and
+        # immediately exits, the JTAG connection becomes hung (process is
+        # halted).  As a workaround, we test for Linux/Windows, and run a short
+        # sleep after running the script.  The sleep must be run AFTER xsdb
+        # exits, but before ssh exits.
+        if ssh ${SSH_OPTS} $JTAG_REMOTE uname &> /dev/null; then
+            # This is Unix - NOTE UNTESTED
+            ssh ${SSH_OPTS} $JTAG_REMOTE xsdb ivinstall.tcl
         else
-            BASECMD=$(basename "$CMD")
-            echo "bash /tmp/ivinstall -Z $SAVEARGS" > startup.sh
-            add_header startup.sh startup.sh.bin
-            add_header "$BASECMD" ivinstall.bin
+            # This is Windows - note '&' in Windows is equiv to ';' in Unix
+            ssh ${SSH_OPTS} $JTAG_REMOTE 'xsdb ivinstall.tcl & xsdb -eval "after 1000"'
         fi
-        add_header jtag/uEnv.ivinstall.txt uEnv.ivinstall.txt.bin
-        cp devicetree/$MACHINE.dtb system.dtb
-        JTAG_FILES="startup.sh.bin uEnv.ivinstall.txt.bin ivinstall.bin jtag/ivinstall.tcl"
-        JTAG_FILES+=" elf/* boot/*Image rootfs/initrd system.dtb"
-        if [ -n "$JTAG_REMOTE" ]; then
-            scp ${SSH_OPTS} $JTAG_FILES $JTAG_REMOTE: || error "scp to JTAG_REMOTE failed"
-            # On Windows, if the ivinstall.tcl script is run via ssh and
-            # immediately exits, the JTAG connection becomes hung (process is
-            # halted).  As a workaround, we test for Linux/Windows, and run a short
-            # sleep after running the script.  The sleep must be run AFTER xsdb
-            # exits, but before ssh exits.
-            if ssh ${SSH_OPTS} $JTAG_REMOTE uname &> /dev/null; then
-                # This is Unix - NOTE UNTESTED
-                ssh ${SSH_OPTS} $JTAG_REMOTE xsdb ivinstall.tcl
-            else
-                # This is Windows - note '&' in Windows is equiv to ';' in Unix
-                ssh ${SSH_OPTS} $JTAG_REMOTE 'xsdb ivinstall.tcl & xsdb -eval "after 1000"'
-            fi
-        else
-            mkdir staging
-            cp $JTAG_FILES staging/
-            cd staging
-            xsdb ivinstall.tcl
-        fi
-    )
+    else
+        mkdir staging
+        cp $JTAG_FILES staging/
+        cd staging
+        xsdb ivinstall.tcl
+    fi
 
 elif ((MODE==SSH_MODE)); then
     verify ssh scp
