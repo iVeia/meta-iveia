@@ -6,8 +6,7 @@ SRC_URI_append += "\
     "
 
 do_install_append () {
-   install -d ${D}/media/sd0
-   install -d ${D}/media/sd1
+   install -d ${D}/media
 	install -Dm 0755 ${WORKDIR}/ams.hwmon ${D}/etc/sensors.d/ams.hwmon
 	install -Dm 0755 ${WORKDIR}/atlas-ii.hwmon ${D}/etc/sensors.d/atlas-ii.hwmon
 }
