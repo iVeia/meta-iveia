@@ -470,7 +470,7 @@ elif ((MODE==SD_MODE)); then
         info "Formatting partition 3 as ext4"
         mkfs.ext4 -q -F -L "${LABEL}ROOTFS" /dev/${PARTS[3]}   || error "failed to format partition 3"
         info "Formatting partition 4 as ext4"
-        mkfs.ext4 -q -F -L "${LABEL}SDHOME" /dev/${PARTS[4]} || error "failed to format partition 4"
+        mkfs.ext4 -q -F -L "${LABEL}DATA" /dev/${PARTS[4]} || error "failed to format partition 4"
     fi
 
     if ((DO_COPY || DO_QSPI)); then

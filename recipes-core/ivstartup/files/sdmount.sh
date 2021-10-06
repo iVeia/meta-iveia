@@ -22,3 +22,9 @@ if [ -e ${DT_MMC} -a "$BOOTDEV" = sdboot ]; then
     SDBOOTDEV=$(tr -d '\0' <${DT_MMC})
 fi
 ln -sf /media/sd${SDBOOTDEV} /media/sd
+
+if [ -b "/dev/mmcblk${SDBOOTDEV}p4" ]; then
+    mkdir /media/data
+    mount /dev/mmcblk${SDBOOTDEV}p4 /media/data
+fi
+
