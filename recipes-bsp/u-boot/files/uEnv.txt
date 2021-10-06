@@ -34,11 +34,10 @@ load_fdt=\
     echo Loading FDT...; \
     run set_fdt_file; \
     ${loader} ${fdt_addr} ${fdt_file} \
-    fdt addr ${fdt_addr}; \            
-    fdt resize 0x1000;    
+    fdt addr ${fdt_addr};            
 load_fdto=\
     echo Loading FDT Overlay if exists...; \
-    ${loader} ${fdto_addr} ${fdto_file} && fdt addr ${fdt_addr} && fdt apply ${fdto_addr}; \
+    ${loader} ${fdto_addr} ${fdto_file} && fdt addr ${fdt_addr} && fdt resize 0x1000 && fdt apply ${fdto_addr}; \
     true
 load_initrd_else_sdrootfs=\
     echo Loading initrd if exists...; \
@@ -53,6 +52,7 @@ boot_kernel=\
 defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon ${sdrootfs}
 set_fdt_chosen=\
     fdt addr ${fdt_addr}; \
+    fdt resize 0x1000; \
     fdt set /chosen iv_mb ${iv_mb}; \
     fdt set /chosen iv_mb_ord ${iv_mb_ord}; \
     fdt set /chosen iv_io ${iv_io}; \
