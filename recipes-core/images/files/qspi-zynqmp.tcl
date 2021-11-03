@@ -5,13 +5,21 @@
 #
 connect
 
+# If given, first arg is the jtag_cable_serial wildcard string.  Use to select
+# the specific JTAG adapter.
+if {$argc > 0} {
+    set jtag_cable_serial [lindex $argv 0]
+} else {
+    set jtag_cable_serial {}
+}
+
 # Set jtag freq to a super high number (it will be adjusted to max)
 jtag targets 1
 jtag frequency 10000000000
 
 # Restart in JTAG mode, required as iVeia devices are fixed to QSPI bootstrap
 # See also: ZynqMP BOOT_MODE_USER (CRL_APB) Register
-targets -set -filter {name =~ "PSU"}
+targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "PSU"}
 mwr  0xff5e0200 0x0100
 rst -system
 
@@ -23,13 +31,13 @@ mwr 0xffca0038 0x1ff
 after 500
 
 # Load and run PMU FW
-targets -set -filter {name =~ "MicroBlaze PMU"}
+targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "MicroBlaze PMU"}
 dow elf/pmu.elf
 con
 after 500
 
 # Reset A53, load and run FSBL
-targets -set -filter {name =~ "Cortex-A53 #0"}
+targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "Cortex-A53 #0"}
 rst -processor
 dow elf/fsbl.elf
 con

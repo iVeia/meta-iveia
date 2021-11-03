@@ -3,12 +3,20 @@
 #
 connect
 
+# If given, first arg is the jtag_cable_serial wildcard string.  Use to select
+# the specific JTAG adapter.
+if {$argc > 0} {
+    set jtag_cable_serial [lindex $argv 0]
+} else {
+    set jtag_cable_serial {}
+}
+
 # Set jtag freq to a super high number (it will be adjusted to max)
 jtag targets 1
 jtag frequency 10000000000
 
 # Reset ARM, load and run FSBL
-targets -set -filter {name =~ "ARM Cortex-A9 MPCore #0"}
+targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "ARM Cortex-A9 MPCore #0"}
 rst -system
 dow fsbl.elf
 bpremove -all

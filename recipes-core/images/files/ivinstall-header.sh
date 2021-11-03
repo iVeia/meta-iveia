@@ -197,7 +197,7 @@ fi
 # iVeia U-Boot environ vars understand the above format, and can verify and
 # extract the file.
 #
-# Note: Zynq targets are little endian.  However, U-Boot crc32 function 
+# Note: Zynq targets are little endian.  However, U-Boot crc32 function
 # generates crc in big-endian format, even on little-endian machines.
 #
 # Usage:
@@ -328,18 +328,38 @@ if ((MODE==JTAG_MODE)); then
     JTAG_FILES="startup.sh.bin uEnv.ivinstall.txt.bin ivinstall.bin jtag/ivinstall.tcl"
     JTAG_FILES+=" elf/* boot/*Image rootfs/initrd system.dtb"
     if [ -n "$JTAG_REMOTE" ]; then
-        scp ${SSH_OPTS} $JTAG_FILES $JTAG_REMOTE: || error "scp to JTAG_REMOTE failed"
+        if ssh ${SSH_OPTS} $JTAG_IPADDR uname &> /dev/null; then
+            IS_UNIX=1
+        fi
+
+        # Split JTAG_REMOTE into IPADDR (before first colon) and the JTAG ID
+        # specifier (the rest).  If no colon, it's IPADDR only.
+        if [[ "$JTAG_REMOTE" =~ : ]]; then
+            JTAG_IPADDR="${JTAG_REMOTE%%:*}"
+            JTAG_ID="${JTAG_REMOTE#*:}"
+        else
+            JTAG_IPADDR="${JTAG_REMOTE}"
+            JTAG_ID=
+        fi
+
+        if ((IS_UNIX)); then
+            ssh ${SSH_OPTS} $JTAG_IPADDR rm -rf iv_staging
+        else
+            ssh ${SSH_OPTS} $JTAG_IPADDR rmdir /q /s iv_staging
+        fi
+        ssh ${SSH_OPTS} $JTAG_IPADDR mkdir iv_staging || error "Cannot create iv_staging"
+        scp ${SSH_OPTS} $JTAG_FILES $JTAG_IPADDR:iv_staging || error "scp to JTAG_REMOTE failed"
         # On Windows, if the ivinstall.tcl script is run via ssh and
         # immediately exits, the JTAG connection becomes hung (process is
         # halted).  As a workaround, we test for Linux/Windows, and run a short
         # sleep after running the script.  The sleep must be run AFTER xsdb
         # exits, but before ssh exits.
-        if ssh ${SSH_OPTS} $JTAG_REMOTE uname &> /dev/null; then
+        if ((IS_UNIX)); then
             # This is Unix - NOTE UNTESTED
-            ssh ${SSH_OPTS} $JTAG_REMOTE xsdb ivinstall.tcl
+            ssh ${SSH_OPTS} $JTAG_IPADDR "cd iv_staging; xsdb ivinstall.tcl $JTAG_ID"
         else
             # This is Windows - note '&' in Windows is equiv to ';' in Unix
-            ssh ${SSH_OPTS} $JTAG_REMOTE 'xsdb ivinstall.tcl & xsdb -eval "after 1000"'
+            ssh ${SSH_OPTS} $JTAG_IPADDR "cd iv_staging & xsdb ivinstall.tcl $JTAG_ID & xsdb -eval \"after 1000\""
         fi
     else
         mkdir staging
