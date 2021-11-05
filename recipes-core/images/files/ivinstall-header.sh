@@ -128,7 +128,7 @@ IS_TARGET=$((IS_ZYNQMP_TARGET || IS_ZYNQ_TARGET))
 # Validate arguments
 #
 [[ -z "$@" ]] || error "Extra invalid options were supplied"
-(($OPTIND <= 1)) && { echo "$USAGE"; exit 0; }
+(($OPTIND <= 1)) && help
 [[ -n "$MACHINE" ]] || error "INTERNAL ERROR: mainboard not available"
 if [[ -n "$IOBOARD" ]]; then
     grep -q "\<$IOBOARD\>" <<<"$IOBOARDS" || error 'invalid ioboard "'$IOBOARD'"'
@@ -291,19 +291,31 @@ fi
 #       - chosen/startup loads/validates ivinstall
 #       - run startup, which ivinstalls with user's args
 #
-# Rough mem layout (in MBs):
-#   0       0x00000000  Mem bottom
-#   5       0x00500000  JTAG magic flag (zynq only)
-#   6       0x00600000  uEnv.txt (with pre-header)
-#   7       0x00700000  DTB
-#   8       0x00800000  Kernel
-#   128     0x08000000  initrd
-#   <383    0x17f00000  Relocated initrd by U-Boot using fdt_high
-#   <384    0x18000000  Relocated DTB by U-Boot using initrd_high
-#   384     0x18000000  startup.sh (with header)
-#   385     0x18100000  ivinstall script (with header)
+# Rough mem layout for Zynq vs ZynqMP:
+#   Zynq                    ZynqMP
+#   MB      ADDR            MB      ADDR
+#   0       0x00000000      "       "           Mem bottom
+#   5       0x00500000      "       "           JTAG magic flag (zynq only)
+#   6       0x00600000      "       "           uEnv.txt (with pre-header)
+#   7       0x00700000      "       "           DTB
+#   8       0x00800000      "       "           Kernel
+#   64      0x04000000      128     0x08000000  U-Boot
+#   128     0x80000000      256     0x10000000  initrd
+#   <383    0x17f00000      NA      NA          Relocated initrd by U-Boot using fdt_high
+#   <384    0x18000000      NA      NA          Relocated DTB by U-Boot using initrd_high
+#   384     0x18000000      512     0x20000000  Top of mem allocated to Linux (via mem=xxx)
+#   384     0x18000000      512     0x20000000  startup.sh (with header)
+#   385     0x18100000      513     0x20100000  ivinstall script (with header)
 #   ...
-#   >=512   Mem top (at least 512MB, up to 4GB on some boards).
+#   >=512   0x40000000      >=1024  0x80000000  Mem top (up to 4GB on some boards)
+#
+# On Zynq, our minimum memory is 512M, so layout is tighter and required
+# relocation fdt/initrd.  This decreases the max initrd size available.
+#
+# Xilinx changed the default U-Boot location from 64M to 128MB when going from
+# Zynq to ZynqMP, and we use that default.  If not for that change, we'd be
+# able to use the same layout for both.
+#
 # The items with the pre-header above are shifted down by the header amount.
 # See add_header().  Also, see the tcl scripts and uEnv.txt for the exact
 # values used.

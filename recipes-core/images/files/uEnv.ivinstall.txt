@@ -4,12 +4,13 @@
 # Memory layout is critical, amd must match addresses from the ivinstall
 # script.
 #
-# The ivinstall image is stored above the memory used by Linux (via mem=xxx).
-# But unfortunately on arm, U-Boot by default assumes that it can relocate the
-# initrd/fdt to high memory.  This conflicts with Linux, which expects the
-# initrd/fdt addresses to be within it's addressable memory.  Therefore, the
-# initrd_high/fdt_high parameters are used to relocate those images to an
-# allowable area.  This must be within the Linux memory set with kernel_mem_mb.
+# FOR ZYNQ ONLY: The ivinstall image is stored above the memory used by Linux
+# (via mem=xxx).  But unfortunately on arm, U-Boot by default assumes that it
+# can relocate the initrd/fdt to high memory.  This conflicts with Linux, which
+# expects the initrd/fdt addresses to be within it's addressable memory.
+# Therefore, the initrd_high/fdt_high parameters are used to relocate those
+# images to an allowable area.  This must be within the Linux memory set with
+# kernel_mem_mb.
 #
 # set_fdt_chosen configures a script that is run at boot to pull the ivinstall
 # image out of memory and run it.  It uses a function to extract() the images
@@ -18,21 +19,29 @@
 #
 fdt_addr=0x700000
 kernel_addr=0x800000
-initrd_addr=0x8000000
-initrd_high=0x17f00000
-fdt_high=0x18000000
-kernel_mem_mb=384
-startup_script_addr=0x18000000
-initrd_script_addr=0x18100000
-bootenv_cmd=run defargs set_fdt_chosen boot_kernel
+bootenv_cmd=run defargs board_config set_fdt_chosen boot_kernel
 defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon mem=${kernel_mem_mb}M
-boot_kernel=\
-    echo Booting kernel...; \
+board_config=\
     if test ${board} = zynq; then \
+        echo Booting on Zynq; \
         setenv kernel_bootcmd bootm; \
+        setenv initrd_addr 0x8000000; \
+        setenv initrd_high 0x17f00000; \
+        setenv fdt_high 0x18000000; \
+        setenv kernel_mem_mb 384; \
+        setenv startup_script_addr 0x18000000; \
+        setenv initrd_script_addr 0x18100000; \
     else \
+        echo Booting on ZynqMP; \
+        setenv kernel_bootcmd bootm; \
+        setenv initrd_addr 0x10000000; \
+        setenv kernel_mem_mb 512; \
+        setenv startup_script_addr 0x20000000; \
+        setenv initrd_script_addr 0x20100000; \
         setenv kernel_bootcmd booti; \
     fi; \
+boot_kernel=\
+    echo Booting kernel...; \
     ${kernel_bootcmd} ${kernel_addr} ${initrd_addr} ${fdt_addr}
 set_fdt_chosen=\
     fdt addr ${fdt_addr}; \
