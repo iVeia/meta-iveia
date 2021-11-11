@@ -19,7 +19,7 @@
 #
 fdt_addr=0x700000
 kernel_addr=0x800000
-bootenv_cmd=run defargs board_config set_fdt_chosen boot_kernel
+bootenv_cmd=run board_config defargs set_fdt_chosen boot_kernel
 defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon mem=${kernel_mem_mb}M
 board_config=\
     if test ${board} = zynq; then \
@@ -39,7 +39,7 @@ board_config=\
         setenv startup_script_addr 0x20000000; \
         setenv initrd_script_addr 0x20100000; \
         setenv kernel_bootcmd booti; \
-    fi; \
+    fi
 boot_kernel=\
     echo Booting kernel...; \
     ${kernel_bootcmd} ${kernel_addr} ${initrd_addr} ${fdt_addr}
