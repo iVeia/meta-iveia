@@ -361,17 +361,31 @@ if ((MODE==JTAG_MODE)); then
         fi
         ssh ${SSH_OPTS} $JTAG_IPADDR mkdir iv_staging || error "Cannot create iv_staging"
         scp ${SSH_OPTS} $JTAG_FILES $JTAG_IPADDR:iv_staging || error "scp to JTAG_REMOTE failed"
-        # On Windows, if the ivinstall.tcl script is run via ssh and
-        # immediately exits, the JTAG connection becomes hung (process is
-        # halted).  As a workaround, we test for Linux/Windows, and run a short
-        # sleep after running the script.  The sleep must be run AFTER xsdb
-        # exits, but before ssh exits.
         if ((IS_UNIX)); then
             # This is Unix - NOTE UNTESTED
-            ssh ${SSH_OPTS} $JTAG_IPADDR "cd iv_staging; xsdb ivinstall.tcl $JTAG_ID"
+            ssh ${SSH_OPTS} ${JTAG_IPADDR} "cd iv_staging; xsdb ivinstall.tcl $JTAG_ID" \
+                || error "xsdb TCL/JTAG failure"
         else
-            # This is Windows - note '&' in Windows is equiv to ';' in Unix
-            ssh ${SSH_OPTS} $JTAG_IPADDR "cd iv_staging & xsdb ivinstall.tcl $JTAG_ID & xsdb -eval \"after 1000\""
+            # On Windows, if the ivinstall.tcl script is run via ssh and
+            # immediately exits, the JTAG connection becomes hung (process is
+            # halted).  As a workaround, we run a short sleep after running the
+            # script.  The sleep must be run AFTER xsdb exits, but before ssh
+            # exits.
+            #
+            # In addition, "call" must be used for xsdb to run in a batch file
+            # without exiting right after it runs.
+            #
+            # This MUST be run as a batch file, as opposed to one liner, because
+            # %errorlevel% substituion occurs before the command is run.
+            cat <<-EOF >winxsdb.bat
+				cd iv_staging
+				call xsdb ivinstall.tcl $JTAG_ID
+				set err=%errorlevel%
+				call xsdb -eval "after 1000"
+				exit %err%
+			EOF
+            scp ${SSH_OPTS} winxsdb.bat ${JTAG_IPADDR}: || error "scp to JTAG_REMOTE failed"
+            ssh ${SSH_OPTS} ${JTAG_IPADDR} winxsdb.bat || error "xsdb TCL/JTAG failure"
         fi
     else
         mkdir staging
