@@ -321,24 +321,6 @@ fi
 # values used.
 #
 if ((MODE==JTAG_MODE)); then
-    info "Extracting Image Archive for JTAG mode..."
-    extract_archive_to_TMPDIR
-    cp "$CMD" $TMPDIR
-    cd $TMPDIR
-    if ((ONLY_BOOT)); then
-        echo > empty_file
-        add_header empty_file startup.sh.bin
-        add_header empty_file ivinstall.bin
-    else
-        BASECMD=$(basename "$CMD")
-        echo "bash /tmp/ivinstall -Z $SAVEARGS" > startup.sh
-        add_header startup.sh startup.sh.bin
-        add_header "$BASECMD" ivinstall.bin
-    fi
-    add_header jtag/uEnv.ivinstall.txt uEnv.ivinstall.txt.bin
-    cp devicetree/$MACHINE.dtb system.dtb
-    JTAG_FILES="startup.sh.bin uEnv.ivinstall.txt.bin ivinstall.bin jtag/ivinstall.tcl"
-    JTAG_FILES+=" elf/* boot/*Image rootfs/initrd system.dtb"
     if [ -n "$JTAG_REMOTE" ]; then
         if ssh ${SSH_OPTS} $JTAG_IPADDR uname &> /dev/null; then
             IS_UNIX=1
@@ -360,6 +342,60 @@ if ((MODE==JTAG_MODE)); then
             ssh ${SSH_OPTS} $JTAG_IPADDR rmdir /q /s iv_staging
         fi
         ssh ${SSH_OPTS} $JTAG_IPADDR mkdir iv_staging || error "Cannot create iv_staging"
+
+        #
+        # WORKAROUND: Often, when trying to install on a target that has just
+        # been powercycled, JTAG loads can fail.  The issue appears related to
+        # letting the target run fully into Linux (but this is not always
+        # true).  Because the extract_archive_to_TMPDIR function takes a while
+        # to run, the actual load doesn't happen until far along into the boot.
+        # The fix is to run a script right NOW that halts the processor, before
+        # Linux has a chance to boot.
+        info "Attempting to halt target..."
+        HALT_TMP=$(mktemp)
+        cat <<-'EOF' > ${HALT_TMP}
+			connect
+			if {$argc > 0} {
+				set jtag_cable_serial [lindex $argv 0]
+			} else {
+				set jtag_cable_serial {}
+			}
+			targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "PSU"}
+			stop
+			EOF
+        scp ${SSH_OPTS} ${HALT_TMP} ${JTAG_IPADDR}:iv_staging/halt.tcl \
+            || error "scp halt.tcl to JTAG_REMOTE failed"
+        if ((IS_UNIX)); then
+            # This is Unix - NOTE UNTESTED
+            ssh ${SSH_OPTS} ${JTAG_IPADDR} \
+                "xsdb iv_staging/halt.tcl $JTAG_ID" \
+                || error "xsdb halt.tcl TCL/JTAG failure"
+        else
+            ssh ${SSH_OPTS} ${JTAG_IPADDR} \
+                "xsdb iv_staging/halt.tcl $JTAG_ID & xsdb -eval \"after 1000\"" \
+                || error "xsdb halt.tcl TCL/JTAG failure"
+        fi
+    fi
+
+    info "Extracting Image Archive for JTAG mode..."
+    extract_archive_to_TMPDIR
+    cp "$CMD" $TMPDIR
+    cd $TMPDIR
+    if ((ONLY_BOOT)); then
+        echo > empty_file
+        add_header empty_file startup.sh.bin
+        add_header empty_file ivinstall.bin
+    else
+        BASECMD=$(basename "$CMD")
+        echo "bash /tmp/ivinstall -Z $SAVEARGS" > startup.sh
+        add_header startup.sh startup.sh.bin
+        add_header "$BASECMD" ivinstall.bin
+    fi
+    add_header jtag/uEnv.ivinstall.txt uEnv.ivinstall.txt.bin
+    cp devicetree/$MACHINE.dtb system.dtb
+    JTAG_FILES="startup.sh.bin uEnv.ivinstall.txt.bin ivinstall.bin jtag/ivinstall.tcl"
+    JTAG_FILES+=" elf/* boot/*Image rootfs/initrd system.dtb"
+    if [ -n "$JTAG_REMOTE" ]; then
         scp ${SSH_OPTS} $JTAG_FILES $JTAG_IPADDR:iv_staging || error "scp to JTAG_REMOTE failed"
         if ((IS_UNIX)); then
             # This is Unix - NOTE UNTESTED
