@@ -21,7 +21,7 @@ the tag followed by an iVeia version number, e.g. `2019.2-1.0`.
 
 The first time download and build steps are as shown below.  For convenience, a
 download script is avaiable to simplify the process - see
-[README.md](README.md).
+[README](README.md).
 ```
 IVEIA_TAG=<CHOOSE THE LATEST TAGGED VERSION, I.E. 2019.2-M.N>
 repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-v2019.2          # Xilinx step

@@ -45,8 +45,10 @@ meta-iveia/download
 Note: the **download** script will move the meta-iveia layer directory into the
 sources directory, which is where Xilinx stores layer directories.
 
-Once downloaded, to build a single installable image:
+The source hierarchy will be moved into a directory named
+**meta-iveia-project**.  To build a single installable image:
 ```
+cd meta-iveia-project
 source setupsdk
 MACHINE=<CHOOSE FROM SUPPORTED MACHINES ABOVE> bitbake ivinstall
 ```
@@ -62,7 +64,7 @@ To install the complete set of binaries (bootloaders, Linux OS, Rootfs, etc)
 use the installer image (ivinstall-${MACHINE}) created above.  For more
 information, see the [INSTALL](INSTALL.md) doc.
 
-To install to an SD card mounted on a host machine, run:
+To install to an SD card mounted on a Linux host machine, run:
 ```
 ./ivinstall-${MACHINE} -fc /dev/sdX
 ```
@@ -75,8 +77,8 @@ When installation finishes, safely eject your SD card.
 
 ## Boot
 
-Insert the SD card into the iVeia IO board, and boot the device.  The serial console should
-display something similar to:
+Insert the SD card into the iVeia IO board, and boot the device.  The serial
+console should display something similar to:
 
 ```
 Xilinx Zynq MP First Stage Boot Loader
@@ -146,10 +148,6 @@ Other information can be found in the docs in this repo, e.g.:
 
 Please submit any patches against the meta-iveia layer to the maintainers:
 
-> Brian Silverman <bsilverman@iveia.com>
-> Rick Rogers <rrogers@iveia.com>
-
-
-
-
+* Brian Silverman <bsilverman@iveia.com>
+* Rick Rogers <rrogers@iveia.com>
 

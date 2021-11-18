@@ -1,16 +1,25 @@
+#!/bin/bash
+#
+# Download and setup Xilinx sources as per instruction from Xilinx and the
+# README in this repo.
+#
+
+error() {
+    echo "ERROR: $1"
+    exit 1
+}
+
 CMD=$(readlink -f "$0")
 LAYER_DIR=$(dirname "$CMD")
-if [ "$LAYER_DIR" = "$PWD" ]; then
-    echo "ERROR: Cannot run from within the meta-iveia layer directory"
-    exit 1
-fi
-if [ $(basename "$LAYER_DIR") != meta-iveia ]; then
-    echo "ERROR: layer dir must be named meta-iveia"
-    exit 1
-fi
+PROJECT_DIR=meta-iveia-project
 
-repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-v2019.2
-repo sync
-mv "$LAYER_DIR" sources
-source setupsdk
-bitbake-layers add-layer ../sources/meta-iveia
+[ "$LAYER_DIR" != "$PWD" ] || error "Cannot run from within the meta-iveia layer directory"
+[ $(basename "$LAYER_DIR") = meta-iveia ] || error "layer dir must be named meta-iveia"
+mkdir "$PROJECT_DIR" || error "\"$PROJECT_DIR\" must not already exist"
+
+cd "$PROJECT_DIR" || error "cd failed"
+repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-v2019.2 || error "repo init failed"
+repo sync || error "repo sync failed"
+mv "$LAYER_DIR" sources || error "mv failed"
+source setupsdk || error "source setupsdk failed"
+bitbake-layers add-layer ../sources/meta-iveia || error "bitbake-layers failed"
