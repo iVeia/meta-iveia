@@ -15,6 +15,31 @@
     clock-frequency = <50000000>;
 };
 
+/*
+ * Because input clock pss_ref_clk changed from default (from 33.33MHZ to
+ * 50MHz), scaling frequencies must be correctly adjusted.  As per TRM,
+ * frequencies are based off an integer divisor of PLL clock (APLL in this
+ * case), which is set to 1200MHz for speed -1 devices (APLL was 1199MHz
+ * when using 33.33MHz)
+ */
+&cpu_opp_table {
+    opp00 {
+        opp-hz = /bits/ 64 <1200000000>;
+    };
+
+    opp01 {
+        opp-hz = /bits/ 64 <600000000>;
+    };
+
+    opp02 {
+        opp-hz = /bits/ 64 <400000000>;
+    };
+
+    opp03 {
+        opp-hz = /bits/ 64 <300000000>;
+    };
+};
+
 &qspi {
     status = "okay";
     is-dual = <0>;
@@ -46,45 +71,45 @@
 };
 
 &pinctrl0 {
-	status = "okay";
-	pinctrl_usb0_default: usb0-default {
-		mux {
-			groups = "usb0_0_grp";
-			function = "usb0";
-		};
+    status = "okay";
+    pinctrl_usb0_default: usb0-default {
+        mux {
+            groups = "usb0_0_grp";
+            function = "usb0";
+        };
 
-		conf {
-			groups = "usb0_0_grp";
-			slew-rate = <SLEW_RATE_SLOW>;
-			io-standard = <IO_STANDARD_LVCMOS18>;
-		};
+        conf {
+            groups = "usb0_0_grp";
+            slew-rate = <SLEW_RATE_SLOW>;
+            io-standard = <IO_STANDARD_LVCMOS18>;
+        };
 
-		conf-rx {
-			pins = "MIO52", "MIO53", "MIO55";
-			bias-high-impedance;
-		};
+        conf-rx {
+            pins = "MIO52", "MIO53", "MIO55";
+            bias-high-impedance;
+        };
 
-		conf-tx {
-			pins = "MIO54", "MIO56", "MIO57", "MIO58", "MIO59",
-			       "MIO60", "MIO61", "MIO62", "MIO63";
-			bias-disable;
-		};
-	};
+        conf-tx {
+            pins = "MIO54", "MIO56", "MIO57", "MIO58", "MIO59",
+                   "MIO60", "MIO61", "MIO62", "MIO63";
+            bias-disable;
+        };
+    };
 };
 
 &usb0 {
-	status = "okay";
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_usb0_default>;
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&pinctrl_usb0_default>;
 };
 
 &dwc3_0 {
-	status = "okay";
-	dr_mode = "host";
-	snps,usb3_lpm_capable;
-	phy-names = "usb3-phy";
-	phys = <&lane0 PHY_TYPE_USB3 0 2 26000000>;
-	maximum-speed = "super-speed";
+    status = "okay";
+    dr_mode = "host";
+    snps,usb3_lpm_capable;
+    phy-names = "usb3-phy";
+    phys = <&lane0 PHY_TYPE_USB3 0 2 26000000>;
+    maximum-speed = "super-speed";
 };
 
 &i2c1 {
