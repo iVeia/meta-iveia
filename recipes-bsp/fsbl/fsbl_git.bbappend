@@ -35,6 +35,7 @@ FSBL_SRCS_zynqmp := "\
     "
 FSBL_SRCS_append_atlas-iii-z8e := " ${THISDIR}/files/${MACHINE}.c"
 FSBL_SRCS_append_atlas-iii-z8 := " ${THISDIR}/files/${MACHINE}.c"
+FSBL_SRCS_append_atlas-iii-z8-var04 := " ${THISDIR}/files/atlas-iii-z8.c"
 FSBL_SRCS_append_atlas-ii-z8ev := " ${THISDIR}/files/${MACHINE}.c"
 FSBL_SRCS_append_atlas-i-z8 := " ${THISDIR}/files/${MACHINE}.c"
 
