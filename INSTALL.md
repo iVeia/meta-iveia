@@ -63,12 +63,23 @@ recommended.
 
 ## Programming Flash
 
-The ivinstall script can be used to program the QSPI flash on the SoM.
-However, the Xilinx `program_flash` utility can be used to directly program the
-flash via JTAG, and does not require a bootable target.
+Programming the QSPI flash on the SoM over JTAG requires a Xilinx compatible
+JTAG cable and the Xilinx tools (full Vivado, or the trimmed down Lab Edition).
+There are two ways to program the flash and they do not require a bootable
+target.
 
-To use Xilinx's `program_flash` utility run:
+In the commands below, the **MACHINE** should reflect the target in use (see the
+[README](README.md)).
 
+
+Using the ivinstall script, you can run:
+```
+./ivinstall-${MACHINE} -Q
+```
+The above requires the Xilinx utility **xsdb** is runnable from the user's PATH.
+
+Alternatively, the Xilinx `program_flash` utility can be used.  It uses the
+images created by the [BUILD](BUILD.md) process.
 ```
 program_flash -f $FSBL_BIN -offset 0 -flash_type qspi_single -fsbl $FSBL_ELF -cable type xilinx_tcf url TCP:127.0.0.1:3121
 ```
