@@ -1,4 +1,12 @@
-USAGE: ivinstall [MODE-OPTION] [OPTIONS] DEVICE
+USAGE:
+    ivinstall [-z] [FORMAT OPTIONS] DEVICE
+    ivinstall -s SSH_TARGET [FORMAT OPTIONS] DEVICE
+    ivinstall -j [-J JTAG_REMOTE] [FORMAT OPTIONS] DEVICE
+    ivinstall -oj [-J JTAG_REMOTE]
+    ivinstall -Q
+    ivinstall -v
+    ivinstall -x
+    ivinstall -h
 
 DESCRIPTION
 
@@ -8,11 +16,11 @@ DESCRIPTION
     of the required boot images are baked into this script, and therefore it
     can be shared and/or transferred to other users/machines.
 
-    Images are installed onto DEVICE, which is a top-level block device.  The
-    DEVICE refers to the actual block device name, so this will vary on the
-    host.  On the target, as a convenience an alias can be used for the DEVICE:
-        - /dev/mmcblk0 or sd0 generally refers to the io-board SD card.
-        - /dev/mmcblk1 or sd1 generally refers to the SoM eMMC/SD.
+    Images are installed onto the given block DEVICE.  The DEVICE refers to the
+    actual block device name, so this will vary on the host.  As a convenience
+    on the target, the following aliases can be used for the DEVICE:
+        - sd0: alias for /dev/mmcblk0 (usually refers to the io-board SD card)
+        - sd1: alias for /dev/mmcblk1 (usually refers to the SoM eMMC/SD)
     On SoMs that do not support an external SD card slot, both /dev/mmcblk0 and
     sd0 refer to the SoM eMMC/SD.  See MODE OPTIONS for more details.
 
@@ -30,8 +38,8 @@ DESCRIPTION
         - As an initramfs (historically named initrd (init ramdisk)) it can be
           stored as a single file named "initrd" along with the other boot
           files.  In this case, the rootfs is loaded into memory, and runtime
-          changes to the rootfs are not stored on disk.  On boot, initrd
-          supercedes ext4, i.e.  if initrd exists, it will be used.
+          changes to the rootfs are not stored on disk.  On boot, if an initrd
+          is found, it will be used.
         - As an ext3 formatted partition on the SD or eMMC.  In this case,
           runtime rootfs changes are saved to disk.  However, the rootfs cannot
           be fully replaced with an updated rootfs at runtime.  To update the
@@ -88,13 +96,12 @@ MODE OPTIONS
         Install via JTAG to SD card on target.  Requires installed Vivado
         command line tool xsdb.  This is by far the slowest method, however it
         requires no user intervention, and can completely reformat a target
-        even if it is bricked or the network is not available.  JTAG mode does
-        not use DEVICE.
+        even if it is bricked or the network is not available.
 
         Can only be run on a host.  The DEVICE refers to the device name on the
         target (see DESCRIPTION).
 
-FILES/FORMAT OPTIONS
+FORMAT OPTIONS
 
     These options modify the formatting of the DEVICE and the files to be
     installed.  The DEVICE will only be formatted if -f is specified (or an
@@ -138,9 +145,6 @@ FILES/FORMAT OPTIONS
         format/copy options.
 
 OTHER OPTIONS
-
-    -e ENDMSG
-        Echo ENDMSG at end of running script.
 
     -h
         Show this help message and exit.
@@ -186,6 +190,10 @@ OTHER OPTIONS
     -x
         Extract only.  Extract contents of this installer to temp directory
         and then exit.
+
+LIMITATIONS
+
+    On macos, the formatting options (i.e. [-fbBn]) are not available.
 
 SUPPORTED BOARDS
 
