@@ -15,6 +15,8 @@ IMAGE_INSTALL += "lmsensors-libsensors"
 IMAGE_INSTALL += "util-linux"
 IMAGE_INSTALL += "bc"
 IMAGE_INSTALL += "stress-ng"
+IMAGE_INSTALL += "iperf2 iperf3"
+IMAGE_INSTALL += "memtester"
 
 # Use openssh, not dropbear
 IMAGE_FEATURES += "ssh-server-openssh"
