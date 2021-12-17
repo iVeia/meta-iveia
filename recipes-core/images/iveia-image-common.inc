@@ -14,6 +14,11 @@ IMAGE_INSTALL += "lmsensors-sensors"
 IMAGE_INSTALL += "lmsensors-libsensors"
 IMAGE_INSTALL += "util-linux"
 IMAGE_INSTALL += "bc"
+IMAGE_INSTALL += "stress-ng"
+
+# Use openssh, not dropbear
+IMAGE_FEATURES += "ssh-server-openssh"
+IMAGE_INSTALL += "packagegroup-core-ssh-openssh"
 
 IMAGE_INSTALL += "opkg"
 IMAGE_REMOVE += "rpm"
