@@ -1,12 +1,12 @@
 #include <machine/atlas-iii-z8.dtsi>
 
 / {
-    model = "Atlas-III Z8 Var 04";
-    compatible = "iveia,atlas-iii-z8-var04", "iveia,atlas-iii-z8", "iveia,atlas-z8", "xlnx,zynqmp";
+    model = "Atlas-III Z8 Var 10";
+    compatible = "iveia,atlas-iii-z8-var10", "iveia,atlas-iii-z8", "iveia,atlas-z8", "xlnx,zynqmp";
 };
 
 /*
- * See atlas-iii-z8.dtsi - for Var 04, this is a speed -2 device, with APLL set
+ * See atlas-iii-z8.dtsi - for Var 10, this is a speed -2 device, with APLL set
  * to 1325MHz
  */
 &cpu_opp_table {
