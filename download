@@ -11,15 +11,26 @@ error() {
 
 CMD=$(readlink -f "$0")
 LAYER_DIR=$(dirname "$CMD")
-PROJECT_DIR=meta-iveia-project
+LAYER_NAME=meta-iveia
+PROJECT_DIR="${LAYER_NAME}-project"
 
-[ "$LAYER_DIR" != "$PWD" ] || error "Cannot run from within the meta-iveia layer directory"
-[ $(basename "$LAYER_DIR") = meta-iveia ] || error "layer dir must be named meta-iveia"
+if [ "$1" == DONTMOVELAYER ]; then
+    MOVELAYER=0
+    LAYER_FINAL_DIR=..
+else
+    MOVELAYER=1
+    LAYER_FINAL_DIR=sources
+fi
+# Clear all positional args (REQUIRED for later "source" command)
+shift $#
+
+[ "$LAYER_DIR" != "$PWD" ] || error "Cannot run from within the $LAYER_NAME layer directory"
+[ $(basename "$LAYER_DIR") = "$LAYER_NAME" ] || error "layer dir must be named $LAYER_NAME"
 mkdir "$PROJECT_DIR" || error "\"$PROJECT_DIR\" must not already exist"
 
 cd "$PROJECT_DIR" || error "cd failed"
 repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-v2019.2 || error "repo init failed"
 repo sync || error "repo sync failed"
-mv "$LAYER_DIR" sources || error "mv failed"
+((MOVELAYER)) && (mv "$LAYER_DIR" "$LAYER_FINAL_DIR" || error "mv failed")
 source setupsdk || error "source setupsdk failed"
-bitbake-layers add-layer ../sources/meta-iveia || error "bitbake-layers failed"
+bitbake-layers add-layer "../$LAYER_FINAL_DIR/$LAYER_NAME" || error "bitbake-layers failed"
