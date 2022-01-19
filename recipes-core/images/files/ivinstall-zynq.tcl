@@ -8,7 +8,7 @@ connect
 if {$argc > 0} {
     set jtag_cable_serial [lindex $argv 0]
 } else {
-    set jtag_cable_serial {}
+    set jtag_cable_serial "*"
 }
 
 # Set jtag freq to a super high number (it will be adjusted to max)

@@ -381,7 +381,7 @@ if ((MODE==JTAG_MODE)); then
 			if {$argc > 0} {
 				set jtag_cable_serial [lindex $argv 0]
 			} else {
-				set jtag_cable_serial {}
+				set jtag_cable_serial "*"
 			}
 			targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "PSU"}
 			stop
