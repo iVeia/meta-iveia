@@ -32,14 +32,14 @@ after 500
 
 # Load and run PMU FW
 targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "MicroBlaze PMU"}
-dow elf/pmu.elf
+dow pmu.elf
 con
 after 500
 
 # Reset A53, load and run FSBL
 targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "Cortex-A53 #0"}
 rst -processor
-dow elf/fsbl.elf
+dow fsbl.elf
 con
 
 # Give FSBL time to run
@@ -51,7 +51,7 @@ dow -data uEnv.qspi.txt.bin 0x5ffff4
 dow -data boot.bin.bin 0x6ffff4
 
 # Other SW...
-dow elf/u-boot.elf
-dow elf/atf.elf
+dow u-boot.elf
+dow atf.elf
 con
 

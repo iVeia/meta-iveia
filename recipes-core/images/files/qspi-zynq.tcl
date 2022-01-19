@@ -18,7 +18,7 @@ jtag frequency 10000000000
 # Reset ARM, load and run FSBL
 targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "ARM Cortex-A9 MPCore #0"}
 rst -system
-dow elf/fsbl.elf
+dow fsbl.elf
 bpadd LoadBootImage
 con
 
@@ -33,6 +33,6 @@ dow -data uEnv.qspi.txt.bin 0x5ffff4
 dow -data boot.bin.bin 0x6ffff4
 
 # Other SW...
-dow elf/u-boot.elf
+dow u-boot.elf
 con
 

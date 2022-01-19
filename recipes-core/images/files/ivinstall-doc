@@ -3,7 +3,7 @@ USAGE:
     ivinstall -s SSH_TARGET [FORMAT OPTIONS] DEVICE
     ivinstall -j [-J JTAG_REMOTE] [FORMAT OPTIONS] DEVICE
     ivinstall -oj [-J JTAG_REMOTE]
-    ivinstall -Q
+    ivinstall -Q [-J JTAG_REMOTE]
     ivinstall -v
     ivinstall -x
     ivinstall -h
@@ -153,7 +153,7 @@ OTHER OPTIONS
         Run JTAG commands from a remote host that is connected via JTAG to a
         target.  JTAG_REMOTE is of the same form used by ssh, i.e.
         [user@]ip_address.  JTAG_REMOTE machine can be Linux or Windows.  Only
-        valid in JTAG MODE.
+        valid in JTAG MODE or with -Q option.
 
         If JTAG_REMOTE contains a colon, then it is split into two parts.  The
         first part up the first colon is the ssh form specified above.  The
@@ -178,10 +178,12 @@ OTHER OPTIONS
         be loaded or run.
 
     -Q
-        Reflash the QSPI only, directly from a JTAG connected target and then
+        Reflash the QSPI only, on a directly connected JTAG target and then
         exit.  Xilinx's xsdb must be available for programming via TCL script.
         This method is prefered over Xilinx's program_flash, which can
         sometimes fail on boards that are hardwired to always boot from QSPI.
+        Can be used with JTAG_REMOTE option, to run from a remote host computer
+        that has a directly connected JTAG target.
 
     -v
         Report version from which images were built and md5sums of all images

@@ -217,6 +217,125 @@ add_header()
 }
 
 #
+# Call xsdb from Windows
+#
+# On Windows, if a TCL script is run via ssh and immediately exits,
+# the JTAG connection can become hung (process is halted).  As a
+# workaround, we run a short sleep after running the script.  The
+# sleep must be run AFTER xsdb exits, but before ssh exits.
+#
+# In addition, "call" must be used for xsdb to run in a batch file
+# without exiting right after it runs.
+#
+# This MUST be run as a batch file, as opposed to one liner, because
+# %errorlevel% substituion occurs before the command is run.
+#
+run_tcl_in_windows()
+{
+    BAT_TMP=$(mktemp)
+    TCL="$1"
+    cat <<-EOF >${BAT_TMP}
+		cd iv_staging
+		call xsdb $TCL $JTAG_ID
+		set err=%errorlevel%
+		call xsdb -eval "after 1000"
+		exit %err%
+		EOF
+    scp ${SSH_OPTS} ${BAT_TMP} ${JTAG_IPADDR}:winxsdb.bat || error "scp $TCL to JTAG_REMOTE failed"
+    ssh ${SSH_OPTS} ${JTAG_IPADDR} winxsdb.bat || error "xsdb $TCL TCL/JTAG failure"
+}
+
+#
+# Setup JTAG_REMOTE
+#
+# If JTAG_REMOTE is given, parse option into IP and cable spec.
+#
+setup_jtag_remote()
+{
+    IS_UNIX=0
+    if ssh ${SSH_OPTS} $JTAG_IPADDR uname &> /dev/null; then
+        IS_UNIX=1
+    fi
+
+    # Split JTAG_REMOTE into IPADDR (before first colon) and the JTAG ID
+    # specifier (the rest).  If no colon, it's IPADDR only.
+    if [[ "$JTAG_REMOTE" =~ : ]]; then
+        JTAG_IPADDR="${JTAG_REMOTE%%:*}"
+        JTAG_ID="${JTAG_REMOTE#*:}"
+    else
+        JTAG_IPADDR="${JTAG_REMOTE}"
+        JTAG_ID=
+    fi
+
+    if ((IS_UNIX)); then
+        ssh ${SSH_OPTS} $JTAG_IPADDR rm -rf iv_staging
+    else
+        ssh ${SSH_OPTS} $JTAG_IPADDR rmdir /q /s iv_staging
+    fi
+    ssh ${SSH_OPTS} $JTAG_IPADDR mkdir iv_staging || error "Cannot create iv_staging"
+
+    #
+    # WORKAROUND: Often, when trying to install on a target that has just
+    # been powercycled, JTAG loads can fail.  The issue appears related to
+    # letting the target run fully into Linux (but this is not always
+    # true).  Because the extract_archive_to_TMPDIR function takes a while
+    # to run, the actual load doesn't happen until far along into the boot.
+    # The fix is to run a script right NOW that halts the processor, before
+    # Linux has a chance to boot.
+    info "Attempting to halt target..."
+    HALT_TMP=$(mktemp)
+    cat <<-'EOF' > ${HALT_TMP}
+		connect
+		if {$argc > 0} {
+			set jtag_cable_serial [lindex $argv 0]
+		} else {
+			set jtag_cable_serial "*"
+		}
+		targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "PSU"}
+		stop
+		EOF
+    scp ${SSH_OPTS} ${HALT_TMP} ${JTAG_IPADDR}:iv_staging/halt.tcl \
+        || error "scp halt.tcl to JTAG_REMOTE failed"
+    if ((IS_UNIX)); then
+        # This is Unix - NOTE UNTESTED
+        ssh ${SSH_OPTS} ${JTAG_IPADDR} \
+            "xsdb iv_staging/halt.tcl $JTAG_ID" \
+            || error "xsdb halt.tcl TCL/JTAG failure"
+    else
+        run_tcl_in_windows halt.tcl
+    fi
+}
+
+#
+# Run local or remote JTAG TCL script
+#
+# Usage: run_jtag_tcl <TCL script> <JTAG FILES required by script ... >
+#
+run_jtag_tcl()
+{
+    TCL="$1"
+    shift
+    JTAG_FILES="$*"
+    if [ -n "$JTAG_REMOTE" ]; then
+        scp ${SSH_OPTS} $JTAG_FILES $JTAG_IPADDR:iv_staging || error "scp to JTAG_REMOTE failed"
+        if ((IS_UNIX)); then
+            # This is Unix - NOTE UNTESTED
+            ssh ${SSH_OPTS} ${JTAG_IPADDR} "cd iv_staging; xsdb $TCL $JTAG_ID" \
+                || error "xsdb TCL/JTAG failure"
+        else
+            run_tcl_in_windows $TCL
+        fi
+    else
+        verify xsdb
+        mkdir iv_staging
+        cp $JTAG_FILES iv_staging/
+        cd iv_staging
+        xsdb $TCL || error "Failed running TCL script to program QSPI flash"
+    fi
+}
+
+
+#
 # Direct QSPI programming.  Replaces Xilinx's program_flash:
 #   - Loads uEnv.qspi.txt into RAM for load via JTAG (similar to JTAG_MODE)
 #   - Loads boot.bin to RAM
@@ -228,16 +347,18 @@ add_header()
 # script resets the processor into JTAG mode.
 #
 if ((DO_QSPI_ONLY)); then
-    verify xsdb
+    setup_jtag_remote
+
     info "Extracting archive..."
     extract_archive_to_TMPDIR
-    (
-        cd $TMPDIR
-        add_header jtag/uEnv.qspi.txt uEnv.qspi.txt.bin || exit 1
-        add_header boot/boot.bin boot.bin.bin || exit 1
-        xsdb jtag/qspi.tcl || exit 1
-    ) || error "Failed running TCL script to program QSPI flash"
+    cd $TMPDIR
+    add_header jtag/uEnv.qspi.txt uEnv.qspi.txt.bin
+    add_header boot/boot.bin boot.bin.bin
 
+    JTAG_FILES="jtag/qspi.tcl boot.bin.bin uEnv.qspi.txt.bin elf/*"
+    run_jtag_tcl qspi.tcl $JTAG_FILES
+
+    echo
     info "JTAG load complete, device will now reflash QSPI."
     info "Watch the serial console to confirm reflash completion."
     echo
@@ -320,83 +441,8 @@ fi
 # See add_header().  Also, see the tcl scripts and uEnv.txt for the exact
 # values used.
 #
-run_tcl_in_windows()
-{
-    # On Windows, if a TCL script is run via ssh and immediately exits,
-    # the JTAG connection can become hung (process is halted).  As a
-    # workaround, we run a short sleep after running the script.  The
-    # sleep must be run AFTER xsdb exits, but before ssh exits.
-    #
-    # In addition, "call" must be used for xsdb to run in a batch file
-    # without exiting right after it runs.
-    #
-    # This MUST be run as a batch file, as opposed to one liner, because
-    # %errorlevel% substituion occurs before the command is run.
-    TCL=$1
-    cat <<-EOF >winxsdb.bat
-		cd iv_staging
-		call xsdb $TCL $JTAG_ID
-		set err=%errorlevel%
-		call xsdb -eval "after 1000"
-		exit %err%
-		EOF
-    scp ${SSH_OPTS} winxsdb.bat ${JTAG_IPADDR}: || error "scp $TCL to JTAG_REMOTE failed"
-    ssh ${SSH_OPTS} ${JTAG_IPADDR} winxsdb.bat || error "xsdb $TCL TCL/JTAG failure"
-}
 if ((MODE==JTAG_MODE)); then
-    if [ -n "$JTAG_REMOTE" ]; then
-        if ssh ${SSH_OPTS} $JTAG_IPADDR uname &> /dev/null; then
-            IS_UNIX=1
-        fi
-
-        # Split JTAG_REMOTE into IPADDR (before first colon) and the JTAG ID
-        # specifier (the rest).  If no colon, it's IPADDR only.
-        if [[ "$JTAG_REMOTE" =~ : ]]; then
-            JTAG_IPADDR="${JTAG_REMOTE%%:*}"
-            JTAG_ID="${JTAG_REMOTE#*:}"
-        else
-            JTAG_IPADDR="${JTAG_REMOTE}"
-            JTAG_ID=
-        fi
-
-        if ((IS_UNIX)); then
-            ssh ${SSH_OPTS} $JTAG_IPADDR rm -rf iv_staging
-        else
-            ssh ${SSH_OPTS} $JTAG_IPADDR rmdir /q /s iv_staging
-        fi
-        ssh ${SSH_OPTS} $JTAG_IPADDR mkdir iv_staging || error "Cannot create iv_staging"
-
-        #
-        # WORKAROUND: Often, when trying to install on a target that has just
-        # been powercycled, JTAG loads can fail.  The issue appears related to
-        # letting the target run fully into Linux (but this is not always
-        # true).  Because the extract_archive_to_TMPDIR function takes a while
-        # to run, the actual load doesn't happen until far along into the boot.
-        # The fix is to run a script right NOW that halts the processor, before
-        # Linux has a chance to boot.
-        info "Attempting to halt target..."
-        HALT_TMP=$(mktemp)
-        cat <<-'EOF' > ${HALT_TMP}
-			connect
-			if {$argc > 0} {
-				set jtag_cable_serial [lindex $argv 0]
-			} else {
-				set jtag_cable_serial "*"
-			}
-			targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "PSU"}
-			stop
-			EOF
-        scp ${SSH_OPTS} ${HALT_TMP} ${JTAG_IPADDR}:iv_staging/halt.tcl \
-            || error "scp halt.tcl to JTAG_REMOTE failed"
-        if ((IS_UNIX)); then
-            # This is Unix - NOTE UNTESTED
-            ssh ${SSH_OPTS} ${JTAG_IPADDR} \
-                "xsdb iv_staging/halt.tcl $JTAG_ID" \
-                || error "xsdb halt.tcl TCL/JTAG failure"
-        else
-            run_tcl_in_windows halt.tcl
-        fi
-    fi
+    setup_jtag_remote
 
     info "Extracting Image Archive for JTAG mode..."
     extract_archive_to_TMPDIR
@@ -414,23 +460,10 @@ if ((MODE==JTAG_MODE)); then
     fi
     add_header jtag/uEnv.ivinstall.txt uEnv.ivinstall.txt.bin
     cp devicetree/$MACHINE.dtb system.dtb
+
     JTAG_FILES="startup.sh.bin uEnv.ivinstall.txt.bin ivinstall.bin jtag/ivinstall.tcl"
     JTAG_FILES+=" elf/* boot/*Image rootfs/initrd system.dtb"
-    if [ -n "$JTAG_REMOTE" ]; then
-        scp ${SSH_OPTS} $JTAG_FILES $JTAG_IPADDR:iv_staging || error "scp to JTAG_REMOTE failed"
-        if ((IS_UNIX)); then
-            # This is Unix - NOTE UNTESTED
-            ssh ${SSH_OPTS} ${JTAG_IPADDR} "cd iv_staging; xsdb ivinstall.tcl $JTAG_ID" \
-                || error "xsdb TCL/JTAG failure"
-        else
-            run_tcl_in_windows ivinstall.tcl
-        fi
-    else
-        mkdir staging
-        cp $JTAG_FILES staging/
-        cd staging
-        xsdb ivinstall.tcl
-    fi
+    run_jtag_tcl ivinstall.tcl $JTAG_FILES
 
 elif ((MODE==SSH_MODE)); then
     verify ssh scp
