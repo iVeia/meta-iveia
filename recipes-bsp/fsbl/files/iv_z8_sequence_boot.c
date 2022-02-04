@@ -2,32 +2,35 @@
  * iv_z8_sequence_boot.c
  *
  * This module checks for valid boot images in an ordered list of boot devices.
- * For each entry in the list, the multi-boot value is updated until the max 
+ * For each entry in the list, the multi-boot value is updated until the max
  * specified in the list entry and the corresponding device init function is
- * called.  If a valid boot image is found for the device / multi-boot combination, 
+ * called.  If a valid boot image is found for the device / multi-boot combination,
  * the device init function returns success.  In this case, the boot mode user reg
- * is updated and a soft reset is performed, resulting in fsbl being re-executed 
- * from selected device.  
+ * is updated and a soft reset is performed, resulting in fsbl being re-executed
+ * from selected device.
  *
- * This module is intended to be called from the start of Stage 2 in xfsbl_main and 
+ * This module is intended to be called from the start of Stage 2 in xfsbl_main and
  * execute its logic if booting from qspi.  For other boot modes, this module simply
  * returns to allow continuing to boot in the previously selected device.
  *
  * (C) Copyright 2020, iVeia
  */
+#include <stdlib.h>
+#include <string.h>
 #include <xil_io.h>
 #include <xfsbl_main.h>
 #include <xfsbl_hw.h>
+#include <xfsbl_qspi.h>
+#include <xparameters.h>
+#include <xiicps.h>
 
+#include "iveia-ipmi.h"
 #include "iv_z8_sequence_boot.h"
 
 // Missing defs from xfsbl_hw.h
-#define CRL_APB_BOOT_MODE_USER_ALT_BOOT_MODE_SHIFT   12
 #define CRL_APB_BOOT_MODE_USER_ALT_BOOT_MODE_MASK    ((u32)0X0000F000U)
-#define CRL_APB_BOOT_MODE_USER_USE_ALT_SHIFT   8
 #define CRL_APB_BOOT_MODE_USER_USE_ALT_MASK    ((u32)0X00000100U)
 #define CRL_APB_BOOT_MODE_USER_BOOT_MODE_SHIFT   0
-#define CRL_APB_BOOT_MODE_USER_BOOT_MODE_MASK    ((u32)0X0000000FU)
 
 extern iv_boot_sequence_t boot_seq[];
 extern int boot_dev_count;
@@ -35,6 +38,107 @@ extern int boot_dev_count;
 static char *pr_boot_mode( uint32_t mode );
 static void soft_reset( void );
 
+
+#define I2C_EEPROM_BUS_ID   XPAR_XIICPS_1_DEVICE_ID
+#define I2C_EEPROM_ADDR		0x52
+#define I2C_SCLK_RATE		100000
+
+#define BOARD_PART_NUMBER_FIELD_SIZE (sizeof(((struct iv_ipmi *)0)->board_area.board_part_number))
+
+int validate_ipmi(struct iv_ipmi * p_iv_ipmi)
+{
+    unsigned char * p;
+    unsigned char sum;
+    int i;
+    int ret = -1;
+
+    /*
+     * Validate checksums
+     */
+    p = (unsigned char *) &p_iv_ipmi->common_header;
+    sum = 0;
+    for (i = 0; i < sizeof(p_iv_ipmi->common_header); i++) {
+        sum += p[i];
+    }
+    if (sum != 0)
+        goto validate_ipmi_exit;
+    p = (unsigned char *) &p_iv_ipmi->board_area;
+    sum = 0;
+    for (i = 0; i < sizeof(p_iv_ipmi->board_area); i++) {
+        sum += p[i];
+    }
+    if (sum != 0)
+        goto validate_ipmi_exit;
+
+    /*
+     * Validate board area format version.
+     */
+    if (p_iv_ipmi->board_area.format_version != 1)
+        goto validate_ipmi_exit;
+
+    ret = 0;
+
+validate_ipmi_exit:
+
+    return ret;
+}
+
+/*
+ * I2C setup and read of IPMI struct from EEPROM
+ */
+static int read_ipmi(struct iv_ipmi * ipmi)
+{
+	int Status;
+	XIicPs_Config *Config;
+    XIicPs Iic;
+
+	Config = XIicPs_LookupConfig(I2C_EEPROM_BUS_ID);
+	if (NULL == Config) return -1;
+
+	Status = XIicPs_CfgInitialize(&Iic, Config, Config->BaseAddress);
+	if (Status != XST_SUCCESS) return -1;
+
+	Status = XIicPs_SelfTest(&Iic);
+	if (Status != XST_SUCCESS) return -1;
+
+	XIicPs_SetSClk(&Iic, I2C_SCLK_RATE);
+
+    /*
+     * EEPROM (24AA32A) requires sending 2-byte memory address to read from.
+     * IPMI struct starts at addr 0.  After writing, read back IPMI struct.
+     */
+    memset(ipmi, 0, 2);
+	Status = XIicPs_MasterSendPolled(&Iic, (u8 *) ipmi, 2, I2C_EEPROM_ADDR);
+	if (Status != XST_SUCCESS) return -1;
+    memset(ipmi, 0, sizeof(*ipmi));
+	Status = XIicPs_MasterRecvPolled(&Iic, (u8 *) ipmi, sizeof(struct iv_ipmi), I2C_EEPROM_ADDR);
+	if (Status != XST_SUCCESS) return -1;
+
+    if (validate_ipmi(ipmi)) return -1;
+
+	return 0;
+}
+
+/*
+ * Extract the PN ordinal from the IPMI struct
+ *
+ * The board_part_number is of the form "205-NNNNN-VV-RR", where NNNNN is the
+ * part number ordinal that we want.
+ *
+ * Return part number ordinal GREATER THAN zero on success, othwerwise there
+ * was an error with the field or converting to int.
+ */
+int get_pn_ord(struct iv_ipmi * ipmi)
+{
+    char pn[BOARD_PART_NUMBER_FIELD_SIZE + 1];
+    strncpy(pn, ipmi->board_area.board_part_number, BOARD_PART_NUMBER_FIELD_SIZE);
+    pn[BOARD_PART_NUMBER_FIELD_SIZE] = '\0';
+
+    char * pord = strchr(pn, '-');
+    if (!pord) return -1;
+
+    return atoi(pord + 1);
+}
 
 int iv_sequence_boot( void )
 {
@@ -69,16 +173,38 @@ int iv_sequence_boot( void )
         // TODO: Possibly validate images XFsbl_PartitionLoad() mechanism.
         //
         seq_entry = &boot_seq[boot_idx];
-        for ( int multi_boot = 0; multi_boot < seq_entry->num_attempts; multi_boot++ )
+        int num_attempts = seq_entry->num_attempts;
+        int boot_by_pn = 0;
+        struct iv_ipmi ipmi;
+        if (num_attempts > MAX_MULTIBOOT_ATTEMPTS) {
+            num_attempts = MAX_MULTIBOOT_ATTEMPTS;
+        } else if (num_attempts < 0) {
+            /*
+             * num_attempts < 0 is special: it means try to boot relative to
+             * the PN.  In this case, read the IPMI, get the part number
+             * ordinal save for use later.
+             */
+            int err = read_ipmi(&ipmi);
+            if (err) {
+                num_attempts = 0;
+            } else {
+                boot_by_pn = get_pn_ord(&ipmi);
+                if (boot_by_pn > 0) {
+                    num_attempts = 1;
+                }
+            }
+        }
+        for ( int multi_boot = 0; multi_boot < num_attempts; multi_boot++ )
         {
             #define PRE_FMT "Searching %s for valid boot image..."
-            #define FMT_0 (PRE_FMT "\r\n")
-            #define FMT_N (PRE_FMT " (retry #%d)\r\n")
             char *mode = pr_boot_mode(seq_entry->mode);
-            if (multi_boot == 0) {
-                XFsbl_Printf(DEBUG_PRINT_ALWAYS, FMT_0, mode);
+            if (boot_by_pn) {
+                XFsbl_Printf(DEBUG_PRINT_ALWAYS, PRE_FMT " (PN %05d)\r\n", mode, boot_by_pn);
+                multi_boot = boot_by_pn;
+            } else if (multi_boot == 0) {
+                XFsbl_Printf(DEBUG_PRINT_ALWAYS, PRE_FMT "\r\n", mode);
             } else {
-                XFsbl_Printf(DEBUG_PRINT_ALWAYS, FMT_N, mode, multi_boot);
+                XFsbl_Printf(DEBUG_PRINT_ALWAYS, PRE_FMT " (retry #%d)\r\n", mode, multi_boot);
             }
             Xil_Out32(CSU_CSU_MULTI_BOOT, multi_boot);
 
@@ -126,11 +252,11 @@ int iv_sequence_boot( void )
                 XFsbl_Printf(DEBUG_PRINT_ALWAYS, "Good image found, resetting...\r\n\r\n");
                 usleep(100000);
 
-                Xil_Out32(CRL_APB_BOOT_MODE_USER, 
+                Xil_Out32(CRL_APB_BOOT_MODE_USER,
                         (seq_entry->mode << CRL_APB_BOOT_MODE_USER_ALT_BOOT_MODE_SHIFT) |
                         (0x1 << CRL_APB_BOOT_MODE_USER_USE_ALT_SHIFT));
                 soft_reset();
-            }   
+            }
             else if ( status == XFSBL_ERROR_UNSUPPORTED_BOOT_MODE )
             {
                 XFsbl_Printf(DEBUG_PRINT_ALWAYS, "Unsupported boot mode, skipping...\r\n");
