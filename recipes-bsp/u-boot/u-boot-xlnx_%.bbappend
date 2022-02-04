@@ -1,6 +1,8 @@
+FILESEXTRAPATHS_prepend := "${THISDIR}/../shared/files:"
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI_append = "\
     file://iveia-init.c;subdir=git/board/xilinx/common \
+    file://iveia-ipmi.h;subdir=git/board/xilinx/common \
     file://Makefile;subdir=git/board/xilinx/common \
     file://iveia-config.h;subdir=git/include/configs \
     file://setexpr-Add-explicit-support-for-32-and-64-bit-ints.patch \
