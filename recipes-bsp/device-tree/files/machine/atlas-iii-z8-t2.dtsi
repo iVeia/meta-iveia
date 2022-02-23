@@ -1,8 +1,12 @@
 #include <atlas-z8.dtsi>
 
 / {
-    model = "Atlas-III Z8";
+    model = "Atlas-III Z8 T2";
     compatible = "iveia,atlas-iii-z8-t2", "iveia,atlas-z8", "xlnx,zynqmp";
+};
+
+&sdhci1 {
+    status = "disabled";
 };
 
 
