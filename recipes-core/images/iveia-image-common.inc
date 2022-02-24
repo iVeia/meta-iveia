@@ -17,6 +17,7 @@ IMAGE_INSTALL += "bc"
 IMAGE_INSTALL += "stress-ng"
 IMAGE_INSTALL += "iperf2 iperf3"
 IMAGE_INSTALL += "memtester"
+IMAGE_INSTALL += "lrzsz"
 
 # Use openssh, not dropbear
 IMAGE_FEATURES += "ssh-server-openssh"
