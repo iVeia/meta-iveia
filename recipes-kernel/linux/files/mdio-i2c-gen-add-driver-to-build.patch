@@ -1,17 +1,7 @@
-From 9d5bfcf6bfa4571c0222294c3e585112f0aafac3 Mon Sep 17 00:00:00 2001
-From: Brian Silverman <bsilverman@iveia.com>
-Date: Tue, 12 Jan 2021 13:47:43 -0500
-Subject: [PATCH 1/2] mdio-i2c-gen: add driver to build
-
----
- drivers/net/phy/Kconfig  | 10 ++++++++++
- drivers/net/phy/Makefile |  1 +
- 2 files changed, 11 insertions(+)
-
-diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
-index 442cbab..c1ee9b2 100644
---- a/drivers/net/phy/Kconfig
-+++ b/drivers/net/phy/Kconfig
+diff --git a/drivers/net/mdio/Kconfig b/drivers/net/mdio/Kconfig
+index a10cc460d7cf..d43b6635d75e 100644
+--- a/drivers/net/mdio/Kconfig
++++ b/drivers/net/mdio/Kconfig
 @@ -117,6 +117,16 @@ config MDIO_I2C
  
  	  This is library mode.
@@ -26,21 +16,18 @@ index 442cbab..c1ee9b2 100644
 +	  the BSC Slave Mode on the BCM54616S GigE PHY).  Potentially
 +	  compatibile with any I2C mode MDIO device.
 +
- config MDIO_MOXART
- 	tristate "MOXA ART MDIO interface support"
- 	depends on ARCH_MOXART || COMPILE_TEST
-diff --git a/drivers/net/phy/Makefile b/drivers/net/phy/Makefile
-index 9d31330..c30a3352 100644
---- a/drivers/net/phy/Makefile
-+++ b/drivers/net/phy/Makefile
-@@ -33,6 +33,7 @@ obj-$(CONFIG_MDIO_CAVIUM)	+= mdio-cavium.o
- obj-$(CONFIG_MDIO_GPIO)		+= mdio-gpio.o
- obj-$(CONFIG_MDIO_HISI_FEMAC)	+= mdio-hisi-femac.o
- obj-$(CONFIG_MDIO_I2C)		+= mdio-i2c.o
+ config MDIO_MVUSB
+ 	tristate "Marvell USB to MDIO Adapter"
+ 	depends on USB
+diff --git a/drivers/net/mdio/Makefile b/drivers/net/mdio/Makefile
+index 5c498dde463f..e15908af0b7a 100644
+--- a/drivers/net/mdio/Makefile
++++ b/drivers/net/mdio/Makefile
+@@ -11,6 +11,7 @@ obj-$(CONFIG_MDIO_CAVIUM)		+= mdio-cavium.o
+ obj-$(CONFIG_MDIO_GPIO)			+= mdio-gpio.o
+ obj-$(CONFIG_MDIO_HISI_FEMAC)		+= mdio-hisi-femac.o
+ obj-$(CONFIG_MDIO_I2C)			+= mdio-i2c.o
 +obj-$(CONFIG_MDIO_I2C_GEN)	+= mdio-i2c-gen.o
- obj-$(CONFIG_MDIO_MOXART)	+= mdio-moxart.o
- obj-$(CONFIG_MDIO_MSCC_MIIM)	+= mdio-mscc-miim.o
- obj-$(CONFIG_MDIO_OCTEON)	+= mdio-octeon.o
--- 
-2.7.4
-
+ obj-$(CONFIG_MDIO_IPQ4019)		+= mdio-ipq4019.o
+ obj-$(CONFIG_MDIO_IPQ8064)		+= mdio-ipq8064.o
+ obj-$(CONFIG_MDIO_MOXART)		+= mdio-moxart.o

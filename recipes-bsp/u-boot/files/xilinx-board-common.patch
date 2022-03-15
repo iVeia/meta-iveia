@@ -1,0 +1,10 @@
+diff --git a/board/xilinx/common/Makefile b/board/xilinx/common/Makefile
+index 212028478c..59824f8b86 100644
+--- a/board/xilinx/common/Makefile
++++ b/board/xilinx/common/Makefile
+@@ -8,3 +8,5 @@ obj-y	+= board.o
+ ifndef CONFIG_SPL_BUILD
+ obj-$(CONFIG_CMD_FRU) += fru.o fru_ops.o
+ endif
++
++obj-y += iveia-init.o

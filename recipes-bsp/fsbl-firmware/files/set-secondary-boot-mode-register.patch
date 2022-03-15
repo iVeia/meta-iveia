@@ -24,9 +24,9 @@ with:
 Note: the latter table also has a mistake - all ordinals from "4 - SD1" and
 thereafter should be incremented by one.
 
-diff -urN old/fsbl/xfsbl_hw.h new/fsbl/xfsbl_hw.h
---- old/fsbl/xfsbl_hw.h	2020-04-03 18:14:05.232424198 -0400
-+++ new/fsbl/xfsbl_hw.h	2020-04-03 18:13:19.104380428 -0400
+diff -urN old/fsbl-firmware/xfsbl_hw.h new/fsbl-firmware/xfsbl_hw.h
+--- old/fsbl-firmware/xfsbl_hw.h	2020-04-03 18:14:05.232424198 -0400
++++ new/fsbl-firmware/xfsbl_hw.h	2020-04-03 18:13:19.104380428 -0400
 @@ -260,6 +260,8 @@
   */
  #define CRL_APB_BOOT_MODE_USER    ( ( CRL_APB_BASEADDR ) + 0X00000200U )
@@ -36,10 +36,10 @@ diff -urN old/fsbl/xfsbl_hw.h new/fsbl/xfsbl_hw.h
  
  /**
   * Register: CRL_APB_RESET_CTRL
-diff -urN old/fsbl/xfsbl_initialization.c new/fsbl/xfsbl_initialization.c
---- old/fsbl/xfsbl_initialization.c	2020-04-03 18:14:05.232424198 -0400
-+++ new/fsbl/xfsbl_initialization.c	2020-04-03 18:13:19.104380428 -0400
-@@ -425,8 +425,24 @@
+diff -urN old/fsbl-firmware/xfsbl_initialization.c new/fsbl-firmware/xfsbl_initialization.c
+--- old/fsbl-firmware/xfsbl_initialization.c	2020-04-03 18:14:05.232424198 -0400
++++ new/fsbl-firmware/xfsbl_initialization.c	2020-04-03 18:13:19.104380428 -0400
+@@ -464,8 +464,24 @@
  	/**
  	 *  Configure the secondary boot device if required
  	 */

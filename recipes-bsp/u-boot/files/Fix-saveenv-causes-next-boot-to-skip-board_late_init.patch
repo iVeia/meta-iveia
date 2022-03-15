@@ -13,7 +13,7 @@ diff --git a/board/xilinx/zynqmp/zynqmp.c b/board/xilinx/zynqmp/zynqmp.c
 index 853f4f9..762fd6a 100644
 --- a/board/xilinx/zynqmp/zynqmp.c
 +++ b/board/xilinx/zynqmp/zynqmp.c
-@@ -589,11 +589,6 @@ int board_late_init(void)
+@@ -583,11 +583,6 @@ int board_late_init(void)
  	usb_ether_init();
  #endif
  
@@ -22,9 +22,9 @@ index 853f4f9..762fd6a 100644
 -		return 0;
 -	}
 -
- 	ret = set_fdtfile();
- 	if (ret)
- 		return ret;
+	if (!CONFIG_IS_ENABLED(ENV_VARS_UBOOT_RUNTIME_CONFIG))
+		return 0;
+
 -- 
 2.7.4
 

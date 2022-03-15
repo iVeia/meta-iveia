@@ -1,6 +1,6 @@
-diff -urN build/fsbl/psu_init.c build.new/fsbl/psu_init.c
---- build/fsbl/psu_init.c	2020-03-18 20:42:37.613969554 -0400
-+++ build.new/fsbl/psu_init.c	2020-03-18 20:47:13.937714000 -0400
+diff -urN build/fsbl-firmware/psu_init.c build.new/fsbl-firmware/psu_init.c
+--- build/fsbl-firmware/psu_init.c	2020-03-18 20:42:37.613969554 -0400
++++ build.new/fsbl-firmware/psu_init.c	2020-03-18 20:47:13.937714000 -0400
 @@ -20962,6 +20962,8 @@
  	return 0;
  }

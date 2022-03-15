@@ -97,7 +97,7 @@ python do_deploy() {
             dep_dir("Image") :                     {"arcname" : "boot/Image"},
             loc_dir("qspi-zynqmp.tcl") :           {"arcname" : "jtag/qspi.tcl"},
             loc_dir("ivinstall-zynqmp.tcl") :      {"arcname" : "jtag/ivinstall.tcl"},
-            dep_dir("pmu-" + machine + ".elf") :   {"arcname" : "elf/pmu.elf"},
+            dep_dir("pmu-firmware-" + machine + ".elf") :   {"arcname" : "elf/pmu.elf"},
             dep_dir("arm-trusted-firmware.elf") :  {"arcname" : "elf/atf.elf"},
         }
         tar_files.update(addtional_tar_files)

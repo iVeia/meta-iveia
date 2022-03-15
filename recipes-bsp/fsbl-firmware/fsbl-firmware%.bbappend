@@ -16,13 +16,13 @@ SRC_URI_append_atlas-i-z8 = " file://eMMC-HS200-speed-workaround.patch"
 do_configure[postfuncs] += "do_post_configure_copy"
 do_post_configure_copy () {
     if [ -n "${FSBL_SRCS}" ]; then
-        cp ${FSBL_SRCS} ${B}/fsbl
+        cp ${FSBL_SRCS} ${B}/fsbl-firmware
     fi
 }
 inherit post-configure-patches
+#   ${THISDIR}/files/set-secondary-boot-mode-register.patch 
 POST_CONFIGURE_PATCHES_zynqmp := "\
     ${THISDIR}/files/add-iveia-init-hook.patch \
-    ${THISDIR}/files/set-secondary-boot-mode-register.patch \
     ${THISDIR}/files/add_sequence_boot.patch \
     "
 FSBL_DIR := "${THISDIR}"
@@ -42,7 +42,7 @@ FSBL_SRCS_append_atlas-ii-z8ev := " ${THISDIR}/files/${MACHINE}.c"
 FSBL_SRCS_append_atlas-i-z8 := " ${THISDIR}/files/${MACHINE}.c"
 
 inherit switch-uart
-XPARAMETERS_H = "${B}/fsbl/zynqmp_fsbl_bsp/psu_cortexa53_0/include/xparameters.h"
+XPARAMETERS_H = "${B}/fsbl-firmware_plat/psu_cortexa53_0/fsbl-firmware_domain/bsp/psu_cortexa53_0/include/xparameters.h"
 
 inherit iveia-version-header
-IVEIA_VERSION_HEADER_FILE = "${B}/fsbl/iveia_version.h"
+IVEIA_VERSION_HEADER_FILE = "${B}/fsbl-firmware/iveia_version.h"

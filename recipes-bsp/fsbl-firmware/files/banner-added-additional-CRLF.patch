@@ -13,7 +13,7 @@ diff --git a/lib/sw_apps/zynqmp_fsbl/src/xfsbl_main.c b/lib/sw_apps/zynqmp_fsbl/
 index 4dc1eaa..c2135f0 100644
 --- a/lib/sw_apps/zynqmp_fsbl/src/xfsbl_main.c
 +++ b/lib/sw_apps/zynqmp_fsbl/src/xfsbl_main.c
-@@ -358,6 +358,7 @@ void XFsbl_PrintFsblBanner(void )
+@@ -341,6 +341,7 @@ void XFsbl_PrintFsblBanner(void )
  	 */
  #if !defined(XFSBL_PERF) || defined(FSBL_DEBUG) || defined(FSBL_DEBUG_INFO) \
  			|| defined(FSBL_DEBUG_DETAILED)
