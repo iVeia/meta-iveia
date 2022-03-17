@@ -31,6 +31,8 @@
 #define CRL_APB_BOOT_MODE_USER_ALT_BOOT_MODE_MASK    ((u32)0X0000F000U)
 #define CRL_APB_BOOT_MODE_USER_USE_ALT_MASK    ((u32)0X00000100U)
 #define CRL_APB_BOOT_MODE_USER_BOOT_MODE_SHIFT   0
+#define CRL_APB_BOOT_MODE_USER_USE_ALT_SHIFT    8U
+#define CRL_APB_BOOT_MODE_USER_ALT_BOOT_MODE_SHIFT     12U
 
 extern iv_boot_sequence_t boot_seq[];
 extern int boot_dev_count;
