@@ -85,12 +85,17 @@ python do_deploy() {
         dep_dir("boot.bin") :                      {"arcname" : "boot/boot.bin"},
         dep_dir("uEnv.txt") :                      {"arcname" : "boot/uEnv.txt"},
         dep_dir("devicetree") :                    {"arcname" : "devicetree"},  # recursive dir
-        dep_dir(rootfs_base + ".cpio.gz.u-boot") : {"arcname" : "rootfs/initrd"},
         dep_dir(rootfs_base + ".ext4") :           {"arcname" : "rootfs/rootfs.ext4"},
         dep_dir("startup.sh") :                    {"arcname" : "boot/startup.sh"},
         loc_dir("uEnv.ivinstall.txt") :            {"arcname" : "jtag/uEnv.ivinstall.txt"},
         loc_dir("uEnv.qspi.txt") :                 {"arcname" : "jtag/uEnv.qspi.txt"},
     }
+
+    if os.path.exists(dep_dir(rootfs_base + ".cpio.gz.u-boot")):
+        addtional_tar_files = {
+            dep_dir(rootfs_base + ".cpio.gz.u-boot") : {"arcname" : "rootfs/initrd"},
+        }
+        tar_files.update(addtional_tar_files)
 
     if is_zynqmp:
         addtional_tar_files = {

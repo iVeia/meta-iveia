@@ -25,6 +25,17 @@ POST_CONFIGURE_PATCHES_zynqmp := "\
     ${THISDIR}/files/add-iveia-init-hook.patch \
     ${THISDIR}/files/add_sequence_boot.patch \
     "
+
+# GTR's are unused on helios-z8
+POST_CONFIGURE_PATCHES_remove_helios-z8 := "\
+    ${THISDIR}/files/add-iveia-init-hook.patch \
+    "
+
+POST_CONFIGURE_PATCHES_append_helios-z8 := "\
+    ${THISDIR}/files/helios-z8-mods.patch \
+    "
+
+
 FSBL_DIR := "${THISDIR}"
 
 FSBL_SRCS_zynqmp := "\
@@ -43,6 +54,7 @@ FSBL_SRCS_append_atlas-i-z8 := " ${THISDIR}/files/${MACHINE}.c"
 
 inherit switch-uart
 XPARAMETERS_H = "${B}/fsbl-firmware_plat/psu_cortexa53_0/fsbl-firmware_domain/bsp/psu_cortexa53_0/include/xparameters.h"
+SWITCH_UART_helios-z8 := "0"
 
 inherit iveia-version-header
 IVEIA_VERSION_HEADER_FILE = "${B}/fsbl-firmware/iveia_version.h"
