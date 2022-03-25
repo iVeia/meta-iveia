@@ -93,14 +93,14 @@ index 3867e88..2b55454 100644
 +    //    -053 part : DRAM Capacity = 16384, Row Address Bits = 16, Dual Rank = NO
 +    // The earlier ddr bringup used the -053 settings. These run fine on the -062, but will lead to memory issues later.
 +    iv_read_mr8(&ddr_mr8_reg);
-+	xil_printf("FSBL: DDR MR8 REG 0x%08x\n", ddr_mr8_reg);
++	xil_printf("FSBL: DDR MR8 REG 0x%08x\r\n", ddr_mr8_reg);
 +    if ( (ddr_mr8_reg & 0x000000ff) == 0x08) {
-+	    xil_printf("FSBL: DETECTED -062 DDR...NOT CURRENTLY SUPPORTED\n");
++	    xil_printf("FSBL: DETECTED -062 DDR...NOT CURRENTLY SUPPORTED\r\n");
 +        //status &=  psu_ddr_init_data_062();
 +    } else if ( (ddr_mr8_reg & 0x000000ff) == 0x10) {
-+	    xil_printf("FSBL: DETECTED -053 DDR\n");
++	    xil_printf("FSBL: DETECTED -053 DDR\r\n");
 +    } else {
-+	    xil_printf("FSBL: UNK DDR VARIANT\n");
++	    xil_printf("FSBL: UNK DDR VARIANT\r\n");
 +    }
 +
  	status &=  psu_peripherals_powerdwn_data();

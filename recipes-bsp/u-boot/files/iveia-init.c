@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2010 - 2020 iVeia
  * Brian Silverman <bsilverman@iveia.com>
@@ -7,11 +8,15 @@
  *
  */
 #include <common.h>
-#include <linux/ctype.h>
-#include <i2c.h>
 #include <env.h>
+#include <linux/ctype.h>
+#include <fdtdec.h>
+#include <i2c.h>
+#include <spi.h>
+#include <spi_flash.h>
 #include <iveia_version.h>
-#include "iveia-ipmi.h"
+
+DECLARE_GLOBAL_DATA_PTR;
 
 /*
  * MAC address constants
@@ -37,11 +42,83 @@
 #define IVEIA_OUI           0x002168
 
 /*
- * Backplanes - Some carriers support backplanes.  Only read the backplane
- * EEPROM if for ORDs of the carriers listed below.
+ * SN and IPMI board info defines
  */
-char * boards_with_backplanes[] = {
+typedef enum {
+    IV_BOARD_CLASS_NONE,
+    IV_BOARD_CLASS_MB,
+    IV_BOARD_CLASS_IO,
+    IV_BOARD_CLASS_BP,
+} IV_BOARD_CLASS;
+
+typedef enum {
+    IV_BOARD_FIELD_NONE,
+    IV_BOARD_FIELD_PN,
+    IV_BOARD_FIELD_SN,
+    IV_BOARD_FIELD_NAME,
+} IV_BOARD_FIELD;
+
+typedef enum {
+    IV_BOARD_SUBFIELD_NONE,
+    IV_BOARD_SUBFIELD_PN_ORDINAL,
+    IV_BOARD_SUBFIELD_PN_VARIANT,
+    IV_BOARD_SUBFIELD_PN_REVISION,
+} IV_BOARD_SUBFIELD;
+
+
+#define MAX_KERN_CMDLINE_FIELD_LEN 64
+#define DEFAULT_IPMI_STRING "none,none,Unknown"
+#define IV_MB_STRING "iv_mb"
+#define IV_IO_STRING "iv_io"
+#define IV_BP_STRING "iv_bp"
+
+/*
+ * iVeia IPMI board struct
+ */
+struct iv_common_header {
+    char format_version;
+    char internal_use_area;
+    char chassis_info_area;
+    char board_info_area;
+    char product_info_area;
+    char multirecord_area;
+    char pad;
+    char checksum;
+} __attribute__((packed));
+
+/*
+ * The board area is treated as a fixed structure, even though it does follow
+ * the IPMI convention that the fields have a dynamic length.  The lengths can
+ * be checked for verification purposes, but otherwise can be safely ignored.
+ */
+struct iv_board_area {
+    char format_version;
+    char length;
+    char language_code;
+    char mfg_date_time[3];
+    char board_manufacturer_len;
+    char board_manufacturer[10];
+    char board_product_name_len;
+    char board_product_name[16];
+    char board_serial_number_len;
+    char board_serial_number[10];
+    char board_part_number_len;
+    char board_part_number[15];
+    char fru_file_id;
+    char end_of_fields_marker;
+    char checksum;
+} __attribute__((packed));
+
+struct iv_ipmi {
+    struct iv_common_header common_header;
+    struct iv_board_area board_area;
 };
+
+
+static bool mb_ipmi_complete = 0;
+static bool io_ipmi_complete = 0;
+static bool bp_ipmi_complete = 0;
+
 
 static char * class2string(IV_BOARD_CLASS class)
 {
@@ -146,14 +223,10 @@ static int iv_io_board_ord_match(char * s)
 }
 
 /*
- * read_ipmi() - Read a specific IPMI struct on a EEPROM.
+ * read_ipmi_i2c() - Read a specific IPMI struct on a I2C EEPROM.
  */
-static int read_ipmi(int bus, int addr, struct iv_ipmi * p_iv_ipmi)
+static int read_ipmi_i2c(int bus, int addr, int offset, struct iv_ipmi * p_iv_ipmi)
 {
-    unsigned char * p;
-    unsigned char sum;
-    int i;
-    int ret = -1;
     int err;
 	struct udevice *dev;
 
@@ -161,41 +234,42 @@ static int read_ipmi(int bus, int addr, struct iv_ipmi * p_iv_ipmi)
     if (err != 0)
 	{
 		printf("%s() - i2c_get_chip_for_busnum ERR %d\n", __func__, err);
-        goto read_ipmi_exit;
+        return err;
 	}
 
     err = dm_i2c_read(dev, 0, (uchar *) p_iv_ipmi, sizeof(*p_iv_ipmi));
     if (err != 0)
-        goto read_ipmi_exit;
+	{
+		printf("%s() - dm_i2c_read ERR %d\n", __func__, err);
+        return err;
+	}
 
-    /*
-     * Validate checksums
-     */
-    p = (unsigned char *) &p_iv_ipmi->common_header;
-    sum = 0;
-    for (i = 0; i < sizeof(p_iv_ipmi->common_header); i++) {
-        sum += p[i];
+    return err;
+}
+
+/*
+ * read_ipmi_qspi() - Read a specific IPMI struct on QSPI 
+ */
+static int read_ipmi_qspi(int bus, int cs, int offset, struct iv_ipmi * p_iv_ipmi)
+{
+    int err;
+    struct spi_flash *board_flash;
+    struct udevice *dev;
+
+    /* speed and mode will be read from DT */
+    err = spi_flash_probe_bus_cs(bus, cs, 3000000, 0, &dev);
+    if (err) {
+	    printf("!spi_flash_probe_bus_cs() failed");
+	    return -1;
     }
-    if (sum != 0)
-        goto read_ipmi_exit;
-    p = (unsigned char *) &p_iv_ipmi->board_area;
-    sum = 0;
-    for (i = 0; i < sizeof(p_iv_ipmi->board_area); i++) {
-        sum += p[i];
-    }
-    if (sum != 0)
-        goto read_ipmi_exit;
 
-    /*
-     * Validate board area format version.
-     */
-    if (p_iv_ipmi->board_area.format_version != 1)
-        goto read_ipmi_exit;
+    board_flash = dev_get_uclass_priv(dev);
 
-    ret = 0;
+    err = spi_flash_read(board_flash, offset, sizeof(*p_iv_ipmi), (uchar *) p_iv_ipmi);
+    if (err)
+        printf("%s() - spi_flash_read ERR %d\n", __func__, err);
 
-read_ipmi_exit:
-    return ret;
+    return err;
 }
 
 static void strcpy_ipmi_field(char * dest, char * src, int len)
@@ -232,9 +306,26 @@ static void strcpy_ipmi_field(char * dest, char * src, int len)
     }
 }
 
-static void print_board_info(IV_BOARD_CLASS class, char * realname)
+static void print_board_info(IV_BOARD_CLASS class)
 {
+    char *realname;
     char buf[MAX_KERN_CMDLINE_FIELD_LEN];
+
+    switch ( class ) {
+        case IV_BOARD_CLASS_MB:
+            realname = "Main Board";
+            break;
+        case IV_BOARD_CLASS_IO:
+            realname = "IO Board";
+            break;
+        case IV_BOARD_CLASS_BP:
+            realname = "BP Board";
+            break;
+        default:
+            return;
+            break;
+    }
+
     printf("%s:\n", realname);
     printf("\tPart Name:     %s\n",
         iv_board_get_field(buf, class, IV_BOARD_FIELD_NAME, IV_BOARD_SUBFIELD_NONE));
@@ -247,7 +338,7 @@ static void print_board_info(IV_BOARD_CLASS class, char * realname)
 /*
  * set_ipmi_env() - Read the IPMI struct, and env_set() based on part/serial read.
  */
-static void set_ipmi_env(int bus, int altbus, int addr, IV_BOARD_CLASS class)
+static void set_ipmi_env(IV_BOARD_CLASS class, struct iv_ipmi *iv_ipmi, void *fdt )
 {
     char pn[MAX_KERN_CMDLINE_FIELD_LEN];
     char sn[MAX_KERN_CMDLINE_FIELD_LEN];
@@ -255,10 +346,7 @@ static void set_ipmi_env(int bus, int altbus, int addr, IV_BOARD_CLASS class)
     char ipmi_string_buf[MAX_KERN_CMDLINE_FIELD_LEN];
     char * varname = class2string(class);
     char forced_varname[64];
-    struct iv_ipmi iv_ipmi;
     char * ipmi_string;
-    int ret;
-    int failed = 0;
 
     /*
      * If env vars were saved (i.e. saveenv), we don't want that old info here
@@ -276,33 +364,15 @@ static void set_ipmi_env(int bus, int altbus, int addr, IV_BOARD_CLASS class)
     sprintf(forced_varname, "%s_forced", varname);
     ipmi_string = env_get(forced_varname);
     if (ipmi_string == NULL || strlen(ipmi_string) == 0) {
-        ret = read_ipmi(bus, addr, &iv_ipmi);
-        if (ret < 0) {
-            printf("Cannot read %s IPMI EEPROM. \n", varname);
-            failed = 1;
-        }
+        strcpy_ipmi_field(pn, iv_ipmi->board_area.board_part_number,
+            sizeof(iv_ipmi->board_area.board_part_number));
+        strcpy_ipmi_field(sn, iv_ipmi->board_area.board_serial_number,
+            sizeof(iv_ipmi->board_area.board_serial_number));
+        strcpy_ipmi_field(name, iv_ipmi->board_area.board_product_name,
+            sizeof(iv_ipmi->board_area.board_product_name));
+        sprintf(ipmi_string_buf, "%s,%s,%s", pn, sn, name);
 
-        if (failed && altbus >= 0) {
-            printf("Reading %s IPMI EEPROM from alternate bus. \n", varname);
-            ret = read_ipmi(altbus, addr, &iv_ipmi);
-            failed = ret < 0;
-            if (failed) {
-                printf("Cannot read %s IPMI EEPROM from alternate bus. \n", varname);
-            }
-        }
-
-        if (!failed) {
-            strcpy_ipmi_field(pn, iv_ipmi.board_area.board_part_number,
-                sizeof(iv_ipmi.board_area.board_part_number));
-            strcpy_ipmi_field(sn, iv_ipmi.board_area.board_serial_number,
-                sizeof(iv_ipmi.board_area.board_serial_number));
-            strcpy_ipmi_field(name, iv_ipmi.board_area.board_product_name,
-                sizeof(iv_ipmi.board_area.board_product_name));
-            sprintf(ipmi_string_buf, "%s,%s,%s", pn, sn, name);
-
-            ipmi_string = ipmi_string_buf;
-        }
-
+        ipmi_string = ipmi_string_buf;
     } else {
         printf("Using 'forced' values for board information.\n");
     }
@@ -311,72 +381,52 @@ static void set_ipmi_env(int bus, int altbus, int addr, IV_BOARD_CLASS class)
      * Verify string seems valid (has exactly 2 commas), and is printable.
      * Convert spaces to underscores.
      */
-    if (!failed) {
-        int commas = 0;
-        int space = 0;
-        int nonprintable = 0;
-        char * p;
-        for (p = ipmi_string; *p != '\0'; p++) {
-            if (*p == ' ') {
-                *p = '_';
-                space++;
-            }
-            if (!isprint(*p))
-                nonprintable++;
-            if (*p == ',')
-                commas++;
+    int commas = 0;
+    int space = 0;
+    int nonprintable = 0;
+    char * p;
+    bool invalid =0;
+    for (p = ipmi_string; *p != '\0'; p++) {
+        if (*p == ' ') {
+            *p = '_';
+            space++;
         }
-        if (space > 0) {
-            printf("iVeia Board string contains spaces, they've been converted "
-                    "to underscores.\n");
-        }
-        if (nonprintable > 0) {
-            printf("iVeia Board string contains non-printable characters.\n");
-            failed = 1;
-        }
-        if (commas != 2) {
-            printf("iVeia Board string '%s' is invalid (needs exactly 2 commas).\n", ipmi_string);
-            failed = 1;
-        }
+        if (!isprint(*p))
+            nonprintable++;
+        if (*p == ',')
+            commas++;
+    }
+    if (space > 0) {
+        printf("iVeia Board string contains spaces, they've been converted "
+                "to underscores.\n");
+    }
+    if (nonprintable > 0) {
+        printf("iVeia Board string contains non-printable characters.\n");
+        invalid = 1;
+    }
+    if (commas != 2) {
+        printf("iVeia Board string '%s' is invalid (needs exactly 2 commas).\n", ipmi_string);
+        invalid = 1;
     }
 
-    if (failed) {
+    if ( invalid ) { 
         ipmi_string = DEFAULT_IPMI_STRING;
         printf("ERROR: Using hardcoded defaults for %s board information.\n", varname);
     }
 
     env_set(varname, ipmi_string);
-    {
-        char varname_ord[MAX_KERN_CMDLINE_FIELD_LEN];
-        char buf[MAX_KERN_CMDLINE_FIELD_LEN];
-        char * p = iv_board_get_field(buf, class, IV_BOARD_FIELD_PN, IV_BOARD_SUBFIELD_PN_ORDINAL);
-        if (p && (strlen(p) + strlen(varname) < sizeof(varname_ord))) {
-            strcpy(varname_ord, varname);
-            strcat(varname_ord, "_ord");
-            env_set(varname_ord, p);
-        }
+
+
+    char varname_ord[MAX_KERN_CMDLINE_FIELD_LEN];
+    char buf[MAX_KERN_CMDLINE_FIELD_LEN];
+    p = iv_board_get_field(buf, class, IV_BOARD_FIELD_PN, IV_BOARD_SUBFIELD_PN_ORDINAL);
+    if (p && (strlen(p) + strlen(varname) < sizeof(varname_ord))) {
+        strcpy(varname_ord, varname);
+        strcat(varname_ord, "_ord");
+        env_set(varname_ord, p);
     }
-}
-
-/*
- * board_scan() - Scan EEPROMs for connected boards.
- */
-static void board_scan(void)
-{
-    int i;
-
-    set_ipmi_env(IV_MB_I2C_BUS, IV_MB_ALT_I2C_BUS, IV_MB_EEPROM_ADDR, IV_BOARD_CLASS_MB);
-    print_board_info(IV_BOARD_CLASS_MB, "Main Board");
-
-    set_ipmi_env(IV_IO_I2C_BUS, IV_IO_ALT_I2C_BUS, IV_IO_EEPROM_ADDR, IV_BOARD_CLASS_IO);
-    print_board_info(IV_BOARD_CLASS_IO, "IO Board");
-
-    for (i = 0; i < ARRAY_SIZE(boards_with_backplanes); i++) {
-        if (iv_io_board_ord_match(boards_with_backplanes[i])) {
-            set_ipmi_env(IV_BP_I2C_BUS, IV_BP_ALT_I2C_BUS, IV_BP_EEPROM_ADDR, IV_BOARD_CLASS_BP);
-            print_board_info(IV_BOARD_CLASS_BP, "Backplane");
-        }
-    }
+    
+    return;
 }
 
 /*
@@ -473,6 +523,145 @@ static void set_mac_addrs(void)
     }
 }
 
+
+static int board_scan_ipmi( IV_BOARD_CLASS brd_class, void *fdt )
+{
+    int ipmi_node, class_node;
+    int bus = -1, addr = 0, offset = 0; 
+	const fdt32_t *val;
+    struct iv_ipmi iv_ipmi;
+    char *class_node_name;
+    
+	ipmi_node = fdt_node_offset_by_compatible(fdt, 0, "iv,ipmi");
+    if ( ipmi_node < 0 )
+    {
+        return -ENOENT;
+    }
+
+    class_node_name = class2string( brd_class );
+
+    class_node = fdt_subnode_offset(fdt, ipmi_node, class_node_name);
+    if (class_node < 0) {
+        //printf("IV IPMI: %s DT NODE NOT FOUND\n", class_node_name);
+        return -ENXIO;
+    }
+
+    if ( (val = fdt_getprop(fdt, class_node, "i2c", NULL) )) {
+        bus = fdt32_to_cpu(*(val + 0));
+        addr = fdt32_to_cpu(*(val + 1));
+        offset = fdt32_to_cpu(*(val + 2));
+        read_ipmi_i2c(bus, addr, offset, &iv_ipmi);
+    } else if ( (val = fdt_getprop(fdt, class_node, "qspi", NULL) )) {
+        int cs  = -1; 
+        bus = fdt32_to_cpu(*(val + 0));
+        cs = fdt32_to_cpu(*(val + 1));
+        offset = fdt32_to_cpu(*(val + 2));
+        read_ipmi_qspi( bus, cs, offset, &iv_ipmi );
+    } else {
+        printf("IV IPMI: %s DT NODE PROPERTY UNSUPPORTED\n", class_node_name);
+        return -EOPNOTSUPP;
+    }
+
+    int err = 0;
+
+    /*
+     * Validate IPMI checksums and format
+     */
+    unsigned char *p, sum;
+    int i;
+
+    p = (unsigned char *)&iv_ipmi.common_header;
+    for (i = 0, sum = 0; i < sizeof(iv_ipmi.common_header); i++) {
+        sum += p[i];
+    }
+    if (sum != 0 ) {
+        err = -EBADMSG;
+        goto out;
+    }
+
+    p = (unsigned char *)&iv_ipmi.board_area;
+    for (i = 0, sum = 0; i < sizeof(iv_ipmi.board_area); i++) {
+        sum += p[i];
+    }
+    if (sum != 0 ) {
+        err = -EBADMSG;
+        goto out;
+    }
+
+    /*
+     * Validate board area format version.
+     */
+    if (iv_ipmi.board_area.format_version != 1) {
+        err = -EBADMSG;
+        goto out;
+    }
+    
+out:
+    if ( err != 0 )
+        memset( &iv_ipmi, 0x00, sizeof(iv_ipmi) );
+
+    set_ipmi_env(brd_class, &iv_ipmi, fdt);
+    print_board_info(brd_class);
+
+    return err;
+}
+
+
+int set_ipmi_chosen( void *fdt )
+{
+    int chosen_node;
+	char *varnames[] = { 
+		IV_MB_STRING, IV_MB_STRING"_ord", 
+		IV_IO_STRING, IV_IO_STRING"_ord", 
+		IV_MB_STRING, IV_MB_STRING"_ord" };
+	char *value;
+
+	chosen_node = fdt_path_offset(fdt, "/chosen");
+    if ( chosen_node <= 0 )
+		return -ENODEV;
+
+	for ( int i = 0; i < sizeof(varnames)/sizeof(varnames[0]); i++ )
+	{
+		value = env_get(varnames[i]);
+		if ( value )
+			fdt_setprop_string( fdt, chosen_node, varnames[i], value );
+	}
+
+
+	return 0;
+}
+
+
+int iv_ipmi_scan( void *fdt )
+{
+    if ( !mb_ipmi_complete ) {
+        if ( board_scan_ipmi( IV_BOARD_CLASS_MB, fdt ) == 0 ) {
+            mb_ipmi_complete = 1;
+        }
+    }
+    if ( !io_ipmi_complete ) {
+        if ( board_scan_ipmi( IV_BOARD_CLASS_IO, fdt ) == 0 ) {
+            io_ipmi_complete = 1;
+        }
+    }
+    if ( !bp_ipmi_complete ) {
+        if ( board_scan_ipmi( IV_BOARD_CLASS_BP, fdt ) == 0 ) {
+            bp_ipmi_complete = 1;
+        }
+    }
+
+    // SET ETH MAC ADDR's
+    if (sn_to_mac_unittests()) {
+        set_mac_addrs();
+    } else {
+        printf("WARNING: MAC addr algorithm failed, MACs will be unassigned/random\n");
+    }
+
+	set_ipmi_chosen( fdt );
+
+    return 0;
+}
+
 /*
  * misc_init_r() - called during the U-Boot init sequence for misc init.
  * Called before network setup, whch is required for configuring MAC addrs.
@@ -483,13 +672,7 @@ int misc_init_r(void)
     printf("Src commit:  %s\n", IVEIA_SRC_BUILD_HASH);
     printf("Meta commit: %s\n", IVEIA_META_BUILD_HASH);
 
-    //i2c_init(100000, 0);
-    board_scan();
-    if (sn_to_mac_unittests()) {
-        set_mac_addrs();
-    } else {
-        printf("WARNING: MAC addr algorithm failed, MACs will be unassigned/random\n");
-    }
+    iv_ipmi_scan( gd->fdt_blob );
 
     return 0;
 }

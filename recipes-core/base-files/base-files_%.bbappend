@@ -3,6 +3,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI_append += "\
     file://ams.hwmon \
     file://atlas-ii.hwmon \
+    file://issue \
     "
 
 do_install_append () {
@@ -12,3 +13,10 @@ do_install_append () {
 }
 
 FILES_${PN}_append = " /media/sd0 /media/sd1"
+
+do_install_basefilesissue () {
+	install -m 644 ${WORKDIR}/issue*  ${D}${sysconfdir}
+	install -Dm 0644 ${WORKDIR}/issue ${D}${sysconfdir}/issue
+	install -Dm 0644 ${WORKDIR}/issue ${D}${sysconfdir}/issue.net
+}
+

@@ -1,0 +1,25 @@
+diff --git a/common/fdt_support.c b/common/fdt_support.c
+index 3440e42a25..8fbd888d57 100644
+--- a/common/fdt_support.c
++++ b/common/fdt_support.c
+@@ -17,6 +17,9 @@
+ #include <exports.h>
+ #include <fdtdec.h>
+ 
++extern int iv_ipmi_scan( void *fdt );
++
++
+ /**
+  * fdt_getprop_u32_default_node - Return a node's property or a default
+  *
+@@ -1750,6 +1753,10 @@ int fdt_overlay_apply_verbose(void *fdt, void *fdto)
+ 			printf("make sure you've compiled with -@\n");
+ 		}
+ 	}
++
++    // rescan for ipmi updates after overlay successfully applied
++    iv_ipmi_scan( fdt );
++
+ 	return err;
+ }
+ #endif

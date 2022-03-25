@@ -8,6 +8,7 @@ SRC_URI_append = "\
     file://xilinx-board-common.patch \
     file://setexpr-Add-explicit-support-for-32-and-64-bit-ints.patch \
     file://Fix-saveenv-causes-next-boot-to-skip-board_late_init.patch \
+    file://add-iv-ipmi-scan-to-fdt-overlay-apply.patch \
     file://uboot.cfg \
     "
 SRC_URI_append_zynq = "\
