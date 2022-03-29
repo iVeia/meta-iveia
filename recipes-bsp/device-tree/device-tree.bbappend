@@ -11,8 +11,11 @@
 #   *_overlay.dtbo
 #       DT overlays for each ioboard from DTS source (files/ivio/*_overlay.dts)
 #
-IV_MB_DTSI = "machine/${MACHINE}.dtsi"
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+
+IV_MB_DTSI = "machine/${MACHINE}.dtsi"
+DTB_FILE_NAME = "${MACHINE}.dtb"
+
 SRC_URI += " \
     file://atlas-z7.dtsi \
     file://atlas-z8.dtsi \
