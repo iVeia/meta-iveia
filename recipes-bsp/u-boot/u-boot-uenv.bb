@@ -7,6 +7,7 @@ INHIBIT_DEFAULT_DEPS = "1"
 inherit deploy
 
 UENV_PATH := "${THISDIR}/files"
+UENV_PATH_helios-z8 := "${THISDIR}/files/helios-z8"
 UENV_FILE = "uEnv.txt"
 
 do_compile() {

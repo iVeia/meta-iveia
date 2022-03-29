@@ -11,6 +11,27 @@
         serial0 = &uart0;
         serial1 = &uart1;
     };
+
+    iv_ipmi: iv_ipmi {
+        compatible = "iv,ipmi";
+        #address-cells = <0x01>;
+        #size-cells = <0x01>;
+
+        iv_mb {
+            qspi = < 0 0 0xff000 >;  // < bus_num chip_sel offset >
+        };
+
+/*
+		// example carrier/backplane nodes to be placed in corresponding dtsi:
+        iv_io {
+            qspi = < 0 0 0xfe000 >;  // < bus_num chip_sel offset >
+        };
+
+        iv_bp {
+            i2c = < 0 0x54 0 >;  // < bus_num addr offset >
+        };
+*/
+	};
 };
 
 

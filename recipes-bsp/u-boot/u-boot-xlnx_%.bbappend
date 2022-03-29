@@ -1,6 +1,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/../shared/files:"
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-#    file://Makefile;subdir=git/board/xilinx/common 
+FILESEXTRAPATHS_prepend_helios-z8 := "${THISDIR}/files/helios-z8:"
+
 SRC_URI_append = "\
     file://iveia-init.c;subdir=git/board/xilinx/common \
     file://iveia-ipmi.h;subdir=git/board/xilinx/common \
@@ -8,9 +9,13 @@ SRC_URI_append = "\
     file://xilinx-board-common.patch \
     file://setexpr-Add-explicit-support-for-32-and-64-bit-ints.patch \
     file://Fix-saveenv-causes-next-boot-to-skip-board_late_init.patch \
-    file://add-iv-ipmi-scan-to-fdt-overlay-apply.patch \
     file://uboot.cfg \
     "
+
+SRC_URI_append_helios-z8 = "\
+    file://add-iv-ipmi-scan-to-fdt-overlay-apply.patch \
+    "
+
 SRC_URI_append_zynq = "\
     file://add-iveia-config-overriding-xilinx-zynq.patch \
     "

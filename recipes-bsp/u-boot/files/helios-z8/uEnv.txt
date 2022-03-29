@@ -53,9 +53,5 @@ defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon ${sdrootfs}
 set_fdt_chosen=\
     fdt addr ${fdt_addr}; \
     fdt resize 0x1000; \
-    fdt set /chosen iv_mb ${iv_mb}; \
-    fdt set /chosen iv_mb_ord ${iv_mb_ord}; \
-    fdt set /chosen iv_io ${iv_io}; \
-    fdt set /chosen iv_io_ord ${iv_io_ord}; \
     fdt set /chosen iv_mmc ${sdbootdev}; \
     fdt set /chosen iv_boot ${modeboot}
