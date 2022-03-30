@@ -1,4 +1,5 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+
 SRC_URI += " \
     file://iveia-version-banner.patch \
     file://net-macb-Allow-eth-d-ordering-by-DTS-index-prop.patch \
@@ -30,4 +31,8 @@ SRC_URI += " \
     file://drivers/net/mdio/mdio-i2c-gen.c;subdir=git \
     file://Documentation/devicetree/bindings/net/mdio-i2c-gen.txt;subdir=git \
     "
+
+#SRC_URI_append_helios-z7 = " \
+#    file://helios-z7.cfg \
+#	"
 
