@@ -1,7 +1,5 @@
 SOC_VARIANT ?= "7z"
 
-#require conf/machine/include/tune-zynq.inc
-#require conf/machine/include/machine-xilinx-overrides.inc
 require conf/machine/include/soc-zynq.inc
 require conf/machine/include/machine-xilinx-default.inc
 
