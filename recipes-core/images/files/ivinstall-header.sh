@@ -563,7 +563,7 @@ elif ((MODE==SD_MODE)); then
                 ((j == SECS)) && error "all partitions were not created/exist on device"
                 sleep 1
             done
-            PARTS=($(lsblk -nrx NAME "$DEVICE" | awk '{print $1}'))
+            PARTS=($(lsblk -nx NAME "$DEVICE" | awk '{print $1}'))
             ((${#PARTS[*]} == 5)) || error "INTERNAL ERROR: failed to create all partitions"
         fi
     fi
