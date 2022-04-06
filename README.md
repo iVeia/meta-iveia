@@ -39,7 +39,7 @@ To download this repo and the rest of the Xilinx sources (this step only needs
 to be run once):
 ```
 IVEIA_TAG=<CHOOSE THE LATEST TAGGED VERSION, I.E. 2019.2-M.N>
-git clone -b $IVEIA_TAG git://github.com/iVeia/meta-iveia.git meta-iveia
+git clone -b $IVEIA_TAG https://github.com/iVeia/meta-iveia.git meta-iveia
 meta-iveia/download
 ```
 Note: the **download** script will move the meta-iveia layer directory into the
