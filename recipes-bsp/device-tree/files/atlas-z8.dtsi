@@ -9,6 +9,34 @@
         serial0 = &uart1;
         serial1 = &uart0;
     };
+
+    iv_ipmi: iv_ipmi {
+        compatible = "iv,ipmi";
+        #address-cells = <0x01>;
+        #size-cells = <0x01>;
+
+		/*
+			optional subnodes:
+				iv_mb: mainboard
+				iv_io: carrier io board
+				iv_bp: blackplane board 
+
+			supported bus properties:
+				i2c = < bus_num addr offset >
+				qspi = < bus_num chip_sel offset >
+
+		*/
+
+		// override below as needed in machine dtsi's
+
+        iv_mb {
+            i2c = < 1 0x52 0 >;  // < bus_num addr offset >
+        };
+
+        iv_io {
+            i2c = < 0 0x53 0 >;  // < bus_num addr offset >
+        };
+	};
 };
 
 &pss_ref_clk {

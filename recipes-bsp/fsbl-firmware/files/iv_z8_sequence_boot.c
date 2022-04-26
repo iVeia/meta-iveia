@@ -47,7 +47,7 @@ static void soft_reset( void );
 
 #define BOARD_PART_NUMBER_FIELD_SIZE (sizeof(((struct iv_ipmi *)0)->board_area.board_part_number))
 
-int validate_ipmi(struct iv_ipmi * p_iv_ipmi)
+static int validate_ipmi(struct iv_ipmi * p_iv_ipmi)
 {
     unsigned char * p;
     unsigned char sum;
@@ -130,7 +130,7 @@ static int read_ipmi(struct iv_ipmi * ipmi)
  * Return part number ordinal GREATER THAN zero on success, othwerwise there
  * was an error with the field or converting to int.
  */
-int get_pn_ord(struct iv_ipmi * ipmi)
+static int get_pn_ord(struct iv_ipmi * ipmi)
 {
     char pn[BOARD_PART_NUMBER_FIELD_SIZE + 1];
     strncpy(pn, ipmi->board_area.board_part_number, BOARD_PART_NUMBER_FIELD_SIZE);
