@@ -29,7 +29,7 @@ shift $#
 mkdir "$PROJECT_DIR" || error "\"$PROJECT_DIR\" must not already exist"
 
 cd "$PROJECT_DIR" || error "cd failed"
-repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-v2019.2 || error "repo init failed"
+repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-v2021.2 || error "repo init failed"
 repo sync || error "repo sync failed"
 ((MOVELAYER)) && (mv "$LAYER_DIR" "$LAYER_FINAL_DIR" || error "mv failed")
 source setupsdk || error "source setupsdk failed"
