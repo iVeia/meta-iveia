@@ -75,13 +75,14 @@ getfilesize()
 SAVEARGS="$*"
 unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_QSPI_ONLY DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD
 unset JTAG_REMOTE MODE SKIP_ROOTFS SSH_TARGET USE_INITRD USER_FAT_SIZE USER_LABEL USER_ROOTFS_SIZE
-unset ONLY_BOOT
+unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE
 SD_MODE=0
 SSH_MODE=1
 JTAG_MODE=2
 MODE=$SD_MODE
-while getopts "B:b:cde:fhi:jJ:kn:oqQs:vxzZ" opt; do
+while getopts "A:B:b:cde:fhi:jJ:kn:oqQs:vxX:zZ" opt; do
     case "${opt}" in
+        A) DO_ASSEMBLE=1; EXTRACT_DIR="$OPTARG"; ;;
         b) USER_FAT_SIZE="$OPTARG"; ;;
         B) USER_ROOTFS_SIZE="$OPTARG"; ;;
         c) DO_COPY=1; ;;
@@ -100,6 +101,7 @@ while getopts "B:b:cde:fhi:jJ:kn:oqQs:vxzZ" opt; do
         s) MODE=$SSH_MODE; SSH_TARGET="$OPTARG" ;;
         v) DO_VERSION=1 ;;
         x) DO_EXTRACT=1 ;;
+        X) DO_EXTRACT=1; EXTRACT_DIR="$OPTARG"; ;;
         z) MODE=$SD_MODE ;;
         Z) FORCE_SD_MODE=1 ;;   # Undocumented option
         \?) error "Invalid option: -$OPTARG" 1>&2; ;;
@@ -117,7 +119,7 @@ SSH_OPTS="-o ConnectTimeout=5"
 
 # Find tarball start line at end of script
 verify awk
-ARCHIVE=$(awk '/^__ARCHIVE_BELOW__/ {print NR + 1; exit 0; }' "$CMD")
+ARCHIVE_START=$(awk '/^__ARCHIVE_BELOW__/ {print NR + 1; exit 0; }' "$CMD")
 
 # We're running on the target if we can find a specfic /sys file.
 IS_ZYNQMP_TARGET=$([[ ! -d /sys/firmware/zynqmp ]]; echo $?)
@@ -147,7 +149,7 @@ extract_archive_to_TMPDIR()
     TMPDIR=$(mktemp -d)
     on_exit() { rm -rf $TMPDIR; }
     trap on_exit EXIT
-    tail -n+$ARCHIVE "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
+    tail -n+$ARCHIVE_START "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
 }
 
 #
@@ -181,11 +183,27 @@ fi
 
 if ((DO_EXTRACT)); then
     info "Extracting Image Archive..."
-    TMPDIR=$(mktemp -d)
-    tail -n+$ARCHIVE "$CMD" | tar -xz -C $TMPDIR
+    if [[ -n "$EXTRACT_DIR" ]]; then
+        TMPDIR="$EXTRACT_DIR"
+        mkdir "$TMPDIR" || error "Unable to create dir \"$EXTRACT_DIR\""
+    else
+        TMPDIR=$(mktemp -d)
+    fi
+    tail -n+$ARCHIVE_START "$CMD" | tar -xz -C "$TMPDIR" || error "Untar failed"
+    head -n+$((ARCHIVE_START-1)) "$CMD" > "$TMPDIR"/.header || error "Header extract failed"
 
     echo "Contents extracted to:"
     echo "    $TMPDIR"
+    exit 0
+fi
+
+if ((DO_ASSEMBLE)); then
+    # stdout intended to be redirected to a file, so all messages
+    # must go to stderr
+    info "Reassemlble Image Archive from \"$EXTRACT_DIR\"..." 1>&2
+    cd "$EXTRACT_DIR"
+    cat .header || error "header not found" 1>&2
+    tar cvzf - * || error "tar failed" 1>&2
     exit 0
 fi
 
@@ -605,7 +623,7 @@ elif ((MODE==SD_MODE)); then
 
         TMPDIR=$(mktemp -d)
         info "Extracting Image Archive..."
-        tail -n+$ARCHIVE "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
+        tail -n+$ARCHIVE_START "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
     fi
 
     if ((DO_COPY)); then
