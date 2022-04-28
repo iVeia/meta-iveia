@@ -444,9 +444,9 @@ fi
 #   <384    0x18000000      NA      NA          Relocated DTB by U-Boot using initrd_high
 #   384     0x18000000      512     0x20000000  Top of mem allocated to Linux (via mem=xxx)
 #   384     0x18000000      512     0x20000000  startup.sh (with header)
-#   385     0x18100000      513     0x20100000  ivinstall script (with header)
+#   385     0x18100000      513     0x20100000  extra_image (with header)
 #   ...
-#   >=512   0x40000000      >=1024  0x80000000  Mem top (up to 4GB on some boards)
+#   >=512   0x40000000      >=1024  0x80000000  Phys mem top (up to 4GB on some boards)
 #
 # On Zynq, our minimum memory is 512M, so layout is tighter and required
 # relocation fdt/initrd.  This decreases the max initrd size available.
@@ -458,6 +458,9 @@ fi
 # The items with the pre-header above are shifted down by the header amount.
 # See add_header().  Also, see the tcl scripts and uEnv.txt for the exact
 # values used.
+#
+# The extra_image can be an ivinstall image, a tarball or anything.  It is
+# extracted from above Linux mem to /tmp/extra_image
 #
 if ((MODE==JTAG_MODE)); then
     setup_jtag_remote
@@ -472,7 +475,7 @@ if ((MODE==JTAG_MODE)); then
         add_header empty_file ivinstall.bin
     else
         BASECMD=$(basename "$CMD")
-        echo "bash /tmp/ivinstall -Z $SAVEARGS" > startup.sh
+        echo "bash /tmp/extra_image -Z $SAVEARGS" > startup.sh
         add_header startup.sh startup.sh.bin
         add_header "$BASECMD" ivinstall.bin
     fi
