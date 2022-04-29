@@ -75,12 +75,12 @@ getfilesize()
 SAVEARGS="$*"
 unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_QSPI_ONLY DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD
 unset JTAG_REMOTE MODE SKIP_ROOTFS SSH_TARGET USE_INITRD USER_FAT_SIZE USER_LABEL USER_ROOTFS_SIZE
-unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE
+unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE REPLACE REPLACE_STARTUP_SCRIPT REPLACE_EXTRA_IMAGE
 SD_MODE=0
 SSH_MODE=1
 JTAG_MODE=2
 MODE=$SD_MODE
-while getopts "A:B:b:cde:fhi:jJ:kn:oqQs:vxX:zZ" opt; do
+while getopts "A:B:b:cde:fhi:jJ:kn:oqQr:R:s:vxX:zZ" opt; do
     case "${opt}" in
         A) DO_ASSEMBLE=1; EXTRACT_DIR="$OPTARG"; ;;
         b) USER_FAT_SIZE="$OPTARG"; ;;
@@ -98,6 +98,8 @@ while getopts "A:B:b:cde:fhi:jJ:kn:oqQs:vxX:zZ" opt; do
         o) ONLY_BOOT=1 ;;
         q) DO_QSPI=1 ;;
         Q) DO_QSPI_ONLY=1 ;;
+        r) REPLACE=1; REPLACE_STARTUP_SCRIPT="$OPTARG"; ;;
+        R) REPLACE=1; REPLACE_EXTRA_IMAGE="$OPTARG"; ;;
         s) MODE=$SSH_MODE; SSH_TARGET="$OPTARG" ;;
         v) DO_VERSION=1 ;;
         x) DO_EXTRACT=1 ;;
@@ -388,14 +390,14 @@ fi
 # From here on out, we're copying/formatting, and the device is required
 # (unless -q alone)
 #
-# Another exception: if ONLY_BOOT, then we don't care about other options
-# (excpet that it is JTAG mode)
+# Another exception: if ONLY_BOOT or REPLACE, then we don't care about other
+# options (except that it is JTAG mode)
 #
 if ((DO_FORMAT || DO_COPY)); then
     [[ -n "$DEVICE" ]] || error "DEVICE was not specified"
 fi
-if ((ONLY_BOOT)); then
-    ((MODE==JTAG_MODE)) || error "The -o option can only be used in JTAG mode (-j)"
+if ((ONLY_BOOT || REPLACE)); then
+    ((MODE==JTAG_MODE)) || error "The -o, -r and -R options can only be used in JTAG mode (-j)"
 else
     ((DO_FORMAT || DO_COPY || DO_QSPI)) || error "Either -f, -c, or -q required (or a combination)"
 fi
@@ -467,22 +469,33 @@ if ((MODE==JTAG_MODE)); then
 
     info "Extracting Image Archive for JTAG mode..."
     extract_archive_to_TMPDIR
-    cp "$CMD" $TMPDIR
+    cp "$CMD" $TMPDIR || error "Cannot copy ivinstall image to TMPDIR"
+    if [[ -n "$REPLACE_STARTUP_SCRIPT" ]]; then
+        cp "$REPLACE_STARTUP_SCRIPT" $TMPDIR/startup.sh \
+            || error "Cannot copy STARTUP_SCRIPT \"$REPLACE_STARTUP_SCRIPT\" to TMPDIR"
+    fi
+    if [[ -n "$REPLACE_EXTRA_IMAGE" ]]; then
+        cp "$REPLACE_EXTRA_IMAGE" $TMPDIR/extra_image \
+            || error "Cannot copy EXTRA_IMAGE \"$REPLACE_EXTRA_IMAGE\" to TMPDIR"
+    fi
     cd $TMPDIR
     if ((ONLY_BOOT)); then
-        echo > empty_file
-        add_header empty_file startup.sh.bin
-        add_header empty_file ivinstall.bin
+        echo > startup.sh
+        echo > extra_image
     else
-        BASECMD=$(basename "$CMD")
-        echo "bash /tmp/extra_image -Z $SAVEARGS" > startup.sh
-        add_header startup.sh startup.sh.bin
-        add_header "$BASECMD" ivinstall.bin
+        if [[ -z "$REPLACE_STARTUP_SCRIPT" ]]; then
+            echo "bash /tmp/extra_image -Z $SAVEARGS" > startup.sh
+        fi
+        if [[ -z "$REPLACE_EXTRA_IMAGE" ]]; then
+            mv $(basename "$CMD") extra_image
+        fi
     fi
+    add_header startup.sh startup.sh.bin
+    add_header extra_image extra_image.bin
     add_header jtag/uEnv.ivinstall.txt uEnv.ivinstall.txt.bin
     cp devicetree/$MACHINE.dtb system.dtb
 
-    JTAG_FILES="startup.sh.bin uEnv.ivinstall.txt.bin ivinstall.bin jtag/ivinstall.tcl"
+    JTAG_FILES="startup.sh.bin uEnv.ivinstall.txt.bin extra_image.bin jtag/ivinstall.tcl"
     JTAG_FILES+=" elf/* boot/*Image rootfs/initrd system.dtb"
     run_jtag_tcl ivinstall.tcl $JTAG_FILES
 

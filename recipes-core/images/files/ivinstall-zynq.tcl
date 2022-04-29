@@ -35,7 +35,7 @@ dow -data system.dtb 0x700000
 dow -data uImage 0x800000
 dow -data initrd 0x8000000
 dow -data startup.sh.bin 0x18000000
-dow -data ivinstall.bin 0x18100000
+dow -data extra_image.bin 0x18100000
 
 # Other SW...
 dow u-boot.elf
