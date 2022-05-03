@@ -1,15 +1,26 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI_append += "\
-    file://ams.hwmon \
-    file://atlas-ii.hwmon \
     file://issue \
     "
 
+SRC_URI_append_zynq += "\
+    file://zynq.hwmon \
+    "
+
+SRC_URI_append_zynqmp += "\
+    file://zynqmp.hwmon \
+    "
+
+SRC_URI_append_atlas-z8 += "\
+    file://atlas-z8.hwmon \
+    "
+
 do_install_append () {
-   install -d ${D}/media
-	install -Dm 0755 ${WORKDIR}/ams.hwmon ${D}/etc/sensors.d/ams.hwmon
-	install -Dm 0755 ${WORKDIR}/atlas-ii.hwmon ${D}/etc/sensors.d/atlas-ii.hwmon
+	install -d ${D}/media
+	install -m 0755 -d ${D}/etc/sensors.d/
+	cp ${WORKDIR}/*.hwmon ${D}/etc/sensors.d/
+	chmod 0755 ${D}/etc/sensors.d/*
 }
 
 FILES_${PN}_append = " /media/sd0 /media/sd1"
