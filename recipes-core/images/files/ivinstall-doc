@@ -212,7 +212,7 @@ OTHER OPTIONS
         Replace the startup script with the given file STARTUP_SCRIPT.  Only
         valid in JTAG mode.  See the -j option.
 
-    -r
+    -R
         Replace the extra image with the given file EXTRA_IMAGE.  Only valid in
         JTAG mode.  See the -j option.
 
