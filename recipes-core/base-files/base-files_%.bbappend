@@ -23,6 +23,17 @@ do_install_append () {
 	chmod 0755 ${D}/etc/sensors.d/*
 }
 
+SRC_URI_append_helios-z7 += "\
+    file://brcm-firmware/ \
+   "
+
+DEPENDS = "rsync-native"
+
+do_install_append_helios-z7 () {
+	install -d ${D}/lib/firmware/brcm
+	rsync -lr ${B}/brcm-firmware/ ${D}/lib/firmware/brcm
+}
+
 FILES_${PN}_append = " /media/sd0 /media/sd1"
 
 do_install_basefilesissue () {
