@@ -272,6 +272,8 @@ run_tcl_in_windows()
 #
 setup_jtag_remote()
 {
+    [[ -n "$JTAG_REMOTE" ]] || return
+
     IS_UNIX=0
     if ssh ${SSH_OPTS} $JTAG_IPADDR uname &> /dev/null; then
         IS_UNIX=1
@@ -336,7 +338,7 @@ run_jtag_tcl()
     TCL="$1"
     shift
     JTAG_FILES="$*"
-    if [ -n "$JTAG_REMOTE" ]; then
+    if [[ -n "$JTAG_REMOTE" ]]; then
         scp ${SSH_OPTS} $JTAG_FILES $JTAG_IPADDR:iv_staging || error "scp to JTAG_REMOTE failed"
         if ((IS_UNIX)); then
             # This is Unix - NOTE UNTESTED
