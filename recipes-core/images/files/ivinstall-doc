@@ -247,7 +247,7 @@ EXAMPLES
         and copy over the necessary boot files.  The FAT boot partition will be
         256 MB.
 
-    ivinstall -jJ user@192.168.1.123 -c -q emmc
+    ivinstall -jJ user@192.168.1.123 -c -q sd1
         Install from host 192.168.1.123 which is connected to the target via
         JTAG.  Do not format eMMC, but copy all bootfiles to it, and reflash
         QSPI as well.
