@@ -203,7 +203,7 @@ SUPPORTED BOARDS
         $MACHINE
 
     IO boards supported:
-$(echo $IOBOARDS | xargs -n1 | sed 's/^/        /')
+$(if [ -n "$IOBOARD" ]; then echo $IOBOARDS | xargs -n1 | sed 's/^/        /'; else echo "        none"; fi)
 
 EXAMPLES
 

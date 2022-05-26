@@ -33,12 +33,14 @@ do_compile() {
 
     # Extract IOBOARD names from devicetree/*_overlay.dtbo files.
     IOBOARDS=""
-    for i in ${DEPLOY_DIR_IMAGE}/devicetree/*_overlay.dtbo; do
+	for i in $(find devicetree/ -name *_overlay.dtbo); do
         IOBOARD=$(basename "$i")
         IOBOARD="${IOBOARD%_overlay.dtbo}"
         IOBOARDS+="${IOBOARD} "
     done
-    INSERT_VARS+="IOBOARDS='${IOBOARDS}'\n"
+	if [ -n "${IOBOARDS}" ]; then
+    	INSERT_VARS+="IOBOARDS='${IOBOARDS}'\n"
+	fi
 
     . "${B}/${PN}.versions"
     INSERT_VARS+="IVEIA_META_BUILD_HASH='${IVEIA_META_BUILD_HASH}'\n"

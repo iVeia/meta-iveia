@@ -50,8 +50,10 @@ do_configure_append() {
         echo "#include <${IVIO}.dtsi>" >> ${COMBO_DTS}
     fi
 
-    # DTS overlays for each ioboard
-    cp ${WORKDIR}/ivio/*_overlay.dts ${DT_FILES_PATH}
+	if [ -d ${WORKDIR}/iviio ]; then
+    	# DTS overlays for each ioboard
+    	cp ${WORKDIR}/ivio/*_overlay.dts ${DT_FILES_PATH}
+	fi
 }
 
 do_deploy() {
