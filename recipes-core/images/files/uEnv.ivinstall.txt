@@ -30,15 +30,14 @@ board_config=\
         setenv fdt_high 0x18000000; \
         setenv kernel_mem_mb 384; \
         setenv startup_script_addr 0x18000000; \
-        setenv initrd_script_addr 0x18100000; \
+        setenv extra_image_addr 0x18100000; \
     else \
         echo Booting on ZynqMP; \
-        setenv kernel_bootcmd bootm; \
+        setenv kernel_bootcmd booti; \
         setenv initrd_addr 0x10000000; \
         setenv kernel_mem_mb 512; \
         setenv startup_script_addr 0x20000000; \
-        setenv initrd_script_addr 0x20100000; \
-        setenv kernel_bootcmd booti; \
+        setenv extra_image_addr 0x20100000; \
     fi
 boot_kernel=\
     echo Booting kernel...; \
@@ -46,14 +45,8 @@ boot_kernel=\
 set_fdt_chosen=\
     fdt addr ${fdt_addr}; \
     fdt set /chosen startup "\
-        extract() { \
-            LEN=$((0x$(bdevmem $1 12 | \
-                dd skip=1 bs=4 count=1 status=none | od -An -tx4 | sed s/[[:space:]]//g))); \
-            bdevmem $1 $((LEN+12)) | \
-                dd skip=12 iflag=skip_bytes bs=1M status=none >$2; \
-        }; \
-        echo Extracting ivinstall script...; \
-        extract ${startup_script_addr} /tmp/startup; \
-        extract ${initrd_script_addr} /tmp/ivinstall; \
+        echo Extracting startup images...; \
+        bdevmem -H ${startup_script_addr} > /tmp/startup; \
+        bdevmem -H ${extra_image_addr} > /tmp/extra_image; \
         source /tmp/startup; \
         "

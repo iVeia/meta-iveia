@@ -1,0 +1,3 @@
+config EEPROM_IPMI_ALTERNATE_FOR_00130
+	bool "Alternate EEPROM format for iVeia board PN 00130"
+	default n

@@ -245,6 +245,19 @@ static void print_board_info(IV_BOARD_CLASS class, char * realname)
 }
 
 /*
+ * Read IPMI from alternate source.
+ *
+ * ipmi_string_buf will hold string of form "PN,SN,Name" on return.  Len is
+ * MAX_KERN_CMDLINE_FIELD_LEN.
+ *
+ * Returns ipmi_string_buf or NULL if alt valid IPMI not found.
+ */
+char * __attribute__((weak)) read_alternate_ipmi(char * ipmi_string_buf)
+{
+    return NULL;
+}
+
+/*
  * set_ipmi_env() - Read the IPMI struct, and env_set() based on part/serial read.
  */
 static void set_ipmi_env(int bus, int altbus, int addr, IV_BOARD_CLASS class)
@@ -341,8 +354,11 @@ static void set_ipmi_env(int bus, int altbus, int addr, IV_BOARD_CLASS class)
     }
 
     if (failed) {
-        ipmi_string = DEFAULT_IPMI_STRING;
-        printf("ERROR: Using hardcoded defaults for %s board information.\n", varname);
+        ipmi_string = read_alternate_ipmi(ipmi_string_buf);
+        if (!ipmi_string) {
+            ipmi_string = DEFAULT_IPMI_STRING;
+            printf("ERROR: Using hardcoded defaults for %s board information.\n", varname);
+        }
     }
 
     env_set(varname, ipmi_string);

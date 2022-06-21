@@ -1,13 +1,31 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/../shared/files:"
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+
+# Kconfig
+SRC_URI_append = "\
+    file://include-iVeia-Kconfig.patch \
+    file://Kconfig;subdir=git/board/iveia \
+    "
+
+# C sources
 SRC_URI_append = "\
     file://iveia-init.c;subdir=git/board/xilinx/common \
     file://iveia-ipmi.h;subdir=git/board/xilinx/common \
     file://Makefile;subdir=git/board/xilinx/common \
+    file://eeprom-ipmi-atlas-ii-z8p-hd.c;subdir=git/board/xilinx/common \
     file://iveia-config.h;subdir=git/include/configs \
+    "
+
+# Patches & CFG
+SRC_URI_append = "\
     file://setexpr-Add-explicit-support-for-32-and-64-bit-ints.patch \
     file://Fix-saveenv-causes-next-boot-to-skip-board_late_init.patch \
     file://uboot.cfg \
+    "
+
+# MACHINE specific patches
+SRC_URI_append_atlas-ii-z8p-hd = "\
+    file://uboot-atlas-ii-z8p-hd.cfg \
     "
 SRC_URI_append_zynq = "\
     file://add-iveia-config-overriding-xilinx-zynq.patch \
