@@ -363,6 +363,9 @@ static int ocp_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, ocp_devp);
 	ocp_devp->dev = &pdev->dev;
 
+    ocp_devp->num_addr_spaces = of_property_count_elems_of_size(pdev->dev.of_node, "reg", sizeof(u64));
+    ocp_devp->num_addr_spaces /= 2;
+
     /*
      * Get a range of minor numbers to work with, using static major.
      */
@@ -370,7 +373,6 @@ static int ocp_probe(struct platform_device *pdev)
     if (err) {
         goto fail;
     }
-    
 
     cdev_init(&ocp_devp->cdev, &ocp_fops);
     ocp_devp->cdev.owner = THIS_MODULE;
@@ -382,8 +384,6 @@ static int ocp_probe(struct platform_device *pdev)
     }
 
     //TODO: allocate mappings array here, free in remove()
-    ocp_devp->num_addr_spaces = of_property_count_elems_of_size(pdev->dev.of_node, "reg", sizeof(u64));
-    ocp_devp->num_addr_spaces /= 2;
     ocp_devp->mappings = kzalloc(sizeof(struct ocp_mapping) * ocp_devp->num_addr_spaces, GFP_KERNEL);
 
     ocp_devp->class = class_create(THIS_MODULE, "ocp");
