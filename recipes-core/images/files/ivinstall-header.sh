@@ -109,6 +109,7 @@ done
 shift $((OPTIND -1))
 
 DEVICE="$1"
+umount ${DEVICE}* 2>/dev/null
 shift
 
 # Environ
@@ -583,12 +584,15 @@ elif ((MODE==SD_MODE)); then
         # Create array of partition names (including primary device first)
         info "Formatting partition 1 as FAT32"
         ((!MISSING_DEV)) || error "Some block devs did not complete partition"
+		umount /dev/${PARTS[1]} 2>/dev/null; wipefs -q -a /dev/${PARTS[1]}
         mkfs.vfat -F 32 -n "${LABEL}BOOT" /dev/${PARTS[1]} || error "failed to format partition 1"
         info "Formatting partition 2 as raw"
-        dd status=none if=/dev/zero of=/dev/${PARTS[2]} 2>/dev/null
+		umount /dev/${PARTS[2]} 2>/dev/null; wipefs -q -a /dev/${PARTS[2]}
         info "Formatting partition 3 as ext4"
+		umount /dev/${PARTS[3]} 2>/dev/null; wipefs -q -a /dev/${PARTS[3]}
         mkfs.ext4 -q -F -L "${LABEL}ROOTFS" /dev/${PARTS[3]}   || error "failed to format partition 3"
         info "Formatting partition 4 as ext4"
+		umount /dev/${PARTS[4]} 2>/dev/null; wipefs -q -a /dev/${PARTS[4]}
         mkfs.ext4 -q -F -L "${LABEL}DATA" /dev/${PARTS[4]} || error "failed to format partition 4"
     fi
 
