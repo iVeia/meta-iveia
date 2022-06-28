@@ -252,6 +252,8 @@ run_tcl_in_windows()
 #
 setup_jtag_remote()
 {
+	[[ -n "$JTAG_REMOTE" ]] || return
+
     IS_UNIX=0
     if ssh ${SSH_OPTS} $JTAG_IPADDR uname &> /dev/null; then
         IS_UNIX=1
