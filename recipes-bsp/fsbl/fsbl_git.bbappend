@@ -3,6 +3,7 @@ SRC_URI_append_zynqmp = "\
     file://banner-added-additional-CRLF.patch \
     file://iveia-version-banner.patch \
     file://QSPI32-Workaround-for-unfinished-QSPI-transfer.patch \
+    file://force-XSDPS_DEFAULT_SPEED_MODE-for-EMMC-boot-target.patch \
     "
 SRC_URI_append_zynq = "\
     file://iveia-version-banner-zynq.patch \
