@@ -18,10 +18,10 @@ if [ -e ${DT_BOOTDEV} ]; then
 fi
 
 DT_MMC=/proc/device-tree/chosen/iv_mmc
-if [ -e ${DT_MMC} -a "$BOOTDEV" = sdboot ]; then
+if [ -e ${DT_MMC} ]; then
     SDBOOTDEV=$(tr -d '\0' <${DT_MMC})
+	ln -sf /media/sd${SDBOOTDEV} /media/sd
 fi
-ln -sf /media/sd${SDBOOTDEV} /media/sd
 
 if [ -b "/dev/mmcblk${SDBOOTDEV}p4" ]; then
     mkdir /media/data
