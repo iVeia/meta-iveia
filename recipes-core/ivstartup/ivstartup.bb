@@ -5,7 +5,7 @@ inherit deploy
 inherit update-rc.d
 
 INITSCRIPT_NAME = "ivstartup.sh"
-INITSCRIPT_PARAMS = "start 999 S ."
+INITSCRIPT_PARAMS = "start 99 S ."
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
