@@ -80,11 +80,12 @@ SD_MODE=0
 SSH_MODE=1
 JTAG_MODE=2
 MODE=$SD_MODE
-while getopts "B:b:cde:fhi:jJ:kn:oqQs:vxzZ" opt; do
+while getopts "B:b:cCde:fhi:jJ:kn:oqQs:vxzZ" opt; do
     case "${opt}" in
         b) USER_FAT_SIZE="$OPTARG"; ;;
         B) USER_ROOTFS_SIZE="$OPTARG"; ;;
         c) DO_COPY=1; ;;
+        C) DO_COPY=1; DO_COPY_SELF=1; ;;
         d) DO_COPY=1; USE_INITRD=1 ;;
         e) ENDMSG="$OPTARG"; ;;
         f) DO_FORMAT=1; ;;
@@ -640,6 +641,18 @@ elif ((MODE==SD_MODE)); then
             cp -v $TMPDIR/rootfs/initrd "$MNT" || error "copy initrd failed"
         elif ((!SKIP_ROOTFS)); then
             verify e2label findmnt
+			if [ -n "$DO_COPY_SELF" ]; then
+            	info "Copying ivinstall script to ext4 rootfs"
+				ext4_sz=$(stat --printf="%s" $TMPDIR/rootfs/rootfs.ext4)
+				ivinstall_sz=$(stat --printf="%s" $0)
+				resize2fs $TMPDIR/rootfs/rootfs.ext4 $((($ext4_sz + $ivinstall_sz)/1024))K
+				mkdir $TMPDIR/rootfs/mnt
+				mount -o loop $TMPDIR/rootfs/rootfs.ext4 $TMPDIR/rootfs/mnt
+				mkdir -p $TMPDIR/rootfs/mnt/home/root
+				cp $0 $TMPDIR/rootfs/mnt/home/root
+				sync
+				umount $TMPDIR/rootfs/mnt
+			fi
             info "Copying ext4 rootfs to DEVICE ($DEVICE) partition 3"
             ((${#PARTS[*]} > 3)) || error "partition 3 of $DEVICE does not exist"
             umount /dev/${PARTS[3]} 2>/dev/null
