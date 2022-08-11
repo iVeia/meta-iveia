@@ -238,7 +238,7 @@ SUPPORTED BOARDS
         $MACHINE
 
     IO boards supported:
-$(if [ -n "$IOBOARD" ]; then echo $IOBOARDS | xargs -n1 | sed 's/^/        /'; else echo "        none"; fi)
+$(echo $IOBOARDS | xargs -n1 | sed 's/^/        /')
 
 EXAMPLES
 
