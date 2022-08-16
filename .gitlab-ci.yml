@@ -1,0 +1,78 @@
+stages:
+  - build
+  - test
+
+build-job:
+  stage: build
+  image: ubuntu:18.04
+  variables:
+    # Need unshallow clone so that `git describe` works for versioning
+    GIT_STRATEGY: clone
+    GIT_DEPTH: 0
+
+    # Yocto caching: gitlab need to know these to cache between pipeline runs.
+    # The vars are passed to make, so make can pass them to the Yocto build.
+    DL_DIR: cache/downloads
+    SSTATE_DIR: cache/sstate-cache
+
+    MACHINES: >-
+      atlas-ii-z8ev atlas-ii-z8-hp
+  timeout: 3h
+  cache:
+    paths:
+      - $DL_DIR
+      - $SSTATE_DIR
+  tags:
+    - stan-docker-tag
+    # - build-server
+  script:
+    - apt update
+    - apt install -y git python python3 curl gcc g++ gawk gnupg locales
+    - apt install -y make chrpath cpio wget diffstat texinfo parted
+    - locale-gen "en_US.UTF-8"
+    - export LANG=en_US.UTF-8
+
+    - curl https://storage.googleapis.com/git-repo-downloads/repo-1 > /usr/local/bin/repo
+    - chmod a+rx /usr/local/bin/repo
+
+    # Yocto builds cannot be run as root (the docker default).  All commands below
+    # related to the Yocto build are run under a new "builder" user.
+    - adduser --disabled-password --gecos "" builder
+    # Force user name - required to run git
+    - su builder -c 'git config --global user.email "builder@iveia.com"'
+    - su builder -c 'git config --global user.name "iVeia Builder"'
+    # Prevent repo utility from requesting "Enable color display ...?"
+    - su builder -c 'git config --global color.ui false'
+    # Fix github deprecation of git:// paths - required to get Xilinx source
+    - su builder -c 'git config --global url."https://".insteadOf git://'
+    # Required by Yocto build because git dir has different owner (root)
+    # than build dir (builder)
+    - su builder -c "git config --global --add safe.directory ${CI_PROJECT_DIR}"
+
+    - cd ..
+    - rm -rf meta-iveia-project
+    - su builder -c "${CI_PROJECT_NAME}/download DONTMOVELAYER"
+
+    - cd meta-iveia-project
+    - echo "DL_DIR = \"${CI_PROJECT_DIR}/${DL_DIR}\"" >> build/conf/local.conf
+    - echo "SSTATE_DIR = \"${CI_PROJECT_DIR}/${SSTATE_DIR}\"" >> build/conf/local.conf
+    - mkdir -p ${CI_PROJECT_DIR}/out/ivinstall
+    - |
+      set -v # Required to force display multiline command
+      # Note: "-fc deploy" should not be needed.  However, when building via gitlab-ci (which
+      # restores the cache dirs), the ivinstall does not get built unless forced.
+      for m in $MACHINES; do
+        su builder -c "source setupsdk && MACHINE=$m bitbake -fc deploy ivinstall" || exit 1
+        cp -v build/tmp/deploy/images/$m/ivinstall-$m ${CI_PROJECT_DIR}/out/ivinstall || exit 1
+      done
+    - ls -la ${CI_PROJECT_DIR}/out/ivinstall
+
+  artifacts:
+    paths:
+      - out/ivinstall/
+
+test-job:
+  stage: test
+  script:
+    - ls
+
