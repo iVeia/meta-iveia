@@ -36,17 +36,17 @@ do_compile() {
     for i in $(find ${DEPLOY_DIR_IMAGE}/devicetree/ -name "*_overlay.dtbo"); do
         IOBOARD=$(basename "$i")
         IOBOARD="${IOBOARD%_overlay.dtbo}"
-        IOBOARDS+="${IOBOARD} "
+        IOBOARDS="${IOBOARDS}${IOBOARD} "
     done
     if [ -n "${IOBOARDS}" ]; then
-        INSERT_VARS+="IOBOARDS='${IOBOARDS}'\n"
+        INSERT_VARS="${INSERT_VARS}IOBOARDS='${IOBOARDS}'\n"
     else
-        INSERT_VARS+="IOBOARDS=none\n"
+        INSERT_VARS="${INSERT_VARS}IOBOARDS='none'\n"
     fi
 
     . "${B}/${PN}.versions"
-    INSERT_VARS+="IVEIA_META_BUILD_HASH='${IVEIA_META_BUILD_HASH}'\n"
-    INSERT_VARS+="IVEIA_BUILD_DATE='${IVEIA_BUILD_DATE}'\n"
+    INSERT_VARS="${INSERT_VARS}IVEIA_META_BUILD_HASH='${IVEIA_META_BUILD_HASH}'\n"
+    INSERT_VARS="${INSERT_VARS}IVEIA_BUILD_DATE='${IVEIA_BUILD_DATE}'\n"
 
     # Insert variables defs, and then the header doc into the named lines of
     # the ivinstall-header
