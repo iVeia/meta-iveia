@@ -2,6 +2,10 @@ stages:
   - build
   - test
 
+variables:
+  IVINSTALL_REL: out/ivinstall
+  IVINSTALL: ${CI_PROJECT_DIR}/${IVINSTALL_REL}
+
 build-job:
   stage: build
   image: ubuntu:18.04
@@ -23,8 +27,7 @@ build-job:
       - $DL_DIR
       - $SSTATE_DIR
   tags:
-    - stan-docker-tag
-    # - build-server
+    - docker
   script:
     - apt update
     - apt install -y git python python3 curl gcc g++ gawk gnupg locales
@@ -56,23 +59,50 @@ build-job:
     - cd meta-iveia-project
     - echo "DL_DIR = \"${CI_PROJECT_DIR}/${DL_DIR}\"" >> build/conf/local.conf
     - echo "SSTATE_DIR = \"${CI_PROJECT_DIR}/${SSTATE_DIR}\"" >> build/conf/local.conf
-    - mkdir -p ${CI_PROJECT_DIR}/out/ivinstall
+    - mkdir -p ${IVINSTALL}
     - |
       set -v # Required to force display multiline command
       # Note: "-fc deploy" should not be needed.  However, when building via gitlab-ci (which
       # restores the cache dirs), the ivinstall does not get built unless forced.
       for m in $MACHINES; do
         su builder -c "source setupsdk && MACHINE=$m bitbake -fc deploy ivinstall" || exit 1
-        cp -v build/tmp/deploy/images/$m/ivinstall-$m ${CI_PROJECT_DIR}/out/ivinstall || exit 1
+        cp -v build/tmp/deploy/images/$m/ivinstall-$m ${IVINSTALL} || exit 1
       done
-    - ls -la ${CI_PROJECT_DIR}/out/ivinstall
+    - ls -la ${IVINSTALL}
 
   artifacts:
     paths:
-      - out/ivinstall/
+      - ${IVINSTALL_REL}
 
 test-job:
   stage: test
+  tags:
+    - ivtest
+  variables:
+    TESTPLAN: iveia/nightly
   script:
-    - ls
+    - cd ~/ivtest
+    - git pull
 
+    # link meta-iveia ivinstaller artifacts into ivtest dir
+    - rm -rf ivinstall
+    - ln -sf ${IVINSTALL} ivinstall
+    - ls -la ivinstall/
+
+    # Install on all targets, then test all targets, and power everything off
+    - ./ivtest -i 0-
+    - ./ivtest -d -T 0- testplans/${TESTPLAN}
+    - ./ivtest -P 0-
+    - grep ^INFO ivlog/latest/logfile
+
+    # Artifacts
+    - cp -r ivlog/latest/ ${CI_PROJECT_DIR}/out/ivtest
+
+    # Verify zero test failures
+    - cat ivlog/latest/fails
+    - test $(cat ivlog/latest/fails) == 0
+
+  artifacts:
+    when: always
+    paths:
+      - out/ivtest
