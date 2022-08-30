@@ -1,10 +1,10 @@
 USAGE:
     ivinstall [-z] [FORMAT OPTIONS] DEVICE
     ivinstall -s SSH_TARGET [FORMAT OPTIONS] DEVICE
-    ivinstall -j [-J JTAG_REMOTE] [FORMAT OPTIONS] DEVICE
-    ivinstall -jo [-J JTAG_REMOTE]
-    ivinstall -j [ -r STARTUP_SCRIPT ] [ -R EXTRA_IMAGE ] [-J JTAG_REMOTE]
-    ivinstall -Q [-J JTAG_REMOTE]
+    ivinstall -j [-J JTAG_REMOTE] [-a JTAG_ADAPTER] [FORMAT OPTIONS] DEVICE
+    ivinstall -jo [-J JTAG_REMOTE] [-a JTAG_ADAPTER]
+    ivinstall -j [-J JTAG_REMOTE] [-a JTAG_ADAPTER] [ -r STARTUP_SCRIPT ] [ -R EXTRA_IMAGE ]
+    ivinstall -Q [-J JTAG_REMOTE] [-a JTAG_ADAPTER]
     ivinstall -v
     ivinstall -x
     ivinstall -X EXTRACT_DIR
@@ -159,6 +159,24 @@ FORMAT OPTIONS
 
 OTHER OPTIONS
 
+    -a JTAG_ADAPTER
+        Specify the JTAG_ADAPTER to use on a system with multiple adapters
+        connected.  JTAG_ADAPTER is a Xilinx xsdb wildcard string to match
+        against the jtag_cable_serial field in xsdb.
+
+        To determine the valid jtag_cable_serial string reported by xsdb, you
+        can run "targets -target-properties" in xsdb, and search for the
+        jtag_cable_serial field in the output.  For example, on a Digilent
+        JTAG-HS3 adapter a valid serial number is 210299ADAA17, and it could
+        be matched using a wildcard string of "*ADAA17*".
+
+        If multiple adapters are connected to a remote machine then the
+        jtag_cable_serial wildcard string must be specified or the download
+        will fail.
+
+        Works with local or remote (-J) adapters.  Only valid in JTAG MODE (-j)
+        or with QSPI reflash (-Q) option.
+
     -A EXTRACT_DIR
         Assemble a new script, given a previously extracted directory of files.
         The commands:
@@ -177,23 +195,6 @@ OTHER OPTIONS
         target.  JTAG_REMOTE is of the same form used by ssh, i.e.
         [user@]ip_address.  JTAG_REMOTE machine can be Linux or Windows.  Only
         valid in JTAG MODE or with -Q option.
-
-        If JTAG_REMOTE contains a colon, then it is split into two parts.  The
-        first part up the first colon is the ssh form specified above.  The
-        rest (after the colon) is a Xilinx xsdb wildcard string to match
-        against the jtag_cable_serial field.  This allows multiple JTAG
-        adapters to be used on the same remote machine by specifying the serial
-        number.
-
-        To determine the valid jtag_cable_serial string reported by xsdb, you
-        can run "targets -target-properties" in xsdb, and search for the
-        jtag_cable_serial field in the output.  For example, on a Digilent
-        JTAG-HS3 adapter a valid serial number is 210299ADAA17, and it could
-        be matched using a wildcard string of "*ADAA17*".
-
-        If multiple adapters are connected to a remote machine then the
-        jtag_cable_serial wildcard string must be specified or the download
-        will fail.
 
     -o
         Only boot, do not install.  Only valid in JTAG mode.  With this option,
