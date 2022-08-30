@@ -133,5 +133,6 @@ python do_deploy() {
     os.chmod(out_script, st.st_mode | stat.S_IEXEC)
 }
 
+addtask do_clean before do_compile
 addtask do_deploy after do_compile before do_build
 
