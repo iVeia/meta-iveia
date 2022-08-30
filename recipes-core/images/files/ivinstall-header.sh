@@ -649,7 +649,7 @@ elif ((MODE==SD_MODE)); then
 				mkdir $TMPDIR/rootfs/mnt
 				mount -o loop $TMPDIR/rootfs/rootfs.ext4 $TMPDIR/rootfs/mnt
 				mkdir -p $TMPDIR/rootfs/mnt/home/root
-				cp $0 $TMPDIR/rootfs/mnt/home/root
+				cp $0 $TMPDIR/rootfs/mnt/home/root/ivinstall-${MACHINE}
 				sync
 				umount $TMPDIR/rootfs/mnt
 			fi
