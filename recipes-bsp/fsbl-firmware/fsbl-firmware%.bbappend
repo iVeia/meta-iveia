@@ -58,3 +58,6 @@ SWITCH_UART_helios-z8 := "0"
 
 inherit iveia-version-header
 IVEIA_VERSION_HEADER_FILE = "${B}/fsbl-firmware/iveia_version.h"
+
+#YAML_COMPILER_FLAGS_append = " -DFSBL_DEBUG -DFSBL_DEBUG_INFO"
+
