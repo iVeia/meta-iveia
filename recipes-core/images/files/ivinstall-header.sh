@@ -338,7 +338,13 @@ run_jtag_tcl()
         mkdir iv_staging
         cp $JTAG_FILES iv_staging/
         cd iv_staging
-        xsdb "$TCL" "$JTAG_ADAPTER" || error "Failed running TCL script to program QSPI flash"
+        #
+        # xsdb does not show download progress unless in interactive mode.  So,
+        # we use interactive mode, which would normally leave us at an
+        # interactive prompt, but we force "exit" with a bash here-string.
+        #
+        xsdb -interactive "$TCL" "$JTAG_ADAPTER" <<<exit \
+            || error "Failed running TCL script to program QSPI flash"
     fi
 }
 
