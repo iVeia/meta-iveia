@@ -2,6 +2,12 @@ stages:
   - build
   - test
 
+workflow:
+  rules:
+    # Only run pipeline on master update (other branches can run manually)
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE != "push"
+
 variables:
   IVINSTALL_REL: out/ivinstall
   IVINSTALL: ${CI_PROJECT_DIR}/${IVINSTALL_REL}
