@@ -335,9 +335,11 @@ run_jtag_tcl()
         fi
     else
         verify xsdb
+        rm -rf iv_staging
         mkdir iv_staging
         cp $JTAG_FILES iv_staging/
         cd iv_staging
+
         #
         # xsdb does not show download progress unless in interactive mode.  So,
         # we use interactive mode, which would normally leave us at an
