@@ -26,6 +26,10 @@ build-job:
 
     MACHINES: >-
       atlas-ii-z8ev atlas-ii-z8-hp
+
+    # These targets need to be rebuilt (if cached) in order to build in the
+    # latest version stamp
+    CLEAN_TGTS: fsbl u-boot-xlnx linux-xlnx xilinx-bootbin ivinstall
   timeout: 3h
   cache:
     paths:
@@ -67,10 +71,9 @@ build-job:
     - mkdir -p ${IVINSTALL}
     - |
       set -v # Required to force display multiline command
-      # Note: "-fc deploy" should not be needed.  However, when building via gitlab-ci (which
-      # restores the cache dirs), the ivinstall does not get built unless forced.
       for m in $MACHINES; do
-        su builder -c "source setupsdk && MACHINE=$m bitbake -fc deploy ivinstall" || exit 1
+        su builder -c "source setupsdk && MACHINE=$m bitbake -c cleansstate ${CLEAN_TGTS}" || exit 1
+        su builder -c "source setupsdk && MACHINE=$m bitbake ivinstall" || exit 1
         cp -v build/tmp/deploy/images/$m/ivinstall-$m ${IVINSTALL} || exit 1
       done
     - ls -la ${IVINSTALL}
