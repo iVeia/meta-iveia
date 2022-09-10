@@ -4,8 +4,7 @@ stages:
 
 workflow:
   rules:
-    # Only run pipeline on master update (other branches can run manually)
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    # Don't run pipeline on push, user must initiate it
     - if: $CI_PIPELINE_SOURCE != "push"
 
 variables:
