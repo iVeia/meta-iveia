@@ -1,0 +1,51 @@
+diff --git a/common/fdt_support.c b/common/fdt_support.c
+index 3440e42a25..8fbd888d57 100644
+--- a/common/fdt_support.c
++++ b/common/fdt_support.c
+@@ -17,6 +17,9 @@
+ #include <exports.h>
+ #include <fdtdec.h>
+ 
++extern int iv_ipmi_scan( void *fdt );
++
++
+ /**
+  * fdt_getprop_u32_default_node - Return a node's property or a default
+  *
+@@ -1750,6 +1753,10 @@ int fdt_overlay_apply_verbose(void *fdt, void *fdto)
+ 			printf("make sure you've compiled with -@\n");
+ 		}
+ 	}
++
++    // rescan for ipmi updates after overlay successfully applied
++    iv_ipmi_scan( fdt );
++
+ 	return err;
+ }
+ #endif
+
+diff --git a/common/bootm.c b/common/bootm.c
+index 167eea4a1e..46423f6194 100644
+--- a/common/bootm.c
++++ b/common/bootm.c
+@@ -30,6 +30,8 @@
+ #include <bootm.h>
+ #include <image.h>
+ 
++extern iv_ipmi_chosen(void *fdt);
++
+ #ifndef CONFIG_SYS_BOOTM_LEN
+ /* use 8MByte as default max gunzip size */
+ #define CONFIG_SYS_BOOTM_LEN	0x800000
+@@ -286,8 +288,10 @@ int bootm_find_images(int flag, int argc, char *const argv[], ulong start,
+ 		return 1;
+ 	}
+ 
+-	if (CONFIG_IS_ENABLED(CMD_FDT))
++	if (CONFIG_IS_ENABLED(CMD_FDT)) {
+ 		set_working_fdt_addr(map_to_sysmem(images.ft_addr));
++		iv_ipmi_chosen(images.ft_addr);
++    }
+ #endif
+ 
+ #if IMAGE_ENABLE_FIT

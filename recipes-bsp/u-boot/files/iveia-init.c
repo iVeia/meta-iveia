@@ -535,7 +535,7 @@ out:
 }
 
 
-int set_ipmi_chosen( void *fdt )
+int iv_ipmi_chosen( void *fdt )
 {
     int chosen_node;
 	char *varnames[] = { 
@@ -584,8 +584,6 @@ int iv_ipmi_scan( void *fdt )
     } else {
         printf("WARNING: MAC addr algorithm failed, MACs will be unassigned/random\n");
     }
-
-	set_ipmi_chosen( fdt );
 
     return 0;
 }
