@@ -1,4 +1,4 @@
-#include <atlas-z8.dtsi>
+#include <atlas-z8-inc.dtsi>
 
 / {
     model = "Atlas-III Z8";

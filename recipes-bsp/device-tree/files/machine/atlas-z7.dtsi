@@ -1,0 +1,7 @@
+#include <atlas-z7-inc.dtsi>
+
+/ {
+    model = "Atlas-Z7 SDK";
+    compatible = "iveia,atlas-z7", "xlnx,zynq-7000";
+};
+

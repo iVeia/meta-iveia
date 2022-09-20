@@ -1,4 +1,4 @@
-#include <atlas-z7.dtsi>
+#include <atlas-z7-inc.dtsi>
 
 / {
     model = "Helios Z7 PCIe";

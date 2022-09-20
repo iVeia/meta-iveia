@@ -1,0 +1,8 @@
+#include <atlas-z8.dtsi>
+
+/ {
+    model = "Atlas-Z8 SDK";
+    compatible = "iveia,atlas-z8", "xlnx,zynqmp";
+};
+
+
