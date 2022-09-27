@@ -5,6 +5,7 @@ SRC_URI += " \
     file://net-macb-Allow-eth-d-ordering-by-DTS-index-prop.patch \
     file://mtd-fix-xilinx-qspi-mtd-driver-error-call-trace.patch \
     file://export-setup-dma-ops.patch \
+    file://cpufreq.cfg \
     file://rtc.cfg \
     file://hwmon.cfg \
     file://usb-gadget.cfg \
@@ -31,6 +32,10 @@ SRC_URI += " \
     file://mdio-i2c-gen.cfg \
     file://drivers/net/mdio/mdio-i2c-gen.c;subdir=git \
     file://Documentation/devicetree/bindings/net/mdio-i2c-gen.txt;subdir=git \
+    "
+
+SRC_URI_append_atlas-ii-z7x = " \
+    file://pca953x.cfg \
     "
 
 #SRC_URI_append_helios-z7 = " \

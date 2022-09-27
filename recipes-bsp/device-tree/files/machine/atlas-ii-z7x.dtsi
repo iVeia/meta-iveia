@@ -5,3 +5,18 @@
     compatible = "iveia,atlas-ii-z7x", "iveia,atlas-z7", "xlnx,zynq-7000";
 };
 
+&i2c1 {
+    status = "okay";
+
+	temp_sensor: temp_sensor@48 {
+		compatible = "ti,tmp112";
+        reg = <0x48>;
+        // temp_alert routed through pl, thus not enabled here                  
+    };
+
+    gpio_expander: gpio_expander@70 {
+        compatible = "nxp,pca9538";
+        reg = <0x70>;
+    };
+};
+
