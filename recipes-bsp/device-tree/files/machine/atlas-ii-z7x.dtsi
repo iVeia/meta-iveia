@@ -14,9 +14,16 @@
         // temp_alert routed through pl, thus not enabled here                  
     };
 
-    gpio_expander: gpio_expander@70 {
+    mb_gpio_expander: gpio_expander@70 {
         compatible = "nxp,pca9538";
         reg = <0x70>;
+        gpio-controller;
+    };
+};
+
+&iv_ipmi_mb {
+    wp {
+        i2c_gpio = <1 0x70 6 1>;
     };
 };
 
