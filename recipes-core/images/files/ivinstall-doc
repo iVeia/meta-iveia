@@ -1,11 +1,14 @@
 USAGE:
     ivinstall [-z] [FORMAT OPTIONS] DEVICE
     ivinstall -s SSH_TARGET [FORMAT OPTIONS] DEVICE
-    ivinstall -j [-J JTAG_REMOTE] [FORMAT OPTIONS] DEVICE
-    ivinstall -oj [-J JTAG_REMOTE]
-    ivinstall -Q [-J JTAG_REMOTE]
+    ivinstall -j [-J JTAG_REMOTE] [-a JTAG_ADAPTER] [FORMAT OPTIONS] DEVICE
+    ivinstall -jo [-J JTAG_REMOTE] [-a JTAG_ADAPTER]
+    ivinstall -j [-J JTAG_REMOTE] [-a JTAG_ADAPTER] [ -r STARTUP_SCRIPT ] [ -R EXTRA_IMAGE ]
+    ivinstall -Q [-J JTAG_REMOTE] [-a JTAG_ADAPTER]
     ivinstall -v
     ivinstall -x
+    ivinstall -X EXTRACT_DIR
+    ivinstall -A EXTRACT_DIR > new_install_script
     ivinstall -h
 
 DESCRIPTION
@@ -98,6 +101,16 @@ MODE OPTIONS
         requires no user intervention, and can completely reformat a target
         even if it is bricked or the network is not available.
 
+        Works by loading all images needed for Linux boot into RAM via JTAG,
+        and then booting.  In addition, a shell sourceable STARTUP_SCRIPT and
+        EXTRA_IMAGE are loaded into high RAM, and extracted once Linux boots.
+        After booting, the STARTUP_SCRIPT is sourced by the shell.  By default,
+        the EXTRA_IMAGE is the ivinstall script itself (this program), and the
+        STARTUP_SCRIPT launches the ivinstall script with user provided
+        arguments.  However, the STARTUP_SCRIPT and EXTRA_IMAGE can either be
+        ignored (with the -o option) or replaced (with the -r and/or -R
+        options).
+
         Can only be run on a host.  The DEVICE refers to the device name on the
         target (see DESCRIPTION).
 
@@ -118,10 +131,6 @@ FORMAT OPTIONS
     -c
         Copy the necessary boot files to the SD card.  Copies rootfs as ext4 to
         partition 3.
-
-    -C
-        Copy this install script to /home/root of install device as ivinstall-${MACHINE}. 
-        This is useful when creating an sd card that will be used to update emmc on a device.
 
     -d
         Copies the initrd instead of ext4 rootfs.  Implies -c (copy).
@@ -150,21 +159,10 @@ FORMAT OPTIONS
 
 OTHER OPTIONS
 
-    -h
-        Show this help message and exit.
-
-    -J JTAG_REMOTE
-        Run JTAG commands from a remote host that is connected via JTAG to a
-        target.  JTAG_REMOTE is of the same form used by ssh, i.e.
-        [user@]ip_address.  JTAG_REMOTE machine can be Linux or Windows.  Only
-        valid in JTAG MODE or with -Q option.
-
-        If JTAG_REMOTE contains a colon, then it is split into two parts.  The
-        first part up the first colon is the ssh form specified above.  The
-        rest (after the colon) is a Xilinx xsdb wildcard string to match
-        against the jtag_cable_serial field.  This allows multiple JTAG
-        adapters to be used on the same remote machine by specifying the serial
-        number.
+    -a JTAG_ADAPTER
+        Specify the JTAG_ADAPTER to use on a system with multiple adapters
+        connected.  JTAG_ADAPTER is a Xilinx xsdb wildcard string to match
+        against the jtag_cable_serial field in xsdb.
 
         To determine the valid jtag_cable_serial string reported by xsdb, you
         can run "targets -target-properties" in xsdb, and search for the
@@ -175,6 +173,28 @@ OTHER OPTIONS
         If multiple adapters are connected to a remote machine then the
         jtag_cable_serial wildcard string must be specified or the download
         will fail.
+
+        Works with local or remote (-J) adapters.  Only valid in JTAG MODE (-j)
+        or with QSPI reflash (-Q) option.
+
+    -A EXTRACT_DIR
+        Assemble a new script, given a previously extracted directory of files.
+        The commands:
+            ivinstall -X EXTRACT_DIR
+            ivinstall -A EXTRACT_DIR > new_install_script
+        will extract and then reassmble a functionally equivalent script named
+        new_install_script.  A user can the extract the files from the
+        ivinstall script, edit them, and then reassemble the ivinstall script.
+        See also -x and -X.
+
+    -h
+        Show this help message and exit.
+
+    -J JTAG_REMOTE
+        Run JTAG commands from a remote host that is connected via JTAG to a
+        target.  JTAG_REMOTE is of the same form used by ssh, i.e.
+        [user@]ip_address.  JTAG_REMOTE machine can be Linux or Windows.  Only
+        valid in JTAG MODE or with -Q option.
 
     -o
         Only boot, do not install.  Only valid in JTAG mode.  With this option,
@@ -189,6 +209,14 @@ OTHER OPTIONS
         Can be used with JTAG_REMOTE option, to run from a remote host computer
         that has a directly connected JTAG target.
 
+    -r
+        Replace the startup script with the given file STARTUP_SCRIPT.  Only
+        valid in JTAG mode.  See the -j option.
+
+    -R
+        Replace the extra image with the given file EXTRA_IMAGE.  Only valid in
+        JTAG mode.  See the -j option.
+
     -v
         Report version from which images were built and md5sums of all images
         in the archive and then exit.
@@ -196,6 +224,10 @@ OTHER OPTIONS
     -x
         Extract only.  Extract contents of this installer to temp directory
         and then exit.
+
+    -X EXTRACT_DIR
+        Extract only.  Same as -x, but with user supplied directory path that
+        will be created by this script.
 
 LIMITATIONS
 
@@ -207,7 +239,7 @@ SUPPORTED BOARDS
         $MACHINE
 
     IO boards supported:
-$(if [ -n "$IOBOARD" ]; then echo $IOBOARDS | xargs -n1 | sed 's/^/        /'; else echo "        none"; fi)
+$(echo $IOBOARDS | xargs -n1 | sed 's/^/        /')
 
 EXAMPLES
 
@@ -216,7 +248,7 @@ EXAMPLES
         and copy over the necessary boot files.  The FAT boot partition will be
         256 MB.
 
-    ivinstall -jJ user@192.168.1.123 -c -q emmc
+    ivinstall -jJ user@192.168.1.123 -c -q sd1
         Install from host 192.168.1.123 which is connected to the target via
         JTAG.  Do not format eMMC, but copy all bootfiles to it, and reflash
         QSPI as well.

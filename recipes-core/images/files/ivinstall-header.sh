@@ -75,17 +75,18 @@ getfilesize()
 SAVEARGS="$*"
 unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_QSPI_ONLY DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD
 unset JTAG_REMOTE MODE SKIP_ROOTFS SSH_TARGET USE_INITRD USER_FAT_SIZE USER_LABEL USER_ROOTFS_SIZE
-unset ONLY_BOOT
+unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE REPLACE REPLACE_STARTUP_SCRIPT REPLACE_EXTRA_IMAGE
 SD_MODE=0
 SSH_MODE=1
 JTAG_MODE=2
 MODE=$SD_MODE
-while getopts "B:b:cCde:fhi:jJ:kn:oqQs:vxzZ" opt; do
+while getopts "a:A:B:b:cde:fhi:jJ:kn:oqQr:R:s:vxX:zZ" opt; do
     case "${opt}" in
+        a) JTAG_ADAPTER="$OPTARG" ;;
+        A) DO_ASSEMBLE=1; EXTRACT_DIR="$OPTARG"; ;;
         b) USER_FAT_SIZE="$OPTARG"; ;;
         B) USER_ROOTFS_SIZE="$OPTARG"; ;;
         c) DO_COPY=1; ;;
-        C) DO_COPY=1; DO_COPY_SELF=1; ;;
         d) DO_COPY=1; USE_INITRD=1 ;;
         e) ENDMSG="$OPTARG"; ;;
         f) DO_FORMAT=1; ;;
@@ -98,9 +99,12 @@ while getopts "B:b:cCde:fhi:jJ:kn:oqQs:vxzZ" opt; do
         o) ONLY_BOOT=1 ;;
         q) DO_QSPI=1 ;;
         Q) DO_QSPI_ONLY=1 ;;
+        r) REPLACE=1; REPLACE_STARTUP_SCRIPT="$OPTARG"; ;;
+        R) REPLACE=1; REPLACE_EXTRA_IMAGE="$OPTARG"; ;;
         s) MODE=$SSH_MODE; SSH_TARGET="$OPTARG" ;;
         v) DO_VERSION=1 ;;
         x) DO_EXTRACT=1 ;;
+        X) DO_EXTRACT=1; EXTRACT_DIR="$OPTARG"; ;;
         z) MODE=$SD_MODE ;;
         Z) FORCE_SD_MODE=1 ;;   # Undocumented option
         \?) error "Invalid option: -$OPTARG" 1>&2; ;;
@@ -110,7 +114,6 @@ done
 shift $((OPTIND -1))
 
 DEVICE="$1"
-umount ${DEVICE}* 2>/dev/null
 shift
 
 # Environ
@@ -119,7 +122,7 @@ SSH_OPTS="-o ConnectTimeout=5"
 
 # Find tarball start line at end of script
 verify awk
-ARCHIVE=$(awk '/^__ARCHIVE_BELOW__/ {print NR + 1; exit 0; }' "$CMD")
+ARCHIVE_START=$(awk '/^__ARCHIVE_BELOW__/ {print NR + 1; exit 0; }' "$CMD")
 
 # We're running on the target if we can find a specfic /sys file.
 IS_ZYNQMP_TARGET=$([[ ! -d /sys/firmware/zynqmp ]]; echo $?)
@@ -149,7 +152,7 @@ extract_archive_to_TMPDIR()
     TMPDIR=$(mktemp -d)
     on_exit() { rm -rf $TMPDIR; }
     trap on_exit EXIT
-    tail -n+$ARCHIVE "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
+    tail -n+$ARCHIVE_START "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
 }
 
 #
@@ -183,11 +186,27 @@ fi
 
 if ((DO_EXTRACT)); then
     info "Extracting Image Archive..."
-    TMPDIR=$(mktemp -d)
-    tail -n+$ARCHIVE "$CMD" | tar -xz -C $TMPDIR
+    if [[ -n "$EXTRACT_DIR" ]]; then
+        TMPDIR="$EXTRACT_DIR"
+        mkdir "$TMPDIR" || error "Unable to create dir \"$EXTRACT_DIR\""
+    else
+        TMPDIR=$(mktemp -d)
+    fi
+    tail -n+$ARCHIVE_START "$CMD" | tar -xz -C "$TMPDIR" || error "Untar failed"
+    head -n+$((ARCHIVE_START-1)) "$CMD" > "$TMPDIR"/.header || error "Header extract failed"
 
     echo "Contents extracted to:"
     echo "    $TMPDIR"
+    exit 0
+fi
+
+if ((DO_ASSEMBLE)); then
+    # stdout intended to be redirected to a file, so all messages
+    # must go to stderr
+    info "Reassemlble Image Archive from \"$EXTRACT_DIR\"..." 1>&2
+    cd "$EXTRACT_DIR"
+    cat .header || error "header not found" 1>&2
+    tar cvzf - * || error "tar failed" 1>&2
     exit 0
 fi
 
@@ -232,51 +251,42 @@ add_header()
 # This MUST be run as a batch file, as opposed to one liner, because
 # %errorlevel% substituion occurs before the command is run.
 #
-run_tcl_in_windows()
+run_remote_tcl_in_windows()
 {
     BAT_TMP=$(mktemp)
     TCL="$1"
+    ADAPTER="$2"
     cat <<-EOF >${BAT_TMP}
 		cd iv_staging
-		call xsdb $TCL $JTAG_ID
+		call xsdb $TCL $ADAPTER
 		set err=%errorlevel%
 		call xsdb -eval "after 1000"
 		exit %err%
 		EOF
-    scp ${SSH_OPTS} ${BAT_TMP} ${JTAG_IPADDR}:winxsdb.bat || error "scp $TCL to JTAG_REMOTE failed"
-    ssh ${SSH_OPTS} ${JTAG_IPADDR} winxsdb.bat || error "xsdb $TCL TCL/JTAG failure"
+    scp ${SSH_OPTS} ${BAT_TMP} ${JTAG_REMOTE}:winxsdb.bat || error "scp $TCL to JTAG_REMOTE failed"
+    ssh ${SSH_OPTS} ${JTAG_REMOTE} winxsdb.bat || error "xsdb $TCL TCL/JTAG failure"
 }
 
 #
-# Setup JTAG_REMOTE
+# Setup JTAG
 #
-# If JTAG_REMOTE is given, parse option into IP and cable spec.
-#
-setup_jtag_remote()
+setup_jtag()
 {
-	[[ -n "$JTAG_REMOTE" ]] || return
+    if [[ -n "$JTAG_REMOTE" ]]; then
+        ssh ${SSH_OPTS} $JTAG_REMOTE cd &> /dev/null || "Cannot ssh to JTAG_REMOTE ($JTAG_REMOTE)"
 
-    IS_UNIX=0
-    if ssh ${SSH_OPTS} $JTAG_IPADDR uname &> /dev/null; then
-        IS_UNIX=1
-    fi
+        JTAG_REMOTE_IS_UNIX=0
+        if ssh ${SSH_OPTS} $JTAG_REMOTE uname &> /dev/null; then
+            JTAG_REMOTE_IS_UNIX=1
+        fi
 
-    # Split JTAG_REMOTE into IPADDR (before first colon) and the JTAG ID
-    # specifier (the rest).  If no colon, it's IPADDR only.
-    if [[ "$JTAG_REMOTE" =~ : ]]; then
-        JTAG_IPADDR="${JTAG_REMOTE%%:*}"
-        JTAG_ID="${JTAG_REMOTE#*:}"
-    else
-        JTAG_IPADDR="${JTAG_REMOTE}"
-        JTAG_ID=
+        if ((JTAG_REMOTE_IS_UNIX)); then
+            ssh ${SSH_OPTS} $JTAG_REMOTE rm -rf iv_staging
+        else
+            ssh ${SSH_OPTS} $JTAG_REMOTE rmdir /q /s iv_staging
+        fi
+        ssh ${SSH_OPTS} $JTAG_REMOTE mkdir iv_staging || error "Cannot create iv_staging"
     fi
-
-    if ((IS_UNIX)); then
-        ssh ${SSH_OPTS} $JTAG_IPADDR rm -rf iv_staging
-    else
-        ssh ${SSH_OPTS} $JTAG_IPADDR rmdir /q /s iv_staging
-    fi
-    ssh ${SSH_OPTS} $JTAG_IPADDR mkdir iv_staging || error "Cannot create iv_staging"
 
     #
     # WORKAROUND: Often, when trying to install on a target that has just
@@ -286,9 +296,10 @@ setup_jtag_remote()
     # to run, the actual load doesn't happen until far along into the boot.
     # The fix is to run a script right NOW that halts the processor, before
     # Linux has a chance to boot.
+    #
     info "Attempting to halt target..."
-    HALT_TMP=$(mktemp)
-    cat <<-'EOF' > ${HALT_TMP}
+    HALT_TCL_ABSPATH=$(mktemp -d)/halt.tcl
+    cat <<-'EOF' > ${HALT_TCL_ABSPATH}
 		connect
 		if {$argc > 0} {
 			set jtag_cable_serial [lindex $argv 0]
@@ -298,16 +309,7 @@ setup_jtag_remote()
 		targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "PSU"}
 		stop
 		EOF
-    scp ${SSH_OPTS} ${HALT_TMP} ${JTAG_IPADDR}:iv_staging/halt.tcl \
-        || error "scp halt.tcl to JTAG_REMOTE failed"
-    if ((IS_UNIX)); then
-        # This is Unix - NOTE UNTESTED
-        ssh ${SSH_OPTS} ${JTAG_IPADDR} \
-            "xsdb iv_staging/halt.tcl $JTAG_ID" \
-            || error "xsdb halt.tcl TCL/JTAG failure"
-    else
-        run_tcl_in_windows halt.tcl
-    fi
+    run_jtag_tcl halt.tcl ${HALT_TCL_ABSPATH}
 }
 
 #
@@ -315,26 +317,36 @@ setup_jtag_remote()
 #
 # Usage: run_jtag_tcl <TCL script> <JTAG FILES required by script ... >
 #
+# Requires setup_jtag() to be run beforehand.
+#
 run_jtag_tcl()
 {
     TCL="$1"
     shift
     JTAG_FILES="$*"
-    if [ -n "$JTAG_REMOTE" ]; then
-        scp ${SSH_OPTS} $JTAG_FILES $JTAG_IPADDR:iv_staging || error "scp to JTAG_REMOTE failed"
-        if ((IS_UNIX)); then
+    if [[ -n "$JTAG_REMOTE" ]]; then
+        scp ${SSH_OPTS} $JTAG_FILES $JTAG_REMOTE:iv_staging || error "scp to JTAG_REMOTE failed"
+        if ((JTAG_REMOTE_IS_UNIX)); then
             # This is Unix - NOTE UNTESTED
-            ssh ${SSH_OPTS} ${JTAG_IPADDR} "cd iv_staging; xsdb $TCL $JTAG_ID" \
+            ssh ${SSH_OPTS} ${JTAG_REMOTE} "cd iv_staging; xsdb \"$TCL\" \"$JTAG_ADAPTER\"" \
                 || error "xsdb TCL/JTAG failure"
         else
-            run_tcl_in_windows $TCL
+            run_remote_tcl_in_windows "$TCL" "$JTAG_ADAPTER"
         fi
     else
         verify xsdb
+        rm -rf iv_staging
         mkdir iv_staging
         cp $JTAG_FILES iv_staging/
         cd iv_staging
-        xsdb $TCL || error "Failed running TCL script to program QSPI flash"
+
+        #
+        # xsdb does not show download progress unless in interactive mode.  So,
+        # we use interactive mode, which would normally leave us at an
+        # interactive prompt, but we force "exit" with a bash here-string.
+        #
+        xsdb -interactive "$TCL" "$JTAG_ADAPTER" <<<exit \
+            || error "Failed running TCL script to program QSPI flash"
     fi
 }
 
@@ -351,7 +363,7 @@ run_jtag_tcl()
 # script resets the processor into JTAG mode.
 #
 if ((DO_QSPI_ONLY)); then
-    setup_jtag_remote
+    setup_jtag
 
     info "Extracting archive..."
     extract_archive_to_TMPDIR
@@ -374,14 +386,14 @@ fi
 # From here on out, we're copying/formatting, and the device is required
 # (unless -q alone)
 #
-# Another exception: if ONLY_BOOT, then we don't care about other options
-# (excpet that it is JTAG mode)
+# Another exception: if ONLY_BOOT or REPLACE, then we don't care about other
+# options (except that it is JTAG mode)
 #
 if ((DO_FORMAT || DO_COPY)); then
     [[ -n "$DEVICE" ]] || error "DEVICE was not specified"
 fi
-if ((ONLY_BOOT)); then
-    ((MODE==JTAG_MODE)) || error "The -o option can only be used in JTAG mode (-j)"
+if ((ONLY_BOOT || REPLACE)); then
+    ((MODE==JTAG_MODE)) || error "The -o, -r and -R options can only be used in JTAG mode (-j)"
 else
     ((DO_FORMAT || DO_COPY || DO_QSPI)) || error "Either -f, -c, or -q required (or a combination)"
 fi
@@ -430,9 +442,9 @@ fi
 #   <384    0x18000000      NA      NA          Relocated DTB by U-Boot using initrd_high
 #   384     0x18000000      512     0x20000000  Top of mem allocated to Linux (via mem=xxx)
 #   384     0x18000000      512     0x20000000  startup.sh (with header)
-#   385     0x18100000      513     0x20100000  ivinstall script (with header)
+#   385     0x18100000      513     0x20100000  extra_image (with header)
 #   ...
-#   >=512   0x40000000      >=1024  0x80000000  Mem top (up to 4GB on some boards)
+#   >=512   0x40000000      >=1024  0x80000000  Phys mem top (up to 4GB on some boards)
 #
 # On Zynq, our minimum memory is 512M, so layout is tighter and required
 # relocation fdt/initrd.  This decreases the max initrd size available.
@@ -445,27 +457,41 @@ fi
 # See add_header().  Also, see the tcl scripts and uEnv.txt for the exact
 # values used.
 #
+# The extra_image can be an ivinstall image, a tarball or anything.  It is
+# extracted from above Linux mem to /tmp/extra_image
+#
 if ((MODE==JTAG_MODE)); then
-    setup_jtag_remote
+    setup_jtag
 
     info "Extracting Image Archive for JTAG mode..."
     extract_archive_to_TMPDIR
-    cp "$CMD" $TMPDIR
+    cp "$CMD" $TMPDIR || error "Cannot copy ivinstall image to TMPDIR"
+    if [[ -n "$REPLACE_STARTUP_SCRIPT" ]]; then
+        cp "$REPLACE_STARTUP_SCRIPT" $TMPDIR/startup.sh \
+            || error "Cannot copy STARTUP_SCRIPT \"$REPLACE_STARTUP_SCRIPT\" to TMPDIR"
+    fi
+    if [[ -n "$REPLACE_EXTRA_IMAGE" ]]; then
+        cp "$REPLACE_EXTRA_IMAGE" $TMPDIR/extra_image \
+            || error "Cannot copy EXTRA_IMAGE \"$REPLACE_EXTRA_IMAGE\" to TMPDIR"
+    fi
     cd $TMPDIR
     if ((ONLY_BOOT)); then
-        echo > empty_file
-        add_header empty_file startup.sh.bin
-        add_header empty_file ivinstall.bin
+        echo > startup.sh
+        echo > extra_image
     else
-        BASECMD=$(basename "$CMD")
-        echo "bash /tmp/ivinstall -Z $SAVEARGS" > startup.sh
-        add_header startup.sh startup.sh.bin
-        add_header "$BASECMD" ivinstall.bin
+        if [[ -z "$REPLACE_STARTUP_SCRIPT" ]]; then
+            echo "bash /tmp/extra_image -Z $SAVEARGS" > startup.sh
+        fi
+        if [[ -z "$REPLACE_EXTRA_IMAGE" ]]; then
+            mv $(basename "$CMD") extra_image
+        fi
     fi
+    add_header startup.sh startup.sh.bin
+    add_header extra_image extra_image.bin
     add_header jtag/uEnv.ivinstall.txt uEnv.ivinstall.txt.bin
     cp devicetree/$MACHINE.dtb system.dtb
 
-    JTAG_FILES="startup.sh.bin uEnv.ivinstall.txt.bin ivinstall.bin jtag/ivinstall.tcl"
+    JTAG_FILES="startup.sh.bin uEnv.ivinstall.txt.bin extra_image.bin jtag/ivinstall.tcl"
     JTAG_FILES+=" elf/* boot/*Image rootfs/initrd system.dtb"
     run_jtag_tcl ivinstall.tcl $JTAG_FILES
 
@@ -567,7 +593,7 @@ elif ((MODE==SD_MODE)); then
                 ((j == SECS)) && error "all partitions were not created/exist on device"
                 sleep 1
             done
-            PARTS=($(lsblk -nx NAME "$DEVICE" | awk '{print $1}'))
+            PARTS=($(lsblk -nrx NAME "$DEVICE" | awk '{print $1}'))
             ((${#PARTS[*]} == 5)) || error "INTERNAL ERROR: failed to create all partitions"
         fi
     fi
@@ -585,15 +611,12 @@ elif ((MODE==SD_MODE)); then
         # Create array of partition names (including primary device first)
         info "Formatting partition 1 as FAT32"
         ((!MISSING_DEV)) || error "Some block devs did not complete partition"
-		umount /dev/${PARTS[1]} 2>/dev/null; wipefs -q -a /dev/${PARTS[1]}
         mkfs.vfat -F 32 -n "${LABEL}BOOT" /dev/${PARTS[1]} || error "failed to format partition 1"
         info "Formatting partition 2 as raw"
-		umount /dev/${PARTS[2]} 2>/dev/null; wipefs -q -a /dev/${PARTS[2]}
+        dd status=none if=/dev/zero of=/dev/${PARTS[2]} 2>/dev/null
         info "Formatting partition 3 as ext4"
-		umount /dev/${PARTS[3]} 2>/dev/null; wipefs -q -a /dev/${PARTS[3]}
         mkfs.ext4 -q -F -L "${LABEL}ROOTFS" /dev/${PARTS[3]}   || error "failed to format partition 3"
         info "Formatting partition 4 as ext4"
-		umount /dev/${PARTS[4]} 2>/dev/null; wipefs -q -a /dev/${PARTS[4]}
         mkfs.ext4 -q -F -L "${LABEL}DATA" /dev/${PARTS[4]} || error "failed to format partition 4"
     fi
 
@@ -612,7 +635,7 @@ elif ((MODE==SD_MODE)); then
 
         TMPDIR=$(mktemp -d)
         info "Extracting Image Archive..."
-        tail -n+$ARCHIVE "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
+        tail -n+$ARCHIVE_START "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
     fi
 
     if ((DO_COPY)); then
@@ -641,18 +664,6 @@ elif ((MODE==SD_MODE)); then
             cp -v $TMPDIR/rootfs/initrd "$MNT" || error "copy initrd failed"
         elif ((!SKIP_ROOTFS)); then
             verify e2label findmnt
-			if [ -n "$DO_COPY_SELF" ]; then
-            	info "Copying ivinstall script to ext4 rootfs"
-				ext4_sz=$(stat --printf="%s" $TMPDIR/rootfs/rootfs.ext4)
-				ivinstall_sz=$(stat --printf="%s" $0)
-				resize2fs $TMPDIR/rootfs/rootfs.ext4 $((($ext4_sz + $ivinstall_sz)/1024))K
-				mkdir $TMPDIR/rootfs/mnt
-				mount -o loop $TMPDIR/rootfs/rootfs.ext4 $TMPDIR/rootfs/mnt
-				mkdir -p $TMPDIR/rootfs/mnt/home/root
-				cp $0 $TMPDIR/rootfs/mnt/home/root/ivinstall-${MACHINE}
-				sync
-				umount $TMPDIR/rootfs/mnt
-			fi
             info "Copying ext4 rootfs to DEVICE ($DEVICE) partition 3"
             ((${#PARTS[*]} > 3)) || error "partition 3 of $DEVICE does not exist"
             umount /dev/${PARTS[3]} 2>/dev/null

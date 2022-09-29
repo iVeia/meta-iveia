@@ -28,27 +28,25 @@ DOC_INSERT_STR = "__INSERT_YOCTO_DOC_HERE_DO_NOT_REMOVE_THIS_LINE__"
 
 inherit iveia-version-header
 
-do_clean() {
-    rm -rf ${DEPLOY_DIR_IMAGE}/ivinstall*
-}
-
 do_compile() {
     INSERT_VARS="MACHINE='${MACHINE}'\n"
 
     # Extract IOBOARD names from devicetree/*_overlay.dtbo files.
     IOBOARDS=""
-	for i in $(find devicetree/ -name *_overlay.dtbo); do
+    for i in $(find ${DEPLOY_DIR_IMAGE}/devicetree/ -name "*_overlay.dtbo"); do
         IOBOARD=$(basename "$i")
         IOBOARD="${IOBOARD%_overlay.dtbo}"
-        IOBOARDS+="${IOBOARD} "
+        IOBOARDS="${IOBOARDS}${IOBOARD} "
     done
-	if [ -n "${IOBOARDS}" ]; then
-    	INSERT_VARS+="IOBOARDS='${IOBOARDS}'\n"
-	fi
+    if [ -n "${IOBOARDS}" ]; then
+        INSERT_VARS="${INSERT_VARS}IOBOARDS='${IOBOARDS}'\n"
+    else
+        INSERT_VARS="${INSERT_VARS}IOBOARDS='none'\n"
+    fi
 
     . "${B}/${PN}.versions"
-    INSERT_VARS+="IVEIA_META_BUILD_HASH='${IVEIA_META_BUILD_HASH}'\n"
-    INSERT_VARS+="IVEIA_BUILD_DATE='${IVEIA_BUILD_DATE}'\n"
+    INSERT_VARS="${INSERT_VARS}IVEIA_META_BUILD_HASH='${IVEIA_META_BUILD_HASH}'\n"
+    INSERT_VARS="${INSERT_VARS}IVEIA_BUILD_DATE='${IVEIA_BUILD_DATE}'\n"
 
     # Insert variables defs, and then the header doc into the named lines of
     # the ivinstall-header
@@ -91,24 +89,19 @@ python do_deploy() {
         dep_dir("boot.bin") :                      {"arcname" : "boot/boot.bin"},
         dep_dir("uEnv.txt") :                      {"arcname" : "boot/uEnv.txt"},
         dep_dir("devicetree") :                    {"arcname" : "devicetree"},  # recursive dir
+        dep_dir(rootfs_base + ".cpio.gz.u-boot") : {"arcname" : "rootfs/initrd"},
         dep_dir(rootfs_base + ".ext4") :           {"arcname" : "rootfs/rootfs.ext4"},
         dep_dir("startup.sh") :                    {"arcname" : "boot/startup.sh"},
         loc_dir("uEnv.ivinstall.txt") :            {"arcname" : "jtag/uEnv.ivinstall.txt"},
         loc_dir("uEnv.qspi.txt") :                 {"arcname" : "jtag/uEnv.qspi.txt"},
     }
 
-    if os.path.exists(dep_dir(rootfs_base + ".cpio.gz.u-boot")):
-        addtional_tar_files = {
-            dep_dir(rootfs_base + ".cpio.gz.u-boot") : {"arcname" : "rootfs/initrd"},
-        }
-        tar_files.update(addtional_tar_files)
-
     if is_zynqmp:
         addtional_tar_files = {
             dep_dir("Image") :                     {"arcname" : "boot/Image"},
             loc_dir("qspi-zynqmp.tcl") :           {"arcname" : "jtag/qspi.tcl"},
             loc_dir("ivinstall-zynqmp.tcl") :      {"arcname" : "jtag/ivinstall.tcl"},
-            dep_dir("pmu-firmware-" + machine + ".elf") :   {"arcname" : "elf/pmu.elf"},
+            dep_dir("pmu-" + machine + ".elf") :   {"arcname" : "elf/pmu.elf"},
             dep_dir("arm-trusted-firmware.elf") :  {"arcname" : "elf/atf.elf"},
         }
         tar_files.update(addtional_tar_files)
@@ -133,6 +126,5 @@ python do_deploy() {
     os.chmod(out_script, st.st_mode | stat.S_IEXEC)
 }
 
-addtask do_clean before do_compile
 addtask do_deploy after do_compile before do_build
 
