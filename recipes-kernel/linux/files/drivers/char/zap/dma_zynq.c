@@ -664,7 +664,7 @@ dma_ll_init(
 
 #ifdef MAPIT
 	pdma_if->rx_buffer_paddr = __pa(rx_vaddr);
-	pdma_if->rx_buffer_size = 4*1024*1024;
+	pdma_if->rx_buffer_size = 128*1024*1024;
 	pdma_if->tx_buffer_paddr = __pa(tx_vaddr);
 	pdma_if->tx_buffer_size = 4*1024*1024;
 

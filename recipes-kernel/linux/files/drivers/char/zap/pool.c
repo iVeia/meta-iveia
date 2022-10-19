@@ -4,6 +4,7 @@
  * (C) Copyright 2008, iVeia, LLC
  *
  */
+#include <linux/slab.h>
 #include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/mm.h>
@@ -175,12 +176,15 @@ int
 pool_create(
 	struct pool * ppool,
 	void * buf_vaddr,
-	unsigned long size
+	unsigned long size,
+	unsigned long max_packets
 	)
 {
 
 	ppool->size = size;
 	ppool->buf_vaddr = buf_vaddr;
+
+	ppool->pentries = kmalloc(max_packets * sizeof(struct pool_entry),GFP_KERNEL);
 
 	init_waitqueue_head( &ppool->freeq );
 	init_waitqueue_head( &ppool->fifoq );
@@ -200,6 +204,7 @@ pool_destroy(
 	struct pool * ppool
 	)
 {
+	kfree(ppool->pentries);
 	ppool->buf_vaddr = NULL;
 }
 
@@ -257,7 +262,7 @@ pool_resize(
 	// We need at least space for a packet, plus the pentries struct (page
 	// aligned)
 	//
-	if ( packet_size > ppool->size - PAGE_ALIGN(sizeof(struct pool_entry))) return -ENOMEM;
+	if ( packet_size > ppool->size ) return -ENOMEM;
 
 	//
 	// Check if pool is in use.  The user of the pool may NOT use any more
@@ -277,16 +282,14 @@ pool_resize(
 
 	ppool->packet_size = packet_size;
 	ppool->aligned_packet_size = ( packet_size + ( sizeof(int) - 1 )) & ~ ( sizeof(int) - 1 );
-	alloc_per_packet = sizeof(struct pool_entry) + ppool->aligned_packet_size;
+	alloc_per_packet = ppool->aligned_packet_size;
 	ppool->num_packets = ( ppool->size - PAGE_SIZE ) / alloc_per_packet;//Why do we subtract PAGE_SIZE?
 
 	ppool->num_packets = min( ppool->num_packets, max_packets );
 
-	ppool->pentries = (struct pool_entry *) ppool->buf_vaddr;
-
 	//ppool->ppackets = (char *) PAGE_ALIGN((unsigned long) &ppool->pentries[ppool->num_packets]);
     ppool->ppackets = ppool->buf_vaddr;//Responsibility of lowlevel DMA code to page align this address
-    ppool->pentries = ppool->buf_vaddr + (ppool->num_packets * ppool->aligned_packet_size);
+
 
 	INIT_LIST_HEAD( &ppool->freelist );
 	INIT_LIST_HEAD( &ppool->fifolist );

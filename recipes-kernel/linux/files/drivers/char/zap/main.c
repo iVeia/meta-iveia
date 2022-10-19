@@ -305,7 +305,7 @@ int zap_open(struct inode *inode, struct file *filp)
         if (is_tx_device(filp)){
 			dev->interface[iDevice].tx_payload_max_size = dev->fpga_params.tx_dat_fifo_size;
 
-	        err = pool_create(&zap_devp->interface[iDevice].tx_pool, zap_devp->interface[iDevice].tx_vaddr, zap_devp->interface[iDevice].tx_size);
+	        err = pool_create(&zap_devp->interface[iDevice].tx_pool, zap_devp->interface[iDevice].tx_vaddr, zap_devp->interface[iDevice].tx_size, ZAP_POOL_MAX_TX_PACKETS);
 	        if (err) {
 		        printk(KERN_ERR "RX pool_create error %d\n", err);
 		        //goto fail;
@@ -324,7 +324,7 @@ int zap_open(struct inode *inode, struct file *filp)
 		} else {
 			dev->interface[iDevice].rx_payload_max_size = dev->fpga_params.rx_dat_fifo_size;
 
-	        err = pool_create(&zap_devp->interface[iDevice].rx_pool, zap_devp->interface[iDevice].rx_vaddr, zap_devp->interface[iDevice].rx_size);
+	        err = pool_create(&zap_devp->interface[iDevice].rx_pool, zap_devp->interface[iDevice].rx_vaddr, zap_devp->interface[iDevice].rx_size, ZAP_POOL_MAX_RX_PACKETS);
 	        if (err) {
 		        printk(KERN_ERR "RX pool_create error %d\n", err);
 		        //goto fail;

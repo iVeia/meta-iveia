@@ -61,7 +61,8 @@ int
 pool_create(
 	struct pool * ppool,
 	void * buf_vaddr,
-	unsigned long size
+	unsigned long size,
+	unsigned long max_packets
 	);
 
 void
