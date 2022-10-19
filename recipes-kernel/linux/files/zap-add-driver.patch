@@ -40,7 +40,7 @@ index 18f8f01..457eb16 100644
  	build_all_zonelists(NULL);
  	page_alloc_init();
  
-+        rx_vaddr = alloc_bootmem_pages(4*1024*1024);
++        rx_vaddr = alloc_bootmem_pages(128*1024*1024);
 +        tx_vaddr = alloc_bootmem_pages(4*1024*1024);
 +
  	pr_notice("Kernel command line: %s\n", boot_command_line);
