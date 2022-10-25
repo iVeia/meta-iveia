@@ -30,6 +30,7 @@ FSBL_DIR := "${THISDIR}"
 
 FSBL_SRCS_zynqmp := "\
     ${THISDIR}/files/iv_z8_init.c \
+    ${THISDIR}/files/*.h \
     ${THISDIR}/files/iv_z8_sequence_boot.c \
     ${THISDIR}/files/iv_z8_sequence_boot.h \
     ${THISDIR}/files/iv_z8_user_boot_sequence.c \
