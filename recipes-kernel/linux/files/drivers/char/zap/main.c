@@ -916,10 +916,17 @@ void zap_cleanup_module(void)
 	unregister_chrdev_region(zap_dev_num, ZAP_MAX_DEVICES * 2);
 }
 
+extern bool nozap;
+
 int zap_init_module(void)
 {
 	int err, i;
 	struct class * zap_class;
+
+	if (nozap) {
+		printk(KERN_WARNING "zap: driver disabled by kernel cmdline\n");
+		return 0;
+	}
 
     //create_proc_read_entry("iveia/zap", 0, NULL, zap_read_procmem, NULL);
 	/*
