@@ -28,6 +28,10 @@ DOC_INSERT_STR = "__INSERT_YOCTO_DOC_HERE_DO_NOT_REMOVE_THIS_LINE__"
 
 inherit iveia-version-header
 
+do_clean() {
+    rm -rf ${DEPLOY_DIR_IMAGE}/ivinstall*
+}
+
 do_compile() {
     INSERT_VARS="MACHINE='${MACHINE}'\n"
 
@@ -126,5 +130,6 @@ python do_deploy() {
     os.chmod(out_script, st.st_mode | stat.S_IEXEC)
 }
 
+addtask do_clean before do_compile
 addtask do_deploy after do_compile before do_build
 
