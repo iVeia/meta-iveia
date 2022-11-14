@@ -20,6 +20,9 @@ IMAGE_INSTALL += "memtester"
 IMAGE_INSTALL += "lrzsz"
 IMAGE_INSTALL += "libgpiod"
 
+IMAGE_INSTALL += "ethtool"
+IMAGE_INSTALL += "iperf3"
+
 # Use openssh, not dropbear
 IMAGE_FEATURES += "ssh-server-openssh"
 IMAGE_INSTALL += "packagegroup-core-ssh-openssh"
