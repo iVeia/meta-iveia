@@ -19,6 +19,7 @@ IMAGE_INSTALL += "iperf2 iperf3"
 IMAGE_INSTALL += "memtester"
 IMAGE_INSTALL += "lrzsz"
 IMAGE_INSTALL += "libgpiod"
+IMAGE_INSTALL += "static-bitfile"
 
 IMAGE_INSTALL += "ethtool"
 IMAGE_INSTALL += "iperf3"

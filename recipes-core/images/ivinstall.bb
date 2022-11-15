@@ -88,6 +88,7 @@ python do_deploy() {
         dep_dir("u-boot.elf") :                    {"arcname" : "elf/u-boot.elf"},
         dep_dir("boot.bin") :                      {"arcname" : "boot/boot.bin"},
         dep_dir("uEnv.txt") :                      {"arcname" : "boot/uEnv.txt"},
+        dep_dir("xilinx.bit") :                    {"arcname" : "boot/xilinx.bit"},
         dep_dir("devicetree") :                    {"arcname" : "devicetree"},  # recursive dir
         dep_dir(rootfs_base + ".cpio.gz.u-boot") : {"arcname" : "rootfs/initrd"},
         dep_dir(rootfs_base + ".ext4") :           {"arcname" : "rootfs/rootfs.ext4"},
