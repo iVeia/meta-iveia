@@ -3,6 +3,7 @@ SRC_URI += " \
     file://iveia-version-banner.patch \
     file://net-macb-Allow-eth-d-ordering-by-DTS-index-prop.patch \
     file://mtd-fix-xilinx-qspi-mtd-driver-error-call-trace.patch \
+    file://usbserial.cfg \
     file://rtc.cfg \
     file://hwmon.cfg \
     file://usb-gadget.cfg \
