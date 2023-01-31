@@ -29,9 +29,6 @@ build-job:
     SDKS: >-
       atlas-z7
       atlas-z8
-    SDK_IMGS: >-
-      petalinux-glibc-x86_64-iveia-image-minimal-cortexa9t2hf-neon-toolchain-2019.2.sh
-      petalinux-glibc-x86_64-iveia-image-minimal-aarch64-toolchain-2019.2.sh
 
     # These targets need to be rebuilt (if cached) in order to build in the
     # latest version stamp
@@ -87,8 +84,9 @@ build-job:
       for s in $SDKS; do
         su builder -c "$SS && MACHINE=$s bitbake iveia-image-minimal -c populate_sdk" || exit 1
       done
-      for s in $SDK_IMGS; do
-        cp -v build/tmp/deploy/sdk/$s ${IVINSTALL} || exit 1
+      for s in $SDKS; do
+        IMG_PREFIX=build/tmp/deploy/sdk/petalinux-glibc-x86_64-iveia-image-minimal
+        cp -v ${IMG_PREFIX}-*-${s}-toolchain-*.sh ${IVINSTALL} || exit 1
       done
     - ls -la ${IVINSTALL}
 
