@@ -36,7 +36,7 @@ build-job:
     # These targets need to be rebuilt (if cached) in order to build in the
     # latest version stamp
     CLEAN_TGTS: fsbl u-boot-xlnx linux-xlnx xilinx-bootbin ivinstall
-  timeout: 3h
+  timeout: 5h
   cache:
     paths:
       - $DL_DIR
