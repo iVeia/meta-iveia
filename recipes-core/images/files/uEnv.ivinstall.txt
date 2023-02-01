@@ -35,9 +35,9 @@ board_config=\
         echo Booting on ZynqMP; \
         setenv kernel_bootcmd booti; \
         setenv initrd_addr 0x10000000; \
-        setenv kernel_mem_mb 512; \
-        setenv startup_script_addr 0x20000000; \
-        setenv extra_image_addr 0x20100000; \
+        setenv kernel_mem_mb 768; \
+        setenv startup_script_addr 0x30000000; \
+        setenv extra_image_addr 0x30100000; \
     fi
 boot_kernel=\
     echo Booting kernel...; \

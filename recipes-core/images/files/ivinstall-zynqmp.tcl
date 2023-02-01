@@ -51,8 +51,8 @@ dow -data uEnv.ivinstall.txt.bin 0x5ffff4
 dow -data system.dtb 0x700000
 dow -data Image 0x800000
 dow -data initrd 0x10000000
-dow -data startup.sh.bin 0x20000000
-dow -data extra_image.bin 0x20100000
+dow -data startup.sh.bin 0x30000000
+dow -data extra_image.bin 0x30100000
 
 # Other SW...
 dow u-boot.elf

@@ -444,9 +444,9 @@ fi
 #   128     0x80000000      256     0x10000000  initrd
 #   <383    0x17f00000      NA      NA          Relocated initrd by U-Boot using fdt_high
 #   <384    0x18000000      NA      NA          Relocated DTB by U-Boot using initrd_high
-#   384     0x18000000      512     0x20000000  Top of mem allocated to Linux (via mem=xxx)
-#   384     0x18000000      512     0x20000000  startup.sh (with header)
-#   385     0x18100000      513     0x20100000  extra_image (with header)
+#   384     0x18000000      768     0x30000000  Top of mem allocated to Linux (via mem=xxx)
+#   384     0x18000000      768     0x30000000  startup.sh (with header)
+#   385     0x18100000      769     0x30100000  extra_image (with header)
 #   ...
 #   >=512   0x40000000      >=1024  0x80000000  Phys mem top (up to 4GB on some boards)
 #
