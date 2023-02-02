@@ -361,9 +361,9 @@ unmount_all()
     # more than 5.  Assume each device has max 9 partitions.
     for i in {1..5}; do
         # sda style device partitions are of the form sda1
-        umount "$DEVICE"[1-9]
+        umount "$DEVICE"[1-9] 2>/dev/null
         # mmcblk0 style device partitions are of the form mmcblk0p1
-        umount "$DEVICE"p[1-9]
+        umount "$DEVICE"p[1-9] 2>/dev/null
         sleep 1
     done
 }
