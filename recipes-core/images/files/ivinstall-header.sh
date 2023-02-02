@@ -556,8 +556,14 @@ elif ((MODE==SD_MODE)); then
         P1_END=$FAT_SIZE
         P2_END=$((P1_END + 1))
         P3_END=$((P2_END + ROOTFS_SIZE))
-        umount "$DEVICE"[1-9] 2>/dev/null
-        umount "$DEVICE"p[1-9] 2>/dev/null
+        # DEVICE partitions may have been mounted multiple times.  Assume not
+        # more than 10.  Assume each device has max 9 partitions.
+        for i in {1..10}; do
+            # sda style device partitions are of the form sda1
+            umount "$DEVICE"[1-9] 2>/dev/null
+            # mmcblk0 style device partitions are of the form mmcblk0p1
+            umount "$DEVICE"p[1-9] 2>/dev/null
+        done
         if command -v wipefs &> /dev/null; then
             wipefs -a "$DEVICE" >/dev/null || error "wipefs failed.  Is device in use?"
         else
