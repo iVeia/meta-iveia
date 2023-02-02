@@ -81,10 +81,11 @@ build-job:
         su builder -c "$SS && MACHINE=$m bitbake ivinstall" || exit 1
         cp -v build/tmp/deploy/images/$m/ivinstall-$m ${IVINSTALL} || exit 1
       done
+    - |
+      set -v # Required to force display multiline command
+      SS="source setupsdk"
       for s in $SDKS; do
         su builder -c "$SS && MACHINE=$s bitbake iveia-image-minimal -c populate_sdk" || exit 1
-      done
-      for s in $SDKS; do
         IMG_PREFIX=build/tmp/deploy/sdk/petalinux-glibc-x86_64-iveia-image-minimal
         cp -v ${IMG_PREFIX}-*-${s}-toolchain-*.sh ${IVINSTALL} || exit 1
       done
