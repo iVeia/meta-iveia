@@ -102,8 +102,10 @@ test-job:
   variables:
     TESTPLAN: iveia/nightly
   script:
+    # Get latest from origin/master, regardless of what we have locally
     - cd ~/ivtest
-    - git pull
+    - git fetch
+    - git reset --hard origin/master
 
     # link meta-iveia ivinstaller artifacts into ivtest dir
     - rm -rf ivinstall
