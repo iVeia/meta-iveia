@@ -603,8 +603,8 @@ elif ((MODE==SD_MODE)); then
                 ((j == SECS)) && error "all partitions were not created/exist on device"
                 sleep 1
             done
-            PARTS=($(lsblk -nrx NAME "$DEVICE" | awk '{print $1}'))
-            ((${#PARTS[*]} == 5)) || error "INTERNAL ERROR: failed to create all partitions"
+            PARTS=($(lsblk -nr "$DEVICE" | awk '{print $1}' | sort))
+            ((${#PARTS[*]} == 5)) || error "all partitions do not exist"
         fi
     fi
 
@@ -620,7 +620,6 @@ elif ((MODE==SD_MODE)); then
         sleep 1 # Ensure parted done
         # Create array of partition names (including primary device first)
         info "Formatting partition 1 as FAT32"
-        ((!MISSING_DEV)) || error "Some block devs did not complete partition"
         mkfs.vfat -F 32 -n "${LABEL}BOOT" /dev/${PARTS[1]} || error "failed to format partition 1"
         info "Formatting partition 2 as raw"
         dd status=none if=/dev/zero of=/dev/${PARTS[2]} 2>/dev/null
