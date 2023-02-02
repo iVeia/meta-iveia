@@ -355,6 +355,20 @@ run_jtag_tcl()
 }
 
 
+unmount_all()
+{
+    # DEVICE partitions may have been mounted multiple times.  Assume not
+    # more than 5.  Assume each device has max 9 partitions.
+    for i in {1..5}; do
+        # sda style device partitions are of the form sda1
+        umount "$DEVICE"[1-9]
+        # mmcblk0 style device partitions are of the form mmcblk0p1
+        umount "$DEVICE"p[1-9]
+        sleep 1
+    done
+}
+
+
 #
 # Direct QSPI programming.  Replaces Xilinx's program_flash:
 #   - Loads uEnv.qspi.txt into RAM for load via JTAG (similar to JTAG_MODE)
@@ -556,14 +570,7 @@ elif ((MODE==SD_MODE)); then
         P1_END=$FAT_SIZE
         P2_END=$((P1_END + 1))
         P3_END=$((P2_END + ROOTFS_SIZE))
-        # DEVICE partitions may have been mounted multiple times.  Assume not
-        # more than 10.  Assume each device has max 9 partitions.
-        for i in {1..10}; do
-            # sda style device partitions are of the form sda1
-            umount "$DEVICE"[1-9] 2>/dev/null
-            # mmcblk0 style device partitions are of the form mmcblk0p1
-            umount "$DEVICE"p[1-9] 2>/dev/null
-        done
+        unmount_all
         if command -v wipefs &> /dev/null; then
             wipefs -a "$DEVICE" >/dev/null || error "wipefs failed.  Is device in use?"
         else
@@ -617,7 +624,13 @@ elif ((MODE==SD_MODE)); then
         # exist.  This issue has been reported online for years, but does not seem
         # to have a fix except for a sleep.
         #
+        # In addition, parted has a known issue that it may remount a
+        # filesystem after creating the partition if the old filesystem data is
+        # still there.  Only fix is to wipe the full block device (way slow) or
+        # unmount again - so we unmount again.
+        #
         sleep 1 # Ensure parted done
+        unmount_all
         # Create array of partition names (including primary device first)
         info "Formatting partition 1 as FAT32"
         mkfs.vfat -F 32 -n "${LABEL}BOOT" /dev/${PARTS[1]} || error "failed to format partition 1"
