@@ -28,7 +28,7 @@ built in the deploy directory above.  This includes, for example, the FSBL and
 PMUFW.  To rebuild these individually, you can use (to rebuild the FSBL):
 
 ```
-MACHINE=<CHOOSE SUPPORTED MACHINE> bitbake fsbl
+MACHINE=<CHOOSE SUPPORTED MACHINE> bitbake fsbl-firmware
 ```
 
 and to rebuild the PMUFW:

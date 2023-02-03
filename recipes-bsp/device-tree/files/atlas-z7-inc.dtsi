@@ -12,6 +12,22 @@
 		reg = <0x0 0x20000000>;
 	};
 
+    iv_ipmi: iv_ipmi {
+        compatible = "iv,ipmi";
+        #address-cells = <0x01>;
+        #size-cells = <0x01>;
+
+		// see Readme.ipmi
+
+        iv_ipmi_mb: iv_mb {
+            i2c = < 1 0x52 0 >;  // < bus_num addr offset >
+        };
+
+        iv_ipmi_io: iv_io {
+            i2c = < 0 0x53 0 >;  // < bus_num addr offset >
+        };
+	};
+
 	usb_phy0: phy0@e0002000 {
 		compatible = "ulpi-phy";
 		#phy-cells = <0>;
@@ -77,6 +93,29 @@
 			bias-disable;
 		};
 	};
+};
+
+&adc {
+	#io-channel-cells = <1>;
+};
+
+&amba {
+	ps_adc_hwmon {
+		compatible = "iio-hwmon";
+		/* 1 temperature channel, and 8 voltage channels */
+		io-channels = <&adc 0>, 
+			    <&adc 1>, <&adc 2>, <&adc 3>, <&adc 4>,
+			    <&adc 5>, <&adc 6>, <&adc 7>, <&adc 8>;
+		io-channel-names = "PS TEMP", 
+				"VCC INT", "VCC AUX", "VCC BRAM", "VCC PINT",
+				"VCC PAUX", "VCC ODDR", "VREFP", "VREFN";
+	};
+
+    iveia_ocp {
+        compatible = "iveia,ocp";
+        reg = <0x0 0x40000000 0x0 0x01000000 0x0 0x70000000 0x0 0x00100000 0x0 0x74000000 0x0 0x00100000>;
+        reg-names = "full", "events", "io-board";
+    };
 };
 
 &usb0 {

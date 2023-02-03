@@ -1,7 +1,7 @@
-diff --git a/fsbl/xfsbl_main.c
+diff --git a/fsbl-firmware/xfsbl_main.c
 index dd4fe75125..0e230efd8a 100644
---- a/fsbl/xfsbl_main.c
-+++ b/fsbl/xfsbl_main.c
+--- a/fsbl-firmware/xfsbl_main.c
++++ b/fsbl-firmwware/xfsbl_main.c
 @@ -141,6 +141,13 @@ int main(void )
  				XFsbl_Printf(DEBUG_INFO,
  						"================= In Stage 2 ============ \n\r");

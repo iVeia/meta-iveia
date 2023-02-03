@@ -20,7 +20,7 @@ diff --git a/drivers/Makefile b/drivers/Makefile
 index 578f469..1662c8a 100644
 --- a/drivers/Makefile
 +++ b/drivers/Makefile
-@@ -85,6 +85,7 @@ obj-$(CONFIG_SPI)		+= spi/
+@@ -86,6 +86,7 @@ obj-$(CONFIG_SPI)		+= spi/
  obj-$(CONFIG_SPMI)		+= spmi/
  obj-$(CONFIG_HSI)		+= hsi/
  obj-$(CONFIG_SLIMBUS)		+= slimbus/
@@ -32,8 +32,8 @@ index 578f469..1662c8a 100644
  obj-$(CONFIG_GAMEPORT)		+= input/gameport/
  obj-$(CONFIG_INPUT)		+= input/
  obj-$(CONFIG_RTC_LIB)		+= rtc/
--obj-y				+= i2c/ media/
-+obj-y				+= media/
+-obj-y				+= i2c/ i3c/ media/
++obj-y				+= i3c/ media/
  obj-$(CONFIG_PPS)		+= pps/
  obj-y				+= ptp/
  obj-$(CONFIG_W1)		+= w1/

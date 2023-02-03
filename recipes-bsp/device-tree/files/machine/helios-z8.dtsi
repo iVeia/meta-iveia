@@ -1,0 +1,61 @@
+#include <atlas-z8.dtsi>
+
+/ {
+    model = "Helios Z8";
+    compatible = "iveia,helios-z8", "iveia,atlas-z8", "xlnx,zynqmp";
+};
+
+/ {
+    aliases {
+        /* uart0 is console, revert change from atlas-z8.dtsi */
+        serial0 = &uart0;
+        serial1 = &uart1;
+    };
+};
+
+&iv_ipmi {
+    /delete-node/ iv_mb;
+    /delete-node/ iv_io;
+
+	iv_mb {
+		qspi = < 0 0 0xff000 >;  // < bus_num chip_sel offset >
+	};
+
+    iv_io {
+        qspi = < 0 0 0xfe000 >;  // < bus_num chip_sel offset >
+    };
+};
+
+
+&dwc3_0 {
+    /delete-property/ phys;
+    /delete-property/ phy-names;
+    /delete-property/ snps,usb3_lpm_capable;
+    /delete-property/ snps,dis_u2_susphy_quirk;
+    /delete-property/ snps,dis_u3_susphy_quirk;
+    maximum-speed = "high-speed";
+};
+
+&i2c1 {
+    /delete-node/ lm75@48;
+};
+
+&spi0 {
+	// disabled here, to be enabled in upper layer if desired
+	status = "disabled";
+	tpm_tis@0 {
+		compatible = "tcg,tpm_tis-spi";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+		//TODO: 
+		//  - TPM_PIRQ: MIO_44
+		//  - TPM_SW_RST: MIO_45
+		// ? pinctrl-names, pintctrl-0
+	};
+};
+
+&spi1 {
+	// bus not connected
+	status = "disabled";
+};
+

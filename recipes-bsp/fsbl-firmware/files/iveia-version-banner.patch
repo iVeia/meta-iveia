@@ -19,10 +19,10 @@ index 4dc1eaa..21f687f 100644
  
  /************************** Constant Definitions *****************************/
  
-@@ -364,6 +365,10 @@ void XFsbl_PrintFsblBanner(void )
-                  "Release %d.%d   %s  -  %s\r\n",
-                  SDK_RELEASE_YEAR, SDK_RELEASE_QUARTER,__DATE__,__TIME__);
- 
+@@ -360,6 +361,10 @@ void XFsbl_PrintFsblBanner(void )
+	XFsbl_Printf(DEBUG_GENERAL, "MultiBootOffset: 0x%0x\r\n",
+		XFsbl_In32(CSU_CSU_MULTI_BOOT));
+
 +	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Machine:     iVeia %s\r\n", IVEIA_MACHINE);
 +	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Src commit:  %s\r\n", IVEIA_SRC_BUILD_HASH);
 +	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Meta commit: %s\r\n", IVEIA_META_BUILD_HASH);

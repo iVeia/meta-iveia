@@ -28,6 +28,10 @@ DOC_INSERT_STR = "__INSERT_YOCTO_DOC_HERE_DO_NOT_REMOVE_THIS_LINE__"
 
 inherit iveia-version-header
 
+do_clean() {
+    rm -rf ${DEPLOY_DIR_IMAGE}/ivinstall*
+}
+
 do_compile() {
     INSERT_VARS="MACHINE='${MACHINE}'\n"
 
@@ -101,7 +105,8 @@ python do_deploy() {
             dep_dir("Image") :                     {"arcname" : "boot/Image"},
             loc_dir("qspi-zynqmp.tcl") :           {"arcname" : "jtag/qspi.tcl"},
             loc_dir("ivinstall-zynqmp.tcl") :      {"arcname" : "jtag/ivinstall.tcl"},
-            dep_dir("pmu-" + machine + ".elf") :   {"arcname" : "elf/pmu.elf"},
+            dep_dir("pmu-firmware-" + machine + ".elf") :
+                                                   {"arcname" : "elf/pmu.elf"},
             dep_dir("arm-trusted-firmware.elf") :  {"arcname" : "elf/atf.elf"},
         }
         tar_files.update(addtional_tar_files)
@@ -126,5 +131,6 @@ python do_deploy() {
     os.chmod(out_script, st.st_mode | stat.S_IEXEC)
 }
 
+addtask do_clean before do_compile
 addtask do_deploy after do_compile before do_build
 

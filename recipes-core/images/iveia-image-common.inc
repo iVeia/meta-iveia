@@ -27,6 +27,8 @@ IMAGE_INSTALL += "packagegroup-core-ssh-openssh"
 IMAGE_INSTALL += "opkg"
 IMAGE_REMOVE += "rpm"
 
+IMAGE_REMOVE += "python3"
+
 # iVeia specific
 IMAGE_INSTALL += "bdevmem"
 IMAGE_INSTALL += "busyloop"

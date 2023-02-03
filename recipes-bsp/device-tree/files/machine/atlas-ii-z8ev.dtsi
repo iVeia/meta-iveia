@@ -6,5 +6,6 @@
 };
 
 &dwc3_0 {
-	phys = <&lane0 PHY_TYPE_USB3 0 0 100000000>;
+	//phys = <&lane0 PHY_TYPE_USB3 0 0 100000000>;
+	phys = <&psgtr 0 PHY_TYPE_USB3 0 0>;
 };

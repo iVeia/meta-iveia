@@ -10,6 +10,19 @@
     };
 };
 
+&iv_ipmi {
+    /delete-node/ iv_mb;
+    /delete-node/ iv_io;
+
+	iv_mb {
+		qspi = < 0 0 0xff000 >;  // < bus_num chip_sel offset >
+	};
+
+    iv_io {
+        qspi = < 0 0 0xfe000 >;  // < bus_num chip_sel offset >
+    };
+};
+
 &sdhci0 {
     status = "disabled";
 };

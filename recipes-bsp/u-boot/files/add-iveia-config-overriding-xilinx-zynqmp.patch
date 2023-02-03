@@ -14,9 +14,9 @@ index 1356314..b8f7b50 100644
 --- a/include/configs/xilinx_zynqmp.h
 +++ b/include/configs/xilinx_zynqmp.h
 @@ -294,7 +294,7 @@
- 	BOOT_TARGET_DEVICES_DHCP(func) \
- 	func(XILINX, xilinx, na)
- 
+	BOOT_TARGET_DEVICES_PXE(func) \
+	BOOT_TARGET_DEVICES_DHCP(func)
+
 -#include <config_distro_bootcmd.h>
 +#include <configs/iveia-config.h>
  

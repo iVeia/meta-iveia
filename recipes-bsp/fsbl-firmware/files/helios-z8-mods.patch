@@ -1,0 +1,110 @@
+From 3569ed33781ff08345f5a9273e63531fff484ff3 Mon Sep 17 00:00:00 2001
+Message-Id: <3569ed33781ff08345f5a9273e63531fff484ff3.1645759863.git.rrogers@iveia.com>
+From: Rick Rogers <rrogers@iveia.com>
+Date: Thu, 24 Feb 2022 22:30:39 -0500
+Subject: [PATCH] helios-z8 mods
+
+- UART 0
+  - MIO7/18 combination not selectable in vivado
+  - designate MIO7 for uart and MIO19 for gpio
+- DDR
+- fsbl failed to handoff to ddr executable w/ 2019.2 generated
+psu_init()
+    - DDR_PHY_MR2_OFFSET setting copied from 2017 fsbl
+- 2 ddr variants (-53 and -62) requiring different ddr init params
+must be supported
+---
+ psu_init.c | 55 +++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 52 insertions(+), 3 deletions(-)
+
+diff --git a/fsbl-firmware/psu_init.c b/fsbl-firmware/psu_init.c
+index 3867e88..2b55454 100644
+--- a/fsbl-firmware/psu_init.c
++++ b/fsbl-firmware/psu_init.c
+@@ -12031,7 +12031,7 @@ unsigned long psu_mio_init_data(void)
+     * Configures MIO Pin 7 peripheral interface mapping
+     * (OFFSET, MASK, VALUE)      (0XFF18001C, 0x000000FEU ,0x00000000U)
+     */
+-	PSU_Mask_Write(IOU_SLCR_MIO_PIN_7_OFFSET, 0x000000FEU, 0x00000000U);
++	PSU_Mask_Write(IOU_SLCR_MIO_PIN_7_OFFSET, 0x000000FEU, 0x000000C0U);
+ /*##################################################################### */
+ 
+     /*
+@@ -12418,7 +12418,7 @@ unsigned long psu_mio_init_data(void)
+     * Configures MIO Pin 19 peripheral interface mapping
+     * (OFFSET, MASK, VALUE)      (0XFF18004C, 0x000000FEU ,0x000000C0U)
+     */
+-	PSU_Mask_Write(IOU_SLCR_MIO_PIN_19_OFFSET, 0x000000FEU, 0x000000C0U);
++	PSU_Mask_Write(IOU_SLCR_MIO_PIN_19_OFFSET, 0x000000FEU, 0x00000000U);
+ /*##################################################################### */
+ 
+     /*
+@@ -19802,10 +19802,43 @@ int psu_protection(void)
+ 	return 0;
+ }
+ 
++
++static void iv_read_mr8(u32 *retval) {
++	u32 uiTemp;
++
++    //Taken from Chapter 17 of TRM
++	//Poll MRSTAT.mr_wr_busy until it's 0
++	do {
++		uiTemp = Xil_In32(0xfd070018);
++	} while ( uiTemp & 0x01);
++
++	Xil_Out32(0xfd070010, 0x00000011);
++	Xil_Out32(0xfd070014, 0x00000800);
++	Xil_Out32(0xfd070010, 0x80000011);
++
++
++	//Poll MRCTRL0.mr_wr until it's 0
++	do {
++		uiTemp = Xil_In32(0xfd070010);
++	} while ( uiTemp & 0x80000000);
++
++
++	//Poll MRSTAT.mr_wr_busy until it's 0
++	do {
++		uiTemp = Xil_In32(0xfd070018);
++	} while ( uiTemp & 0x01);
++
++	*retval = Xil_In32(0xfd09051c);
++
++	//Reset FIFO RD Pointer
++	Xil_In32(0xfd090548);
++}
++
+ int
+ psu_init(void)
+ {
+ 	int status = 1;
++    u32 ddr_mr8_reg;
+ 
+ 	status &= psu_mio_init_data();
+ 	status &=  psu_peripherals_pre_init_data();
+@@ -19816,6 +19816,22 @@ psu_init(void)
+ 	status &=  psu_peripherals_init_data();
+ 	init_peripheral();
+ 
++    //Two different memory chips are out there, the -053 and -062 part.
++    // They use the same Vivado memory settings, except :
++    //    -062 part : DRAM Capacity = 8192,  Row Address Bits = 15, Dual Rank = YES
++    //    -053 part : DRAM Capacity = 16384, Row Address Bits = 16, Dual Rank = NO
++    // The earlier ddr bringup used the -053 settings. These run fine on the -062, but will lead to memory issues later.
++    iv_read_mr8(&ddr_mr8_reg);
++	xil_printf("FSBL: DDR MR8 REG 0x%08x\r\n", ddr_mr8_reg);
++    if ( (ddr_mr8_reg & 0x000000ff) == 0x08) {
++	    xil_printf("FSBL: DETECTED -062 DDR...NOT CURRENTLY SUPPORTED\r\n");
++        //status &=  psu_ddr_init_data_062();
++    } else if ( (ddr_mr8_reg & 0x000000ff) == 0x10) {
++	    xil_printf("FSBL: DETECTED -053 DDR\r\n");
++    } else {
++	    xil_printf("FSBL: UNK DDR VARIANT\r\n");
++    }
++
+ 	status &=  psu_peripherals_powerdwn_data();
+ 	status &=    psu_afi_config();
+ 	psu_ddr_qos_init_data();
+-- 
+2.25.1

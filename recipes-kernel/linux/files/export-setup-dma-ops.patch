@@ -1,0 +1,11 @@
+This is needed for iVeia ZAP driver.
+
+diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
+index 4bf1dd3eb041..de81fbfef456 100644
+--- a/arch/arm64/mm/dma-mapping.c
++++ b/arch/arm64/mm/dma-mapping.c
+@@ -57,3 +57,4 @@ void arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
+ 		dev->dma_ops = &xen_swiotlb_dma_ops;
+ #endif
+ }
++EXPORT_SYMBOL(arch_setup_dma_ops);

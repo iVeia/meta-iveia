@@ -1,0 +1,11 @@
+chip "ps_adc_hwmon-*"
+    label temp1 "PS TEMP"
+    label in1 "VCC INT"
+    label in2 "VCC AUX"
+    label in3 "VCC BRAM"
+    label in4 "VCC PINT"
+    label in5 "VCC PAUX"
+    label in6 "VCC ODDR"
+    label in7 "VREFP"
+    label in8 "VREFN"
+

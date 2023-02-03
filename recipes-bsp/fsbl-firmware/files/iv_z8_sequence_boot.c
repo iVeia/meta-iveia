@@ -31,6 +31,8 @@
 #define CRL_APB_BOOT_MODE_USER_ALT_BOOT_MODE_MASK    ((u32)0X0000F000U)
 #define CRL_APB_BOOT_MODE_USER_USE_ALT_MASK    ((u32)0X00000100U)
 #define CRL_APB_BOOT_MODE_USER_BOOT_MODE_SHIFT   0
+#define CRL_APB_BOOT_MODE_USER_USE_ALT_SHIFT    8U
+#define CRL_APB_BOOT_MODE_USER_ALT_BOOT_MODE_SHIFT     12U
 
 extern iv_boot_sequence_t boot_seq[];
 extern int boot_dev_count;
@@ -45,7 +47,7 @@ static void soft_reset( void );
 
 #define BOARD_PART_NUMBER_FIELD_SIZE (sizeof(((struct iv_ipmi *)0)->board_area.board_part_number))
 
-int validate_ipmi(struct iv_ipmi * p_iv_ipmi)
+static int validate_ipmi(struct iv_ipmi * p_iv_ipmi)
 {
     unsigned char * p;
     unsigned char sum;
@@ -128,7 +130,7 @@ static int read_ipmi(struct iv_ipmi * ipmi)
  * Return part number ordinal GREATER THAN zero on success, othwerwise there
  * was an error with the field or converting to int.
  */
-int get_pn_ord(struct iv_ipmi * ipmi)
+static int get_pn_ord(struct iv_ipmi * ipmi)
 {
     char pn[BOARD_PART_NUMBER_FIELD_SIZE + 1];
     strncpy(pn, ipmi->board_area.board_part_number, BOARD_PART_NUMBER_FIELD_SIZE);

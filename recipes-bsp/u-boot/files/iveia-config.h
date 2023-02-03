@@ -39,7 +39,7 @@
     "        setenv boot_targets jtag ${boot_targets}; \n" \
     "    fi;\0" \
     "pauseboot=setenv pauseboot_on 1; boot\0" \
-    "bootseq=\n" \
+    "iv-bootseq=\n" \
     "    run zynq_test_forced_jtag; \n" \
     "    setexpr first_target sub ' .*' '' \"${boot_targets} \"; \n" \
     "    setexpr other_targets gsub \" ${first_target} \" ' ' \" ${boot_targets} \"; \n" \

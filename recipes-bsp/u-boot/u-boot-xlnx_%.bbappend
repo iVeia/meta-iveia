@@ -11,15 +11,16 @@ SRC_URI_append = "\
 SRC_URI_append = "\
     file://iveia-init.c;subdir=git/board/xilinx/common \
     file://iveia-ipmi.h;subdir=git/board/xilinx/common \
-    file://Makefile;subdir=git/board/xilinx/common \
     file://eeprom-ipmi-atlas-ii-z8p-hd.c;subdir=git/board/xilinx/common \
     file://iveia-config.h;subdir=git/include/configs \
     "
 
 # Patches & CFG
 SRC_URI_append = "\
+    file://xilinx-board-common.patch \    
     file://setexpr-Add-explicit-support-for-32-and-64-bit-ints.patch \
     file://Fix-saveenv-causes-next-boot-to-skip-board_late_init.patch \
+    file://add-iv-ipmi-fdt-hooks.patch \
     file://uboot.cfg \
     "
 

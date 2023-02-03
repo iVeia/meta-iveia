@@ -54,7 +54,10 @@ do_configure_append() {
 }
 
 do_deploy() {
-    # Override Xilinx's bbappended deploy, and do the default
-    # devicetree.bbclass's deploy
-    devicetree_do_deploy
+    # Xilinx appends to devicetree.bbclass's deploy, and we can't use their
+    # mods (which are based on system-top.dtb, which we've renamed).
+    # So, we deploy the DTBs ourselves.
+    for DTB_FILE in `ls *.dtb *.dtbo`; do
+        install -Dm 0644 ${B}/${DTB_FILE} ${DEPLOYDIR}/devicetree/${DTB_FILE}
+    done
 }

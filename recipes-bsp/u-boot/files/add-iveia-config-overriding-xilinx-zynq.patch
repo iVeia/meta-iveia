@@ -10,17 +10,16 @@ and allows iveia specific environment setup.
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/include/configs/zynq-common.h b/include/configs/zynq-common.h
-index 9494267..7e4d477 100644
 --- a/include/configs/zynq-common.h
 +++ b/include/configs/zynq-common.h
-@@ -214,7 +214,7 @@
- 	BOOT_TARGET_DEVICES_DHCP(func) \
- 	func(XILINX, xilinx, na)
- 
+@@ -190,7 +190,7 @@
+ 	BOOT_TARGET_DEVICES_PXE(func) \
+ 	BOOT_TARGET_DEVICES_DHCP(func)
+
 -#include <config_distro_bootcmd.h>
 +#include <configs/iveia-config.h>
  #endif /* CONFIG_SPL_BUILD */
- 
+
  /* Default environment */
 -- 
 2.7.4
