@@ -11,9 +11,9 @@ diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
 index 2a15414..5327125 100644
 --- a/arch/arm/Kconfig
 +++ b/arch/arm/Kconfig
-@@ -1592,6 +1592,7 @@ source "board/xilinx/zynq/Kconfig"
- source "board/xilinx/zynqmp/Kconfig"
- source "board/zipitz2/Kconfig"
+@@ -2037,6 +2037,7 @@ source "board/phytium/durian/Kconfig"
+ source "board/phytium/durian/Kconfig"
+ source "board/xen/xenguest_arm64/Kconfig"
  
 +source "board/iveia/Kconfig"
  source "arch/arm/Kconfig.debug"
