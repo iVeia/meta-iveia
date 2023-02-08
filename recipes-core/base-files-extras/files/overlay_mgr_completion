@@ -1,0 +1,25 @@
+_overlay_mgr_complete()
+{
+    local cur prev opts
+ 
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+ 
+    case "${prev}" in
+    overlay-mgr)
+	opts="help list status add remove"
+        ;;
+    add)
+	opts=`overlay-mgr list`
+        ;;
+    remove)
+	opts=`ls /sys/kernel/config/device-tree/overlays`
+        ;;
+    *)
+       ;;
+    esac
+ 
+    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+}
+complete -F _overlay_mgr_complete overlay-mgr

@@ -1,0 +1,43 @@
+#
+#  Completion for foo:
+#
+#  foo file [filename]
+#  foo hostname [hostname]
+#
+_iio_complete() 
+{
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+	case "${prev}" in
+    iio)
+    	opts="list "
+		attr=$(find -L /sys/bus/iio/devices -maxdepth 2 -name name)
+        for i in $attr
+        do
+            opts+="$(cat $i) "
+        done
+        ;;
+    *)
+    	opts='search '
+		attr=$(find -L /sys/bus/iio/devices -maxdepth 2 -name name)
+        for i in $attr
+        do
+			dev_name=$(cat $i)
+            #echo $dev_name
+            if [ "$dev_name" = "${prev}" ] ; then
+				phy_path=$(echo $i | sed 's:/name$::')
+                #opts=${phy_path}
+                opts+=`ls --color=never ${phy_path}`
+                break;
+			fi
+        done
+        ;;
+    esac
+
+    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+}
+complete -F _iio_complete iio
+

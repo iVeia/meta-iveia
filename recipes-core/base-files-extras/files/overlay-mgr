@@ -1,0 +1,73 @@
+#!/bin/bash
+
+#dmesg -c > /dev/null
+
+OVERLAYS=/sys/kernel/config/device-tree/overlays
+FIRMWARE=/lib/firmware
+
+usage="\
+$(basename $0) usage:
+    help - print usage
+    list - print available overlays
+    status - print currently loaded overlays
+    add <overlay> - insert overlay 
+    remove <overlay> - delete overlay
+"
+
+
+function add()
+{
+	if [ -e $OVERLAYS/$1 ]; then
+   		echo Overlay $1 already exists
+       	exit -1
+   	fi
+	#FW_FILE="dt-overlays/$(basename $FIRMWARE/$1)"
+	DTBO=$(basename $1)
+	LABEL="${DTBO%.*}"
+	FW_FILE="dt-overlays/$DTBO"
+	if [ ! -e "$FIRMWARE/$FW_FILE" ]; then
+   		echo $FW_FILE does not exist
+       	exit -1
+	fi
+	mkdir $OVERLAYS/$LABEL
+	echo $FW_FILE > $OVERLAYS/$LABEL/path
+}
+
+function remove()
+{
+	rmdir $OVERLAYS/$1
+}
+
+cmd=add
+
+case $1 in
+	help)
+		printf "$usage\n"
+		exit 0
+		;;
+	list)
+		ls $FIRMWARE/dt-overlays
+		;;
+	status)
+		ls -l $OVERLAYS
+		exit 0
+		;;
+	add)
+		add $2
+        	;;
+    	remove)
+		if [ "$2" == "all" ]; then
+			for f in $OVERLAYS/*
+			do
+				remove $(basename $f)
+			done
+		else
+        	remove $2
+		fi
+        	;;
+	*)
+      		printf "$usage\n"
+		exit 0
+        	;;
+esac
+
