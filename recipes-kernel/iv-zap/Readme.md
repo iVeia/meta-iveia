@@ -13,7 +13,7 @@
 
 &{/amba} {
     iv_zap {
-        compatible = "iveia,zap";
+        compatible = "iv,zap";
         memory-region = <0x1a>;
         num-devices = <0x10>;
         reg = <0x00 0x98000000 0x00 0x1000>;

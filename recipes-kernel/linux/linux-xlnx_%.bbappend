@@ -16,14 +16,6 @@ inherit iveia-version-header
 IVEIA_VERSION_HEADER_FILE = "${S}/include/iveia_version.h"
 
 #
-# Zap not currently buildable as an OOT module.  Future: build as module.
-#
-#SRC_URI += " \
-#    file://zap-add-driver.patch \
-#    file://drivers/char/zap/;subdir=git \
-#    "
-
-#
 # I2C-based MDIO driver
 #
 SRC_URI += " \

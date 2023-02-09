@@ -1,7 +1,7 @@
 /*
  * ZAP (Zero-copy Application Port) driver
  *
- * (C) Copyright 2008-2010, iVeia, LLC
+ * (C) Copyright 2008-2021, iVeia, LLC
  *
  * IVEIA IS PROVIDING THIS DESIGN, CODE, OR INFORMATION "AS IS" AS A
  * COURTESY TO YOU. BY PROVIDING THIS DESIGN, CODE, OR INFORMATION AS
@@ -83,6 +83,11 @@
  *	WQ - the DMA workqueues - are in dma.c.
  *	ISR - DMA ISRs - are board specific, and are therofore in dma_*.c
  */
+#include <linux/platform_device.h>
+#include <linux/of_platform.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/of_reserved_mem.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/slab.h>
@@ -96,13 +101,21 @@
 #include <asm/io.h>
 #include <asm/uaccess.h>
 #include <linux/proc_fs.h>
+#include <linux/ioport.h>
+#include <linux/io.h>
+#include <linux/dma-map-ops.h>
+//#include <linux/kallsyms.h>
 
-
-#define MAPIT
 
 #include "_zap.h"
 #include "pool.h"
 #include "dma.h"
+
+
+// arch_setup_dma_ops() may not be exported for arm64, so get via kallsyms_lookup_name()
+//static void *ksym_arch_setup_dma_ops;
+//typedef typeof(&arch_setup_dma_ops) arch_setup_dma_ops_fn;
+//#define arch_setup_dma_ops (* (arch_setup_dma_ops_fn)ksym_arch_setup_dma_ops)
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -110,13 +123,6 @@
 // Globals
 //
 ///////////////////////////////////////////////////////////////////////////
-
- 
-extern volatile void * tx_vaddr;
-extern volatile void * rx_vaddr;
-// Proc file entry. Mainly used for status and debug
-
-//#define IV_ZAP_DEVNO	(MKDEV(IV_ZAP_DEV_MAJOR, 0))
 
 #define MODNAME "zap"
 
@@ -130,15 +136,7 @@ extern volatile void * rx_vaddr;
 #define ZAP_POOL_MAX_RX_PACKETS ( DMA_BD_RX_NUM - 1 )
 #define ZAP_POOL_MAX_TX_PACKETS ( DMA_BD_TX_NUM - 1 )
 
-struct zap_dev * zap_devp;
-
-MODULE_DESCRIPTION("iVeia ZAP driver");
-MODULE_AUTHOR("iVeia, LLC");
-MODULE_LICENSE("GPL");
-
-struct zap_dev *zap_devices;
-
-static dev_t zap_dev_num;
+struct zap_dev * zap_devp = NULL;
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -164,60 +162,54 @@ zap_device_num(struct file *filp)
 static void
 setup_multiple_pools(int iNumPools)
 {
-//Reads zap_devp->rx/tx_vaddr and zap_devp->rx/tx_size, 
-//  and creates zap_devp->interface[1,2..iNumPools-1].(rx/tx_vaddr),(rx/tx_size)
     int i;
     unsigned long iRxSize,iTxSize;
     //unsigned int ulRxTopAddr;
 
     iRxSize = zap_devp->rx_pool_size / iNumPools;
     iTxSize = zap_devp->tx_pool_size / iNumPools;
-    for (i=0;i<iNumPools;i++){
-        zap_devp->interface[i].rx_vaddr = (void *)PAGE_ALIGN((unsigned long)(zap_devp->rx_pool_vaddr + iRxSize * i));
-        zap_devp->interface[i].tx_vaddr = (void *)PAGE_ALIGN((unsigned long)(zap_devp->tx_pool_vaddr + iTxSize * i));
-        zap_devp->interface[i].rx_paddr = __pa(zap_devp->interface[i].rx_vaddr);
-        zap_devp->interface[i].tx_paddr = __pa(zap_devp->interface[i].tx_vaddr);
+
+    for (i = 0; i < iNumPools; i++) {
+        zap_devp->interface[i].rx_paddr = (phys_addr_t)PAGE_ALIGN(((uintptr_t)zap_devp->rx_pool_paddr + iRxSize * i));
+        zap_devp->interface[i].tx_paddr = (phys_addr_t)PAGE_ALIGN(((uintptr_t)zap_devp->tx_pool_paddr + iRxSize * i));
     }
 
-    if (iNumPools == 1){
+    if (iNumPools == 1) {
         zap_devp->interface[iNumPools-1].rx_size = zap_devp->rx_pool_size;
         zap_devp->interface[iNumPools-1].tx_size = zap_devp->tx_pool_size;
-    }else{
+    } else {
         //Fill in sizes
-        for (i=0;i<iNumPools-1;i++){
-            zap_devp->interface[i].rx_size = zap_devp->interface[i+1].rx_vaddr - zap_devp->interface[i].rx_vaddr;
-            zap_devp->interface[i].tx_size = zap_devp->interface[i+1].tx_vaddr - zap_devp->interface[i].tx_vaddr;
+        for (i = 0; i < iNumPools-1; i++) {
+            zap_devp->interface[i].rx_size = zap_devp->interface[i+1].rx_paddr - zap_devp->interface[i].rx_paddr;
+            zap_devp->interface[i].tx_size = zap_devp->interface[i+1].tx_paddr - zap_devp->interface[i].tx_paddr;
         }
-        zap_devp->interface[iNumPools-1].rx_size = zap_devp->rx_pool_vaddr + zap_devp->rx_pool_size - zap_devp->interface[iNumPools-1].rx_vaddr;
-        zap_devp->interface[iNumPools-1].tx_size = zap_devp->tx_pool_vaddr + zap_devp->tx_pool_size - zap_devp->interface[iNumPools-1].tx_vaddr;
+        zap_devp->interface[iNumPools-1].rx_size = zap_devp->rx_pool_paddr + zap_devp->rx_pool_size - zap_devp->interface[iNumPools-1].rx_paddr;
+        zap_devp->interface[iNumPools-1].tx_size = zap_devp->tx_pool_paddr + zap_devp->tx_pool_size - zap_devp->interface[iNumPools-1].tx_paddr;
     }
 
-/*
+#if defined(DEBUG)
     //PRINT RX RESULTS
     printk(KERN_ERR "****SETUP_MULTIPLE_POOLS****\n");
-    printk(KERN_ERR "rx_paddr = 0x%08x\n",zap_devp->rx_pool_paddr);
-    printk(KERN_ERR "rx_vaddr = 0x%08x\n",zap_devp->rx_pool_vaddr);
-    printk(KERN_ERR "rx_size  = 0x%08x\n",zap_devp->rx_pool_size);
+    printk(KERN_ERR "rx_paddr = 0x%llx\n",zap_devp->rx_pool_paddr);
+    printk(KERN_ERR "rx_size  = 0x%lx\n",zap_devp->rx_pool_size);
     for (i=0;i<iNumPools;i++){
         printk(KERN_ERR "\t**POOL %d\n",i);
-        printk(KERN_ERR "\t\trx_paddr = 0x%08x\n",zap_devp->interface[i].rx_paddr);
-        printk(KERN_ERR "\t\trx_vaddr = 0x%08x\n",zap_devp->interface[i].rx_vaddr);
-        printk(KERN_ERR "\t\trx_size  = 0x%08x\n",zap_devp->interface[i].rx_size);
+        printk(KERN_ERR "\t\trx_paddr = 0x%llx\n",zap_devp->interface[i].rx_paddr);
+        printk(KERN_ERR "\t\trx_size  = 0x%lx\n",zap_devp->interface[i].rx_size);
     }
 
     //PRINT TX RESULTS
     printk(KERN_ERR "****SETUP_MULTIPLE_POOLS****\n");
-    printk(KERN_ERR "tx_paddr = 0x%08x\n",zap_devp->tx_pool_paddr);
-    printk(KERN_ERR "tx_vaddr = 0x%08x\n",zap_devp->tx_pool_vaddr);
-    printk(KERN_ERR "tx_size  = 0x%08x\n",zap_devp->tx_pool_size);
+    printk(KERN_ERR "tx_paddr = 0x%llx\n",zap_devp->tx_pool_paddr);
+    printk(KERN_ERR "tx_size  = 0x%lx\n",zap_devp->tx_pool_size);
     for (i=0;i<iNumPools;i++){
         printk(KERN_ERR "\t**POOL %d\n",i);
-        printk(KERN_ERR "\t\ttx_paddr = 0x%08x\n",zap_devp->interface[i].tx_paddr);
-        printk(KERN_ERR "\t\ttx_vaddr = 0x%08x\n",zap_devp->interface[i].tx_vaddr);
-        printk(KERN_ERR "\t\ttx_size  = 0x%08x\n",zap_devp->interface[i].tx_size);
+        printk(KERN_ERR "\t\ttx_paddr = 0x%llx\n",zap_devp->interface[i].tx_paddr);
+        printk(KERN_ERR "\t\ttx_size  = 0x%lx\n",zap_devp->interface[i].tx_size);
     }
-*/
+#endif
 
+    return;
 }
 
 static int 
@@ -241,6 +233,8 @@ IsJumboPacketSupported(void)
 
 	return 1;
 }
+
+
 ///////////////////////////////////////////////////////////////////////////
 //
 // Public funcs
@@ -254,7 +248,8 @@ int zap_read_procmem(char *buf, char **start, off_t offset, int count, int *eof,
     dma_ll_update_fpga_parameters();
 
 	len+= sprintf(buf + len, "FPGA CODE: %d\n",zap_devp->fpga_params.fpga_board_code);
-	len+= sprintf(buf + len, "FPGA Version: v%d_%d_%c\n",zap_devp->fpga_params.fpga_version_major,zap_devp->fpga_params.fpga_version_minor,zap_devp->fpga_params.fpga_version_release);
+	len+= sprintf(buf + len, "FPGA Version: v%d_%d_%c\n",zap_devp->fpga_params.fpga_version_major, 
+            zap_devp->fpga_params.fpga_version_minor, zap_devp->fpga_params.fpga_version_release);
     len+= sprintf(buf + len, "NUM_INTERFACES = %d\n",zap_devp->fpga_params.num_interfaces);
 	len+= sprintf(buf + len, "RX_DAT_FIFO_SIZE = %d\n",(unsigned int)zap_devp->fpga_params.rx_dat_fifo_size);
 	len+= sprintf(buf + len, "RX_OOB_FIFO_SIZE = %d\n",(unsigned int)zap_devp->fpga_params.rx_oob_fifo_size);
@@ -275,7 +270,6 @@ int zap_read_procmem(char *buf, char **start, off_t offset, int count, int *eof,
  */
 int zap_open(struct inode *inode, struct file *filp)
 {
-	
 	struct zap_dev * dev;
 	ssize_t retval = 0;
 	int err;
@@ -286,37 +280,37 @@ int zap_open(struct inode *inode, struct file *filp)
 
     iDevice = zap_device_num(filp);
 
-    //printk(KERN_ERR "ZAP_OPEN, Device %d\n",iDevice);
+    dev_dbg(dev->dev, "%s(), Device %d\n", __func__, iDevice);
 
-	if (down_interruptible(&dev->sem)) return -ERESTARTSYS;
+	if (down_interruptible(&dev->sem)) 
+        return -ERESTARTSYS;
 
-
-	if ( (filp->f_flags & O_ACCMODE) != O_RDONLY ){
+	if ( (filp->f_flags & O_ACCMODE) != O_RDONLY ) {
 
 		dma_ll_update_fpga_parameters(); //Incase FPGA Reprogram has occured
 
-        if (zap_device_num(filp) >= dev->fpga_params.num_interfaces){
+        if (zap_device_num(filp) >= dev->fpga_params.num_interfaces) {
             up(&dev->sem);
             return -ENXIO;
         }
 
         setup_multiple_pools(zap_devp->fpga_params.num_interfaces);
 
-        if (is_tx_device(filp)){
+        if (is_tx_device(filp)) {
 			dev->interface[iDevice].tx_payload_max_size = dev->fpga_params.tx_dat_fifo_size;
 
-	        err = pool_create(&zap_devp->interface[iDevice].tx_pool, zap_devp->interface[iDevice].tx_vaddr, zap_devp->interface[iDevice].tx_size, ZAP_POOL_MAX_TX_PACKETS);
+	        err = pool_create(&zap_devp->interface[iDevice].tx_pool, (void *)zap_devp->interface[iDevice].tx_paddr, 
+                    zap_devp->interface[iDevice].tx_size);
 	        if (err) {
 		        printk(KERN_ERR "RX pool_create error %d\n", err);
 		        //goto fail;
 	        }
 
-			err = pool_resize(
-			&dev->interface[iDevice].tx_pool,
-			dev->interface[iDevice].tx_payload_max_size,
-			ZAP_POOL_MAX_TX_PACKETS,
-			0
-			);
+			err = pool_resize( &dev->interface[iDevice].tx_pool, 
+                    dev->interface[iDevice].tx_payload_max_size, 
+                    ZAP_POOL_MAX_TX_PACKETS, 
+                    0
+			        );
 			if (err) {
 				printk(KERN_ERR "pool_resize (tx) error %d\n", err);
 				//goto fail;
@@ -324,18 +318,18 @@ int zap_open(struct inode *inode, struct file *filp)
 		} else {
 			dev->interface[iDevice].rx_payload_max_size = dev->fpga_params.rx_dat_fifo_size;
 
-	        err = pool_create(&zap_devp->interface[iDevice].rx_pool, zap_devp->interface[iDevice].rx_vaddr, zap_devp->interface[iDevice].rx_size, ZAP_POOL_MAX_RX_PACKETS);
+	        err = pool_create(&zap_devp->interface[iDevice].rx_pool, (void *)zap_devp->interface[iDevice].rx_paddr, 
+                    zap_devp->interface[iDevice].rx_size);
 	        if (err) {
 		        printk(KERN_ERR "RX pool_create error %d\n", err);
 		        //goto fail;
 	        }
 
-			err = pool_resize(
-				&dev->interface[iDevice].rx_pool,
-				dev->interface[iDevice].rx_payload_max_size,
-				ZAP_POOL_MAX_RX_PACKETS,
-				0
-				);
+			err = pool_resize(&dev->interface[iDevice].rx_pool, 
+                    dev->interface[iDevice].rx_payload_max_size,
+				    ZAP_POOL_MAX_RX_PACKETS,
+				    0
+				    );
 			if (err) {
 				printk(KERN_ERR "pool_resize (rx) error %d\n", err);
 				//goto fail;
@@ -346,8 +340,8 @@ int zap_open(struct inode *inode, struct file *filp)
 
 	dev->open_count++;
 	up(&dev->sem);
-	return retval;
 
+	return retval;
 }
 
 int zap_release(struct inode *inode, struct file *filp)
@@ -360,13 +354,19 @@ int zap_release(struct inode *inode, struct file *filp)
 
     iDevice = zap_device_num(filp);
 
-    if (dma_tx_is_on(iDevice))
+    dev_dbg(dev->dev, "%s(), Device %d\n", __func__, iDevice);
+
+    if (dma_tx_is_on(iDevice)) {
         dma_stop_tx(iDevice);
+	}
 
-    if (dma_rx_is_on(iDevice))
+    if (dma_rx_is_on(iDevice)) {
         dma_stop_rx(iDevice);
+	}
 
-	if (down_interruptible(&dev->sem)) return -ERESTARTSYS;
+	if (down_interruptible(&dev->sem)) {
+        return -ERESTARTSYS;
+	}
 
 	dev->open_count--;
 
@@ -379,6 +379,7 @@ int zap_release(struct inode *inode, struct file *filp)
 	
 	return 0;
 }
+
 
 //This was added because Z8 was getting kernel panics on dma_map_single(NULL..)
 //http://stackoverflow.com/questions/19952968/dma-map-single-minimum-requirements-to-struct-device
@@ -401,36 +402,36 @@ ssize_t zap_read(struct file *filp, char __user *buf, size_t count, loff_t *f_po
 	unsigned long flags = 0;
 	unsigned long read_data[4];
     int iDevice;
-
-#ifdef MAPIT
     dma_addr_t dma_addr;
-#endif
 
-	if (count != sizeof(read_data)) return -EINVAL;
-	if (!access_ok(VERIFY_WRITE, (void __user *)buf, count)) return -EFAULT;
+	if (count != sizeof(read_data)) 
+        return -EINVAL;
+	if (!access_ok((void __user *)buf, count)) 
+        return -EFAULT;
 
     iDevice = zap_device_num(filp);
 
 	if ( is_tx_device(filp)) {
 		if ( filp->f_flags & O_NONBLOCK ) {
-			if ( ! pool_getbuf_try( &dev->interface[iDevice].tx_pool, &pbuf, &len )) return -EAGAIN;
+			if ( ! pool_getbuf_try( &dev->interface[iDevice].tx_pool, &pbuf, &len )) 
+                return -EAGAIN;
 		} else {
 			retval = pool_getbuf( &dev->interface[iDevice].tx_pool, &pbuf, &len );
-			if ( retval ) return retval;
+			if ( retval ) 
+                return retval;
 		}
 	} else {
 		if ( filp->f_flags & O_NONBLOCK ) {
-			if ( ! pool_deqbuf_try( &dev->interface[iDevice].rx_pool, &pbuf, &len, &ooblen, &flags )) return -EAGAIN;
+			if ( ! pool_deqbuf_try( &dev->interface[iDevice].rx_pool, &pbuf, &len, &ooblen, &flags )) 
+                return -EAGAIN;
 		} else {
 			retval = pool_deqbuf( &dev->interface[iDevice].rx_pool, &pbuf, &len, &ooblen, &flags );
-			if ( retval ) return retval;
+			if ( retval ) 
+                return retval;
 		}
 
-#ifdef MAPIT
         dma_addr = dma_map_single(&zap_device, (void *)pbuf, (size_t)len, DMA_FROM_DEVICE );
         dma_unmap_single(&zap_device, dma_addr, (size_t)len, DMA_FROM_DEVICE );
-#endif
-
 	}
 
 	read_data[0] = pool_pbuf2offset(
@@ -445,6 +446,7 @@ ssize_t zap_read(struct file *filp, char __user *buf, size_t count, loff_t *f_po
 
 	return count;
 }
+
 ssize_t zap_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
 	struct zap_dev * dev = filp->private_data;
@@ -454,12 +456,12 @@ ssize_t zap_write(struct file *filp, const char __user *buf, size_t count, loff_
 	unsigned long ooblen;
 	unsigned long write_data[3];
     int iDevice;
-#ifdef MAPIT
     dma_addr_t dma_addr;
-#endif
 
-	if (count != sizeof(write_data)) return -EINVAL;
-	if (!access_ok(VERIFY_READ, (void __user *)buf, count)) return -EFAULT;
+	if (count != sizeof(write_data)) 
+        return -EINVAL;
+	if (!access_ok((void __user *)buf, count)) 
+        return -EFAULT;
 
     iDevice = zap_device_num(filp);
 
@@ -484,13 +486,13 @@ ssize_t zap_write(struct file *filp, const char __user *buf, size_t count, loff_
 				return -EPERM;
 
 			//Check to make sure Packet larger than max size is not being sent
-			if ((len > dev->interface[iDevice].tx_payload_max_size) || ((ooblen > dev->interface[iDevice].tx_header_size) && dev->interface[iDevice].tx_header_enable) )
+			if ((len > dev->interface[iDevice].tx_payload_max_size) || 
+                    ((ooblen > dev->interface[iDevice].tx_header_size) && 
+                     dev->interface[iDevice].tx_header_enable) )
 				return -EINVAL;
 
-#ifdef MAPIT
             dma_addr = dma_map_single(&zap_device,pbuf,len,DMA_TO_DEVICE);
             dma_unmap_single(&zap_device, dma_addr, len, DMA_TO_DEVICE);
-#endif
 
 			err = pool_enqbuf( &dev->interface[iDevice].tx_pool, pbuf, len, ooblen, 0 );
 
@@ -499,13 +501,14 @@ ssize_t zap_write(struct file *filp, const char __user *buf, size_t count, loff_
 	#else
 			dma_ll_tx_write_buf(iDevice);
     #endif
-
 		}
-		if ( err ) return err;
+		if ( err ) 
+            return err;
 	} else {
 		pbuf = pool_offset2pbuf( &dev->interface[iDevice].rx_pool, write_data[0] );
 		err = pool_freebuf( &dev->interface[iDevice].rx_pool, pbuf );
-		if ( err ) return err;
+		if ( err ) 
+            return err;
 	#if defined(CONFIG_ARCH_ZYNQ) || defined(CONFIG_ARCH_ZYNQMP)
 		//dma_ll_rx_free_buf();
 	#else
@@ -533,8 +536,10 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	 * wrong cmds: return ENOTTY (inappropriate ioctl) before access_ok()
 	 */
 
-	if (_IOC_TYPE(cmd) != ZAP_IOC_MAGIC) return -ENOTTY;
-	if (_IOC_NR(cmd) > ZAP_IOC_MAXNR) return -ENOTTY;
+	if (_IOC_TYPE(cmd) != ZAP_IOC_MAGIC) 
+        return -ENOTTY;
+	if (_IOC_NR(cmd) > ZAP_IOC_MAXNR) 
+        return -ENOTTY;
 
     iDevice = zap_device_num(filp);
 
@@ -545,13 +550,16 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	 * "write" is reversed
 	 */
 	if (_IOC_DIR(cmd) & _IOC_READ) {
-		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
+		err = !access_ok((void __user *)arg, _IOC_SIZE(cmd));
 	} else if (_IOC_DIR(cmd) & _IOC_WRITE) {
-		err =  !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
+		err =  !access_ok((void __user *)arg, _IOC_SIZE(cmd));
 	}
-	if (err) return -EFAULT;
+	if (err) 
+        return -EFAULT;
 
-	if (down_interruptible(&dev->sem)) return -ERESTARTSYS;
+	if (down_interruptible(&dev->sem)) 
+        return -ERESTARTSYS;
+
 	switch(cmd) {
 		case ZAP_IOC_R_STATUS:
 			__put_user( dev->status, (unsigned long __user *)arg);
@@ -570,17 +578,20 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		case ZAP_IOC_W_TX_MAX_SIZE:
 			//retval = dma_stop();
 			retval = dma_stop_tx(iDevice);
-			if ( retval ) break;
+			if ( retval ) 
+                break;
 			__get_user( ulTemp, (unsigned long __user *)arg);
 
 			//If IB Max Size > TX FIFO Size, return error
-			if (dev->interface[iDevice].tx_header_enable){
-				if (((ulTemp - dev->interface[iDevice].tx_header_size) > dev->fpga_params.tx_dat_fifo_size) && (dev->interface[iDevice].tx_jumbo_pkt_enable == 0)){
+			if (dev->interface[iDevice].tx_header_enable) {
+				if (((ulTemp - dev->interface[iDevice].tx_header_size) > dev->fpga_params.tx_dat_fifo_size) && 
+                        (dev->interface[iDevice].tx_jumbo_pkt_enable == 0)) {
 					retval = -EFBIG;
 					break;
 				}
 			}else{
-				if ((ulTemp > dev->fpga_params.tx_dat_fifo_size) && (dev->interface[iDevice].tx_jumbo_pkt_enable == 0)){
+				if ((ulTemp > dev->fpga_params.tx_dat_fifo_size) && 
+                        (dev->interface[iDevice].tx_jumbo_pkt_enable == 0)) {
 					retval = -EFBIG;
 					break;
 				}
@@ -602,21 +613,23 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		case ZAP_IOC_W_TX_HEADER_SIZE:
 			//retval = dma_stop();
 			retval = dma_stop_tx(iDevice);
-			if ( retval ) break;
+			if ( retval ) 
+                break;
 			__get_user( ulTemp, (unsigned long __user *)arg);
 
 			//If IB Max Size > TX FIFO Size, return error
-			if (ulTemp > dev->fpga_params.tx_oob_fifo_size){
+			if (ulTemp > dev->fpga_params.tx_oob_fifo_size) {
 				retval = -EFBIG;
 				break;
 			}
 
-			if (ulTemp >= dev->interface[iDevice].tx_payload_max_size){
+			if (ulTemp >= dev->interface[iDevice].tx_payload_max_size) {
 				retval = -EFBIG;
 				break;
 			}
 
-			if ( ((dev->interface[iDevice].tx_payload_max_size - ulTemp) > dev->fpga_params.tx_dat_fifo_size) && (dev->interface[iDevice].tx_jumbo_pkt_enable == 0)){
+			if ( ((dev->interface[iDevice].tx_payload_max_size - ulTemp) > dev->fpga_params.tx_dat_fifo_size) && 
+                    (dev->interface[iDevice].tx_jumbo_pkt_enable == 0)) {
 				retval = -EFBIG;
 				break;
 			}
@@ -636,17 +649,20 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		case ZAP_IOC_W_RX_MAX_SIZE:
 			//retval = dma_stop();
 			retval = dma_stop_rx(iDevice);
-			if ( retval ) break;
+			if ( retval ) 
+                break;
 			__get_user( ulTemp, (unsigned long __user *)arg);
 
 			//If IB Max Size > TX FIFO Size, return error
-			if (dev->interface[iDevice].rx_header_enable){
-				if ( ((ulTemp - dev->interface[iDevice].rx_header_size) > dev->fpga_params.rx_dat_fifo_size) && (dev->interface[iDevice].rx_jumbo_pkt_enable == 0)){
+			if (dev->interface[iDevice].rx_header_enable) {
+				if ( ((ulTemp - dev->interface[iDevice].rx_header_size) > dev->fpga_params.rx_dat_fifo_size) && 
+                        (dev->interface[iDevice].rx_jumbo_pkt_enable == 0)) {
 					retval = -EFBIG;
 					break;
 				}
 			}else{
-				if ( (ulTemp > dev->fpga_params.rx_dat_fifo_size) && (dev->interface[iDevice].rx_jumbo_pkt_enable == 0)){
+				if ( (ulTemp > dev->fpga_params.rx_dat_fifo_size) && 
+                        (dev->interface[iDevice].rx_jumbo_pkt_enable == 0)) {
 					retval = -EFBIG;
 					break;
 				}
@@ -667,7 +683,8 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		case ZAP_IOC_W_RX_HEADER_SIZE:
 			//retval = dma_stop();
 			retval = dma_stop_rx(iDevice);
-			if ( retval ) break;
+			if ( retval ) 
+                break;
 			__get_user( ulTemp, (unsigned long __user *)arg);
 
 			//If IB Max Size > RX FIFO Size, return error
@@ -681,7 +698,8 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				break;
 			}
 
-			if ( ((dev->interface[iDevice].rx_payload_max_size - ulTemp) > dev->fpga_params.rx_dat_fifo_size) && (dev->interface[iDevice].rx_jumbo_pkt_enable == 0)){
+			if ( ((dev->interface[iDevice].rx_payload_max_size - ulTemp) > dev->fpga_params.rx_dat_fifo_size) && 
+                    (dev->interface[iDevice].rx_jumbo_pkt_enable == 0)) {
 				retval = -EFBIG;
 				break;
 			}
@@ -702,13 +720,14 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		case ZAP_IOC_W_RX_JUMBO_EN:
 			//retval = dma_stop();
 			retval = dma_stop_rx(iDevice);
-			if ( retval ) break;
+			if ( retval ) 
+                break;
 			__get_user( ulTemp, (unsigned long __user *)arg);
 
 			if (ulTemp == 0)
 				dev->interface[iDevice].rx_jumbo_pkt_enable = 0;
 			else{
-				if (!IsJumboPacketSupported()){
+				if (!IsJumboPacketSupported()) {
 					retval = -EINVAL;
 					printk(KERN_ERR "ZAP : FPGA Image does not support Jumbo Packets\n");
 					break;
@@ -725,13 +744,14 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		case ZAP_IOC_W_TX_JUMBO_EN:
 			//retval = dma_stop();
 			retval = dma_stop_tx(iDevice);
-			if ( retval ) break;
+			if ( retval ) 
+                break;
 			__get_user( ulTemp, (unsigned long __user *)arg);
 
 			if (ulTemp == 0)
 				dev->interface[iDevice].tx_jumbo_pkt_enable = 0;
 			else{
-				if (!IsJumboPacketSupported()){
+				if (!IsJumboPacketSupported()) {
 					retval = -EINVAL;
 					printk(KERN_ERR "ZAP : FPGA Image does not support Jumbo Packets\n");
 					break;
@@ -759,9 +779,9 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			{
 				unsigned long dma_on;
 				__get_user( dma_on, (unsigned long __user *)arg);
-				if ( dma_on ){
+				if ( dma_on ) {
 					retval = dma_start_rx(iDevice);
-				}else{
+				} else {
 					retval = dma_stop_rx(iDevice);
 				}
 			}
@@ -776,7 +796,7 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			{
 				unsigned long dma_on;
 				__get_user( dma_on, (unsigned long __user *)arg);
-				if ( dma_on ){
+				if ( dma_on ) {
 					retval = dma_start_tx(iDevice);
 				}else{
 					retval = dma_stop_tx(iDevice);
@@ -799,11 +819,12 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			retval = -ENOTTY;
 			break;
 	}
+
 	up(&dev->sem);
+
 	return retval;
 
 }
-
 
 int zap_mmap(struct file *filp, struct vm_area_struct *vma)
 {
@@ -830,20 +851,22 @@ int zap_mmap(struct file *filp, struct vm_area_struct *vma)
 	available_size = pool_size;
 	pfn = ( pool_phys_start) >> PAGE_SHIFT;
 
-	if (requested_size > available_size) return -EINVAL;
+	if (requested_size > available_size) 
+        return -EINVAL;
 
-#ifndef MAPIT
-	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);//12 seconds
-#endif
-	//vma->vm_page_prot = pgprot_dmacoherent(vma->vm_page_prot);//11.8 seconds
+    dev_info(zap_devp->dev, "mmap %s 0x%0llx -> 0x%0lx (0x%0lx)\n", 
+            is_tx_device(filp) ? "tx":"rx", 
+            pool_phys_start, vma->vm_start, pool_size);
+
+    // setting pgprot_noncached results in performance hit in processing rx buff in user space
+	//vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 
 	ret = remap_pfn_range(vma, vma->vm_start, pfn, requested_size, vma->vm_page_prot);
-	//ret = io_remap_page_range(vma, vma->start, pool_phys_start + offset, requested_size, vma->vm_page_prot);
-	if (ret) return -EAGAIN;
+	if (ret) 
+        return -EAGAIN;
 
 	return 0;
 }
-
 
 unsigned int zap_poll(struct file *filp, poll_table *wait)
 {
@@ -853,7 +876,8 @@ unsigned int zap_poll(struct file *filp, poll_table *wait)
 	int ready;
     int iDevice;
 
-	if (down_interruptible(&dev->sem)) return 0;
+	if (down_interruptible(&dev->sem)) 
+        return 0;
 
     iDevice = zap_device_num(filp);
 
@@ -868,6 +892,7 @@ unsigned int zap_poll(struct file *filp, poll_table *wait)
 		pool_fifobufs_ready(&dev->interface[iDevice].rx_pool, &pq);
 	}
 	poll_wait(filp, pq, wait);
+
 	if ( is_tx_device(filp)) {
 		ready = pool_freebufs_ready(&dev->interface[iDevice].tx_pool, &pq);
 	} else {
@@ -899,34 +924,108 @@ struct file_operations zap_fops = {
  * Thefore, it must be careful to work correctly even if some of the items
  * have not been initialized
  */
-void zap_cleanup_module(void)
+static int zap_remove(struct platform_device *pdev)
 {
-	dma_cleanup(ZAP_MAX_DEVICES);
+    int i;
 
-	//pool_destroy(&zap_devp->rx_pool);
-	//pool_destroy(&zap_devp->tx_pool);
+    pr_info("zap - REMOVE\n");
 
-	/* Get rid of our char dev entries */
+	dma_cleanup( zap_devp->num_devices );
+
 	if (zap_devp) {
-		cdev_del(&zap_devp->cdev);
+        for( i = 0; i < zap_devp->num_devices; i++) {
+	        pool_destroy(&zap_devp->interface[i].rx_pool);
+	        pool_destroy(&zap_devp->interface[i].tx_pool);
+            device_destroy( zap_devp->class, MKDEV(MAJOR(zap_devp->node),(i*2)) );
+            device_destroy( zap_devp->class, MKDEV(MAJOR(zap_devp->node),(i*2)+1) );
+        }
+        class_destroy( zap_devp->class );
+        cdev_del(&zap_devp->cdev);
+        unregister_chrdev_region(zap_devp->node, zap_devp->num_devices * 2);
+
+        if (zap_devp->interface)
+            kfree(zap_devp->interface);
 		kfree(zap_devp);
+        zap_devp = NULL;
 	}
 
-	/* cleanup_module is never called if registering failed */
-	unregister_chrdev_region(zap_dev_num, ZAP_MAX_DEVICES * 2);
+    return 0;
 }
 
-extern bool nozap;
-
-int zap_init_module(void)
+static int zap_probe(struct platform_device *pdev)
 {
 	int err, i;
-	struct class * zap_class;
+    struct device_node *np;
+    struct reserved_mem *rmem = NULL;
+    u64 rx_pool_sz, tx_pool_sz;    
 
-	if (nozap) {
-		printk(KERN_WARNING "zap: driver disabled by kernel cmdline\n");
-		return 0;
+    pr_info("zap - PROBE\n");
+
+	zap_devp = kzalloc(sizeof(struct zap_dev), GFP_KERNEL);
+	if (!zap_devp) {
+		err = -ENOMEM;
+		goto fail;
 	}
+	memset(zap_devp, 0, sizeof(struct zap_dev));
+    platform_set_drvdata(pdev, zap_devp);
+	zap_devp->dev = &pdev->dev;
+
+    err = of_property_read_u32(pdev->dev.of_node, "num-devices", &zap_devp->num_devices);
+    if ( err )
+        zap_devp->num_devices = ZAP_MAX_DEVICES;
+    dev_info(zap_devp->dev, "num_devices %u\n", zap_devp->num_devices);
+
+    err = of_property_read_u32(pdev->dev.of_node, "irq", &zap_devp->hw_irq);
+    if ( err )
+    {
+        dev_err(zap_devp->dev, "irq not specified in device tree\n");
+		goto fail;
+    }
+    dev_info(zap_devp->dev, "irq %u\n", zap_devp->hw_irq);
+
+    if ( of_property_read_u64_index(pdev->dev.of_node, "reg", 0, &zap_devp->reg_base ) != 0 ) {
+        dev_err(zap_devp->dev, "dt reg ERROR (0)\n");
+        goto fail;
+    }
+    if ( of_property_read_u64_index(pdev->dev.of_node, "reg", 1, &zap_devp->reg_sz ) != 0 ) {
+        dev_err(zap_devp->dev, "dt reg ERROR (1)\n");
+        goto fail;
+    }
+    dev_info(zap_devp->dev, "pl reg base: 0x%0llx, sz 0x%0llx\n", zap_devp->reg_base, zap_devp->reg_sz); 
+
+
+    /* Get reserved memory region from Device-tree */
+    np = of_parse_phandle(pdev->dev.of_node, "memory-region", 0);
+    if (!np) {
+      dev_err(zap_devp->dev, "No %s specified\n", "memory-region");
+      goto fail;
+    }
+
+    rmem = of_reserved_mem_lookup(np);
+	if (!rmem) {
+		dev_err(zap_devp->dev, "unable to acquire memory-region\n");
+		return -EINVAL;
+    }
+
+    dev_info(zap_devp->dev, "memory-region: 0x%0llx 0x%0llx\n", rmem->base, rmem->size);
+
+    if ( of_find_property(pdev->dev.of_node, "pool-sizes", NULL) ) {
+        if ( of_property_read_u64_index(pdev->dev.of_node, "pool-sizes", 0, &tx_pool_sz ) != 0 ) {
+            dev_err(zap_devp->dev, "dt pool-sizes ERROR (0)\n");
+            goto fail;
+        }
+        if ( of_property_read_u64_index(pdev->dev.of_node, "pool-sizes", 1, &rx_pool_sz ) != 0 ) {
+            dev_err(zap_devp->dev, "dt pool-sizes ERROR (1)\n");
+            goto fail;
+        }
+        if ( (tx_pool_sz + rx_pool_sz) > rmem->size )
+        {
+            dev_err(zap_devp->dev, "dt pool-sizes ERROR\n");
+            goto fail;
+        }
+    } else {
+        tx_pool_sz = rx_pool_sz = rmem->size / 2;
+    }
 
     //create_proc_read_entry("iveia/zap", 0, NULL, zap_read_procmem, NULL);
 	/*
@@ -938,31 +1037,24 @@ int zap_init_module(void)
 	 * Even though ZAP_MAX_DEVICES is defined, we currently only support one
 	 * ZAP instance, and we only create one cdev.
 	 */
-	err = alloc_chrdev_region(&zap_dev_num,0,ZAP_MAX_DEVICES * 2,MODNAME);
-	//err = register_chrdev_region(IV_ZAP_DEVNO, ZAP_MAX_DEVICES * 2, MODNAME);
+	err = alloc_chrdev_region(&zap_devp->node, 0, zap_devp->num_devices * 2, MODNAME);
 	if (err) {
 		goto fail;
 	}
 
-	zap_class = class_create(THIS_MODULE, "zap");
-	if (IS_ERR(zap_class)){
-		err = PTR_ERR(zap_class);
+	zap_devp->class = class_create(THIS_MODULE, "zap");
+	if (IS_ERR(zap_devp->class)){
+		err = PTR_ERR(zap_devp->class);
 		goto fail;
 	}
 
-	zap_devp = kmalloc(sizeof(struct zap_dev), GFP_KERNEL);
-	if (!zap_devp) {
-		err = -ENOMEM;
-		goto fail;
-	}
-	memset(zap_devp, 0, sizeof(struct zap_dev));
 	
     sema_init(&zap_devp->sem, 1);
 
 	cdev_init(&zap_devp->cdev, &zap_fops);
 	zap_devp->cdev.owner = THIS_MODULE;
 	zap_devp->cdev.ops = &zap_fops;
-	err = cdev_add (&zap_devp->cdev, zap_dev_num, ZAP_MAX_DEVICES * 2);
+	err = cdev_add (&zap_devp->cdev, zap_devp->node, zap_devp->num_devices * 2);
 	if (err) {
 		printk(KERN_ERR "Error %d adding zap\n", err);
 		goto fail;
@@ -970,39 +1062,71 @@ int zap_init_module(void)
 
 	zap_devp->status = 0;
 
-    for (i=0;i<ZAP_MAX_DEVICES;i++){
+    zap_devp->interface = kzalloc( zap_devp->num_devices * sizeof(struct zap_if), GFP_KERNEL );
+    if ( !zap_devp->interface ) {
+		printk(KERN_ERR "ZAP kzalloc FAIL\n");
+        goto fail;
+    }
+
+    for (i=0; i < zap_devp->num_devices; i++ ) {
 	    zap_devp->interface[i].rx_highwater = 0;
 	    zap_devp->interface[i].tx_highwater = 0;
 	    zap_devp->interface[i].rx_header_enable = 0;
 	    zap_devp->interface[i].tx_header_enable = 0;
 	    zap_devp->interface[i].rx_header_size = 0;
 	    zap_devp->interface[i].tx_header_size = 0;
-		device_create(zap_class, NULL, MKDEV(MAJOR(zap_dev_num),i*2), NULL, "zaprx%d",i);
-		device_create(zap_class, NULL, MKDEV(MAJOR(zap_dev_num),(i*2)+1), NULL, "zaptx%d",i);
+		device_create(zap_devp->class, NULL, MKDEV(MAJOR(zap_devp->node),i*2), NULL, "zaprx%d",i);
+		device_create(zap_devp->class, NULL, MKDEV(MAJOR(zap_devp->node),(i*2)+1), NULL, "zaptx%d",i);
 	    zap_devp->interface[i].rx_jumbo_pkt_enable = 0;
 	    zap_devp->interface[i].tx_jumbo_pkt_enable = 0;
     }
 
-	err = dma_init(zap_devp,
-		&zap_devp->rx_pool_paddr, &zap_devp->rx_pool_vaddr, &zap_devp->rx_pool_size,
-		&zap_devp->tx_pool_paddr, &zap_devp->tx_pool_vaddr, &zap_devp->tx_pool_size);
+    dma_set_coherent_mask(zap_devp->dev, 0xFFFFFFFF);
+
+    zap_devp->rx_pool_paddr = rmem->base;
+    zap_devp->rx_pool_size = rx_pool_sz;
+
+    zap_devp->tx_pool_paddr = zap_devp->rx_pool_paddr + zap_devp->rx_pool_size;
+    zap_devp->tx_pool_size = tx_pool_sz;
+    dev_info(zap_devp->dev, "rx_pool 0x%llx (0x%lx), tx_pool 0x%llx (0x%lx)\n", 
+            zap_devp->rx_pool_paddr, zap_devp->rx_pool_size, 
+            zap_devp->tx_pool_paddr, zap_devp->tx_pool_size);
+
+	err = dma_init(zap_devp, 
+            zap_devp->rx_pool_paddr, zap_devp->rx_pool_size,
+		    zap_devp->tx_pool_paddr, zap_devp->tx_pool_size);
 	if (err) {
 		printk(KERN_ERR "ZAP DMA init error %d\n", err);
 		goto fail;
 	}
 
+	//ksym_arch_setup_dma_ops = (void *)kallsyms_lookup_name("arch_setup_dma_ops");
 	arch_setup_dma_ops(&zap_device, 0, 0, NULL,false);
 
 	return 0;
 
   fail:
-	/*
-	 * TODO: Fix: zap_cleanup_module() hangs driver (skipping it is benign, but
-	 * leaves resources open).
-	 */
-	zap_cleanup_module();
+	zap_remove( pdev );
 	return err;
 }
 
-module_init(zap_init_module);
-module_exit(zap_cleanup_module);
+
+static const struct of_device_id zap_of_match[] = {
+	{ .compatible = "iv,zap", },
+	{ /* end of list */ }
+};
+MODULE_DEVICE_TABLE(of, zap_of_match);
+
+static struct platform_driver zap_driver = {
+	.probe = zap_probe,
+	.remove = zap_remove,
+	.driver = {
+		.name = "zap",
+		.of_match_table = zap_of_match,
+	},
+};
+module_platform_driver(zap_driver);
+
+MODULE_DESCRIPTION("iVeia ZAP driver");
+MODULE_AUTHOR("iVeia, LLC");
+MODULE_LICENSE("GPL");
