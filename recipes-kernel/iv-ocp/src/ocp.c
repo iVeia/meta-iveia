@@ -1,5 +1,5 @@
 /*
- * OCP char driver
+ * iVeia OCP char driver
  *
  * (C) Copyright 2008-2020, iVeia, LLC
  *
@@ -427,7 +427,7 @@ fail:
 
 /* Match table for OF platform binding */
 static const struct of_device_id ocp_of_match[] = {
-	{ .compatible = "iveia,ocp", },
+	{ .compatible = "iv,ocp", },
 	{ /* end of list */ },
 };
 MODULE_DEVICE_TABLE(of, ocp_of_match);
@@ -436,7 +436,7 @@ static struct platform_driver ocp_driver = {
 	.probe = ocp_probe,
 	.remove = ocp_remove,
 	.driver = {
-		.name = "ocp",
+		.name = "iv-ocp",
 		.of_match_table = ocp_of_match,
 	},
 };

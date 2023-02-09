@@ -1,4 +1,5 @@
-obj-m := ocp.o
+iv-ocp-objs = ocp.o
+obj-m := iv-ocp.o
 
 SRC := $(shell pwd)
 
