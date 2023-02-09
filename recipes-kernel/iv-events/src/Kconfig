@@ -1,0 +1,8 @@
+config IVEIA_EVENTS
+	tristate "iVeia's Events driver"
+	depends on IVEIA_TITANV5 || IVEIA_TITAN_PPCX || MACH_IV_ATLAS_I_LPE || MACH_IV_ATLAS_I_Z7E
+	default n
+	---help---
+	  iVeia's Events driver
+	  
+	  This driver provides support for interrupt driven event notification.
