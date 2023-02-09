@@ -26,3 +26,13 @@ IMAGE_INSTALL += "kernel-module-iv-ocp"
 
 IMAGE_CLASSES_remove = "image-types-xilinx-qemu qemuboot-xilinx"
 
+
+# create /etc/os-release with build timestamp and git hash for meta-iveia 
+META_IVEIA_VER_DIR := "${THISDIR}"  
+gen_os_release() {
+        echo "date: $(date)" >> ${IMAGE_ROOTFS}/etc/os-release
+        META_IVEIA_COMMIT=`git -C ${META_IVEIA_VER_DIR} describe --dirty --match=NeVeRmAtCh --always`
+        echo "meta-iveia: ${META_IVEIA_COMMIT}" >> ${IMAGE_ROOTFS}/etc/os-release
+}
+IMAGE_PREPROCESS_COMMAND += "gen_os_release; "
+
