@@ -1,5 +1,5 @@
 HDF_BASE = "file://"
-HDF_PATH = "${HDF_NAME}"
+HDF_PATH = "${HDF_MACHINE}/system.xsa"
 FILESEXTRAPATHS:prepend := "${THISDIR}:"
 
 # atlas-z7/8 are "fake" MACHINEs, used solely for building SDKs.  They don't
