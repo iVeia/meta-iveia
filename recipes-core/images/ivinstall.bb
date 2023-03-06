@@ -7,11 +7,11 @@ inherit deploy
 # depends on do_populate_sysroot, which ${IVIMG} doesn't have.
 IVIMG := "iveia-image-minimal"
 do_deploy[depends] = "${IVIMG}:do_build"
-DEPENDS_append = " fsbl u-boot-xlnx u-boot-uenv xilinx-bootbin device-tree linux-xlnx ivstartup"
-DEPENDS_append_zynqmp = " pmu-firmware arm-trusted-firmware"
+DEPENDS:append = " fsbl u-boot-xlnx u-boot-uenv xilinx-bootbin device-tree linux-xlnx ivstartup"
+DEPENDS:append:zynqmp = " pmu-firmware arm-trusted-firmware"
 
 LOCAL_FILES := "${THISDIR}/files"
-FILESEXTRAPATHS_prepend := "${LOCAL_FILES}:"
+FILESEXTRAPATHS:prepend := "${LOCAL_FILES}:"
 HEADER_DOC = "ivinstall-doc"
 HEADER_ORIG = "ivinstall-header.sh"
 HEADER = "ivinstall-header-final.sh"

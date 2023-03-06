@@ -1,15 +1,15 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI_append_zynqmp = "\
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+SRC_URI:append:zynqmp = "\
     file://banner-added-additional-CRLF.patch \
     file://iveia-version-banner.patch \
     file://QSPI32-Workaround-for-unfinished-QSPI-transfer.patch \
     file://force-XSDPS_DEFAULT_SPEED_MODE-for-EMMC-boot-target.patch \
     "
-SRC_URI_append_zynq = "\
+SRC_URI:append:zynq = "\
     file://iveia-version-banner-zynq.patch \
     "
 
-SRC_URI_append_atlas-i-z8 = " file://eMMC-HS200-speed-workaround.patch"
+SRC_URI:append:atlas-i-z8 = " file://eMMC-HS200-speed-workaround.patch"
 
 # These patches must be applied after configure because configure dynamically
 # creates some sources (based off of the XSA hardware def), and these patches
@@ -36,12 +36,12 @@ FSBL_SRCS_zynqmp := "\
     ${THISDIR}/files/iv_z8_user_boot_sequence.c \
     ${THISDIR}/../shared/files/iveia-ipmi.h \
     "
-FSBL_SRCS_append_atlas-iii-z8e := " ${THISDIR}/files/${MACHINE}.c"
-FSBL_SRCS_append_atlas-iii-z8 := " ${THISDIR}/files/${MACHINE}.c"
-FSBL_SRCS_append_atlas-iii-z8-var10 := " ${THISDIR}/files/atlas-iii-z8.c"
-FSBL_SRCS_append_atlas-iii-z8-t2 := " ${THISDIR}/files/atlas-iii-z8.c"
-FSBL_SRCS_append_atlas-ii-z8ev := " ${THISDIR}/files/${MACHINE}.c"
-FSBL_SRCS_append_atlas-i-z8 := " ${THISDIR}/files/${MACHINE}.c"
+FSBL_SRCS:append:atlas-iii-z8e := " ${THISDIR}/files/${MACHINE}.c"
+FSBL_SRCS:append:atlas-iii-z8 := " ${THISDIR}/files/${MACHINE}.c"
+FSBL_SRCS:append:atlas-iii-z8-var10 := " ${THISDIR}/files/atlas-iii-z8.c"
+FSBL_SRCS:append:atlas-iii-z8-t2 := " ${THISDIR}/files/atlas-iii-z8.c"
+FSBL_SRCS:append:atlas-ii-z8ev := " ${THISDIR}/files/${MACHINE}.c"
+FSBL_SRCS:append:atlas-i-z8 := " ${THISDIR}/files/${MACHINE}.c"
 
 inherit switch-uart
 XPARAMETERS_H = "${B}/fsbl/zynqmp_fsbl_bsp/psu_cortexa53_0/include/xparameters.h"
