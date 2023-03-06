@@ -1,18 +1,18 @@
-From 9d5bfcf6bfa4571c0222294c3e585112f0aafac3 Mon Sep 17 00:00:00 2001
+From 48017cd6b78a3ddda8100c6f9222b8040af87dea Mon Sep 17 00:00:00 2001
 From: Brian Silverman <bsilverman@iveia.com>
 Date: Tue, 12 Jan 2021 13:47:43 -0500
-Subject: [PATCH 1/2] mdio-i2c-gen: add driver to build
+Subject: [PATCH 4/5] mdio-i2c-gen: add driver to build
 
 ---
- drivers/net/phy/Kconfig  | 10 ++++++++++
- drivers/net/phy/Makefile |  1 +
+ drivers/net/mdio/Kconfig  | 10 ++++++++++
+ drivers/net/mdio/Makefile |  1 +
  2 files changed, 11 insertions(+)
 
-diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
-index 442cbab..c1ee9b2 100644
---- a/drivers/net/phy/Kconfig
-+++ b/drivers/net/phy/Kconfig
-@@ -117,6 +117,16 @@ config MDIO_I2C
+diff --git a/drivers/net/mdio/Kconfig b/drivers/net/mdio/Kconfig
+index 6da1fcb25847..52fe0412477f 100644
+--- a/drivers/net/mdio/Kconfig
++++ b/drivers/net/mdio/Kconfig
+@@ -131,6 +131,16 @@ config MDIO_I2C
  
  	  This is library mode.
  
@@ -26,21 +26,21 @@ index 442cbab..c1ee9b2 100644
 +	  the BSC Slave Mode on the BCM54616S GigE PHY).  Potentially
 +	  compatibile with any I2C mode MDIO device.
 +
- config MDIO_MOXART
- 	tristate "MOXA ART MDIO interface support"
- 	depends on ARCH_MOXART || COMPILE_TEST
-diff --git a/drivers/net/phy/Makefile b/drivers/net/phy/Makefile
-index 9d31330..c30a3352 100644
---- a/drivers/net/phy/Makefile
-+++ b/drivers/net/phy/Makefile
-@@ -33,6 +33,7 @@ obj-$(CONFIG_MDIO_CAVIUM)	+= mdio-cavium.o
- obj-$(CONFIG_MDIO_GPIO)		+= mdio-gpio.o
- obj-$(CONFIG_MDIO_HISI_FEMAC)	+= mdio-hisi-femac.o
- obj-$(CONFIG_MDIO_I2C)		+= mdio-i2c.o
-+obj-$(CONFIG_MDIO_I2C_GEN)	+= mdio-i2c-gen.o
- obj-$(CONFIG_MDIO_MOXART)	+= mdio-moxart.o
- obj-$(CONFIG_MDIO_MSCC_MIIM)	+= mdio-mscc-miim.o
- obj-$(CONFIG_MDIO_OCTEON)	+= mdio-octeon.o
+ config MDIO_MVUSB
+ 	tristate "Marvell USB to MDIO Adapter"
+ 	depends on USB
+diff --git a/drivers/net/mdio/Makefile b/drivers/net/mdio/Makefile
+index 15f8dc4042ce..6463e394660c 100644
+--- a/drivers/net/mdio/Makefile
++++ b/drivers/net/mdio/Makefile
+@@ -13,6 +13,7 @@ obj-$(CONFIG_MDIO_CAVIUM)		+= mdio-cavium.o
+ obj-$(CONFIG_MDIO_GPIO)			+= mdio-gpio.o
+ obj-$(CONFIG_MDIO_HISI_FEMAC)		+= mdio-hisi-femac.o
+ obj-$(CONFIG_MDIO_I2C)			+= mdio-i2c.o
++obj-$(CONFIG_MDIO_I2C_GEN)		+= mdio-i2c-gen.o
+ obj-$(CONFIG_MDIO_IPQ4019)		+= mdio-ipq4019.o
+ obj-$(CONFIG_MDIO_IPQ8064)		+= mdio-ipq8064.o
+ obj-$(CONFIG_MDIO_MOXART)		+= mdio-moxart.o
 -- 
-2.7.4
+2.25.1
 
