@@ -1,4 +1,4 @@
-From 56e732e6bc5b3124dc7dd67ba9366744fc4d2938 Mon Sep 17 00:00:00 2001
+From 705080209e6507fa8df85783d5e6742c5c88043c Mon Sep 17 00:00:00 2001
 From: Brian Silverman <bsilverman@iveia.com>
 Date: Thu, 26 May 2022 17:04:34 -0400
 Subject: [PATCH] include iVeia Kconfig
@@ -8,17 +8,14 @@ Subject: [PATCH] include iVeia Kconfig
  1 file changed, 1 insertion(+)
 
 diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 2a15414..5327125 100644
+index b31b92f5fe..1eabb70462 100644
 --- a/arch/arm/Kconfig
 +++ b/arch/arm/Kconfig
-@@ -1592,6 +1592,7 @@ source "board/xilinx/zynq/Kconfig"
- source "board/xilinx/zynqmp/Kconfig"
- source "board/zipitz2/Kconfig"
+@@ -2216,6 +2216,7 @@ source "board/phytium/durian/Kconfig"
+ source "board/xen/xenguest_arm64/Kconfig"
+ source "board/keymile/Kconfig"
  
 +source "board/iveia/Kconfig"
  source "arch/arm/Kconfig.debug"
  
  endmenu
--- 
-2.7.4
-

@@ -1,4 +1,4 @@
-From 3c215433adfecdda8a42e214046e586ba8b96f30 Mon Sep 17 00:00:00 2001
+From 65e7ff358c011390e426c63ba42fe3e5fc4ba518 Mon Sep 17 00:00:00 2001
 From: Brian Silverman <bsilverman@iveia.com>
 Date: Wed, 8 Apr 2020 11:37:41 -0400
 Subject: [PATCH] Fix: saveenv causes next boot to skip board_late_init()
@@ -10,10 +10,10 @@ previously saved, we still need to determine the bootmode, reset reason, etc.
  1 file changed, 5 deletions(-)
 
 diff --git a/board/xilinx/zynqmp/zynqmp.c b/board/xilinx/zynqmp/zynqmp.c
-index 853f4f9..762fd6a 100644
+index 0fcc6ff993..12a74deb9e 100644
 --- a/board/xilinx/zynqmp/zynqmp.c
 +++ b/board/xilinx/zynqmp/zynqmp.c
-@@ -589,11 +589,6 @@ int board_late_init(void)
+@@ -622,11 +622,6 @@ int board_late_init(void)
  	usb_ether_init();
  #endif
  
@@ -22,9 +22,9 @@ index 853f4f9..762fd6a 100644
 -		return 0;
 -	}
 -
- 	ret = set_fdtfile();
- 	if (ret)
- 		return ret;
+ 	if (!CONFIG_IS_ENABLED(ENV_VARS_UBOOT_RUNTIME_CONFIG))
+ 		return 0;
+ 
 -- 
-2.7.4
+2.25.1
 
