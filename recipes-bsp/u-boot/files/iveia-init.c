@@ -10,6 +10,7 @@
  */
 #include <common.h>
 #include <linux/ctype.h>
+#include <dm.h>
 #include <i2c.h>
 #include <env.h>
 #include <iveia_version.h>
@@ -157,12 +158,13 @@ static int read_ipmi(int bus, int addr, struct iv_ipmi * p_iv_ipmi)
     int i;
     int ret = -1;
     int err;
-    unsigned int oldbus;
+    struct udevice *dev;
 
-    oldbus = i2c_get_bus_num();
-    i2c_set_bus_num(bus);
+    err = i2c_get_chip_for_busnum(bus, addr, 2, &dev);
+    if (err)
+        goto read_ipmi_exit;
 
-    err = i2c_read(addr, 0, 2, (uchar *) p_iv_ipmi, sizeof(*p_iv_ipmi));
+    err = dm_i2c_read(dev, 0, (uchar *) p_iv_ipmi, sizeof(*p_iv_ipmi));
     if (err != 0)
         goto read_ipmi_exit;
 
@@ -193,8 +195,7 @@ static int read_ipmi(int bus, int addr, struct iv_ipmi * p_iv_ipmi)
     ret = 0;
 
 read_ipmi_exit:
-    i2c_set_bus_num(oldbus);
-
+    /* TODO: Can probably convert the "goto" pattern back to "return" pattern now that there is no cleanup step here anymore */
     return ret;
 }
 
@@ -499,7 +500,6 @@ int misc_init_r(void)
     printf("Src commit:  %s\n", IVEIA_SRC_BUILD_HASH);
     printf("Meta commit: %s\n", IVEIA_META_BUILD_HASH);
 
-    i2c_init(100000, 0);
     board_scan();
     if (sn_to_mac_unittests()) {
         set_mac_addrs();
