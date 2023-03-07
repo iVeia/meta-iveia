@@ -11,7 +11,7 @@
 #include <common.h>
 #include <linux/ctype.h>
 #include <i2c.h>
-#include <environment.h>
+#include <env.h>
 #include <iveia_version.h>
 #include "iveia-ipmi.h"
 
