@@ -44,7 +44,7 @@ FSBL_SRCS:append:atlas-ii-z8ev := " ${THISDIR}/files/${MACHINE}.c"
 FSBL_SRCS:append:atlas-i-z8 := " ${THISDIR}/files/${MACHINE}.c"
 
 inherit switch-uart
-XPARAMETERS_H = "${B}/fsbl/zynqmp_fsbl_bsp/psu_cortexa53_0/include/xparameters.h"
+XPARAMETERS_H = "${B}/fsbl-firmware/zynqmp_fsbl_bsp/psu_cortexa53_0/include/xparameters.h"
 
 inherit iveia-version-header
-IVEIA_VERSION_HEADER_FILE = "${B}/fsbl/iveia_version.h"
+IVEIA_VERSION_HEADER_FILE = "${B}/fsbl-firmware/iveia_version.h"
