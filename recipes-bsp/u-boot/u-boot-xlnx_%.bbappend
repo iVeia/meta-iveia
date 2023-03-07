@@ -11,9 +11,9 @@ SRC_URI:append = "\
 SRC_URI:append = "\
     file://iveia-init.c;subdir=git/board/xilinx/common \
     file://iveia-ipmi.h;subdir=git/board/xilinx/common \
-    file://Makefile;subdir=git/board/xilinx/common \
     file://eeprom-ipmi-atlas-ii-z8p-hd.c;subdir=git/board/xilinx/common \
     file://iveia-config.h;subdir=git/include/configs \
+    file://Add-iveia-initialization-to-Makefile.patch \
     "
 
 # Patches & CFG
