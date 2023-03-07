@@ -8,7 +8,7 @@ MACHINE_FEATURES = "rtc ext2 ext3 vfat usbhost"
 #
 # Atlas Z7 is based off of ZC702 (with mods to the u-boot recipe)
 #
-UBOOT_MACHINE = "zynq_zc702_config"
+UBOOT_MACHINE = "xilinx_zynq_virt_defconfig"
 
 SERIAL_CONSOLE = "115200 ttyPS0"
 SERIAL_CONSOLES_CHECK = "${SERIAL_CONSOLES}"

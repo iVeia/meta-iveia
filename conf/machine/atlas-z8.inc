@@ -9,7 +9,7 @@ EXTRA_IMAGE_FEATURES += "fpga-manager"
 #
 # Atlas Z8 is based off of ZCU102 (with mods to the u-boot recipe)
 #
-UBOOT_MACHINE = "xilinx_zynqmp_zcu102_rev1_0_defconfig"
+UBOOT_MACHINE = "xilinx_zynqmp_virt_defconfig"
 
 SERIAL_CONSOLE = "115200 ttyPS0"
 SERIAL_CONSOLES_CHECK = "${SERIAL_CONSOLES}"
