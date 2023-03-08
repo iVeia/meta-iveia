@@ -166,22 +166,6 @@ if ((DO_VERSION)); then
     echo "Build date: ${IVEIA_BUILD_DATE}"
     echo
 
-    echo "Archive MD5SUMs:"
-    extract_archive_to_TMPDIR
-    (
-        cd $TMPDIR
-        if [[ $(uname) == Darwin ]]; then
-            verify md5 xargs
-            find . -depth +1 -type f | xargs -n1 md5 | \
-                awk -F"[() =]*" '{print $3 " " $2}' | sort -k 2 > md5sums
-        else
-            verify md5sum xargs
-            find . -type f | xargs -n1 md5sum | sort -k 2 > md5sums
-        fi
-        while read ARCH_MD5 ARCH_FILE; do
-            echo "   ${ARCH_MD5} ${ARCH_FILE}"
-        done < md5sums
-    )
     exit 0
 fi
 
