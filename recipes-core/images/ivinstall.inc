@@ -35,7 +35,7 @@ do_clean() {
 do_compile() {
     INSERT_VARS="MACHINE='${MACHINE}'\n"
 
-    # Extract IOBOARD names from devicetree/*_overlay.dtbo files.
+    # Extract IOBOARD names from devicetree/ *_overlay.dtbo files.
     IOBOARDS=""
     for i in $(find ${DEPLOY_DIR_IMAGE}/devicetree/ -name "*_overlay.dtbo"); do
         IOBOARD=$(basename "$i")
@@ -48,8 +48,15 @@ do_compile() {
         INSERT_VARS="${INSERT_VARS}IOBOARDS='none'\n"
     fi
 
-    . "${B}/${PN}.versions"
-    INSERT_VARS="${INSERT_VARS}IVEIA_META_BUILD_HASH='${IVEIA_META_BUILD_HASH}'\n"
+    source "${META_IVEIA_VERSIONS_FILE}"
+    source "${B}/${PN}.versions"
+    INSERT_VARS="${INSERT_VARS}IVEIA_NUM_LAYERS='${IVEIA_NUM_LAYERS}'\n"
+    for i in `seq $IVEIA_NUM_LAYERS`; do
+        INDIRECT_LAYER=IVEIA_META_${i}_LAYER
+        INDIRECT_BUILD_HASH=IVEIA_META_${i}_BUILD_HASH
+        INSERT_VARS="${INSERT_VARS}${INDIRECT_LAYER}='${!INDIRECT_LAYER}'\n"
+        INSERT_VARS="${INSERT_VARS}${INDIRECT_BUILD_HASH}='${!INDIRECT_BUILD_HASH}'\n"
+    done
     INSERT_VARS="${INSERT_VARS}IVEIA_BUILD_DATE='${IVEIA_BUILD_DATE}'\n"
 
     # Insert variables defs, and then the header doc into the named lines of

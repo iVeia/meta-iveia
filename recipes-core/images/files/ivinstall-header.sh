@@ -160,9 +160,16 @@ extract_archive_to_TMPDIR()
 # If requested, display version and md5sums
 #
 if ((DO_VERSION)); then
-    [[ -n "$IVEIA_META_BUILD_HASH" || -n "$IVEIA_BUILD_DATE" ]] || \
-        error "INTERNAL ERROR: version not available"
-    echo "Meta commit: ${IVEIA_META_BUILD_HASH}"
+    if [[ -n "$IVEIA_NUM_LAYERS" ]]; then
+        for ((i = 1; i <= $IVEIA_NUM_LAYERS; i++)); do
+            INDIRECT_LAYER=IVEIA_META_${i}_LAYER
+            INDIRECT_BUILD_HASH=IVEIA_META_${i}_BUILD_HASH
+            echo "Layer (${!INDIRECT_LAYER}) commit: ${!INDIRECT_BUILD_HASH}"
+        done
+    else
+        echo "Versions unknown"
+    fi
+    [[ -z "$IVEIA_BUILD_DATE" ]] && IVEIA_BUILD_DATE="unknown"
     echo "Build date: ${IVEIA_BUILD_DATE}"
     echo
 

@@ -9,10 +9,7 @@ IMAGE_INSTALL += "packagegroup-core-ssh-openssh"
 
 # Add on packages
 IMAGE_INSTALL += "base-files-extras"
-IMAGE_INSTALL += "rsync parted coreutils"
-IMAGE_INSTALL += "e2fsprogs-e2fsck e2fsprogs-mke2fs e2fsprogs-tune2fs e2fsprogs-badblocks e2fsprogs-resize2fs"
-
-IMAGE_INSTALL += "util-linux"
+IMAGE_INSTALL += "rsync coreutils"
 IMAGE_INSTALL += "i2c-tools"
 IMAGE_INSTALL += "strace"
 IMAGE_INSTALL += "lmsensors-sensors lmsensors-libsensors"

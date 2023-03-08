@@ -596,7 +596,23 @@ int misc_init_r(void)
 {
     printf("Machine:     iVeia %s\n", IVEIA_MACHINE);
     printf("Src commit:  %s\n", IVEIA_SRC_BUILD_HASH);
-    printf("Meta commit: %s\n", IVEIA_META_BUILD_HASH);
+	#ifdef IVEIA_META_1_LAYER
+		printf("Layer (%s) commit: %s\n", IVEIA_META_1_LAYER, IVEIA_META_1_BUILD_HASH);
+	#else
+		printf("Layer commit: unknown\n");
+	#endif
+	#ifdef IVEIA_META_2_LAYER
+		printf("Layer (%s) commit: %s\n", IVEIA_META_2_LAYER, IVEIA_META_2_BUILD_HASH);
+	#endif
+	#ifdef IVEIA_META_3_LAYER
+		printf("Layer (%s) commit: %s\n", IVEIA_META_3_LAYER, IVEIA_META_3_BUILD_HASH);
+	#endif
+	#ifdef IVEIA_META_4_LAYER
+		printf("Layer (%s) commit: %s\n", IVEIA_META_4_LAYER, IVEIA_META_4_BUILD_HASH);
+	#endif
+	#if IVEIA_NUM_LAYERS > 4
+		#error More than four meta-iveia* layers not supported
+	#endif
 
     iv_ipmi_scan( gd->fdt_blob );
 
