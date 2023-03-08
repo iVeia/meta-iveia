@@ -45,11 +45,11 @@ index 2ef2a23ec8fe..d3481da02f13 100644
  			   NULL, 0, -1, -1, NULL, set_init_arg);
  
 +    if (nozap) {
-+        pr_notice("zap: SKIPPING alloc_bootmem_pages()\n");
++        pr_notice("zap: SKIPPING memblock_alloc()\n");
 +    } else {
-+        pr_notice("zap: calling alloc_bootmem_pages()\n");
-+        rx_vaddr = alloc_bootmem_pages(128*1024*1024);
-+        tx_vaddr = alloc_bootmem_pages(4*1024*1024);
++        pr_notice("zap: calling memblock_alloc()\n");
++        rx_vaddr = memblock_alloc(128*1024*1024, PAGE_SIZE);
++        tx_vaddr = memblock_alloc(4*1024*1024, PAGE_SIZE);
 +    }
 +
  	/*
