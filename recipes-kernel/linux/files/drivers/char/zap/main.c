@@ -407,7 +407,7 @@ ssize_t zap_read(struct file *filp, char __user *buf, size_t count, loff_t *f_po
 #endif
 
 	if (count != sizeof(read_data)) return -EINVAL;
-	if (!access_ok(VERIFY_WRITE, (void __user *)buf, count)) return -EFAULT;
+	if (!access_ok((void __user *)buf, count)) return -EFAULT;
 
     iDevice = zap_device_num(filp);
 
@@ -459,7 +459,7 @@ ssize_t zap_write(struct file *filp, const char __user *buf, size_t count, loff_
 #endif
 
 	if (count != sizeof(write_data)) return -EINVAL;
-	if (!access_ok(VERIFY_READ, (void __user *)buf, count)) return -EFAULT;
+	if (!access_ok((void __user *)buf, count)) return -EFAULT;
 
     iDevice = zap_device_num(filp);
 
@@ -538,18 +538,7 @@ long zap_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
     iDevice = zap_device_num(filp);
 
-	/*
-	 * the direction is a bitmask, and VERIFY_WRITE catches R/W
-	 * transfers. `Type' is user-oriented, while
-	 * access_ok is kernel-oriented, so the concept of "read" and
-	 * "write" is reversed
-	 */
-	if (_IOC_DIR(cmd) & _IOC_READ) {
-		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
-	} else if (_IOC_DIR(cmd) & _IOC_WRITE) {
-		err =  !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
-	}
-	if (err) return -EFAULT;
+	if (!access_ok((void __user *)arg, _IOC_SIZE(cmd))) return -EFAULT;
 
 	if (down_interruptible(&dev->sem)) return -ERESTARTSYS;
 	switch(cmd) {
