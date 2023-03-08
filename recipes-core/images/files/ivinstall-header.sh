@@ -559,7 +559,7 @@ elif ((MODE==SD_MODE)); then
             wipefs -a "$DEVICE" >/dev/null || error "wipefs failed.  Is device in use?"
         else
             # Use poor man's wipefs
-            dd if=/dev/zero of="$DEVICE" bs=1M count=16 status=none || \
+            dd if=/dev/zero of="$DEVICE" bs=1M count=16 2>/dev/null || \
                 error "Unable to wipe disk.  Is device in use?"
         fi
         parted -s "$DEVICE" mklabel msdos || error "mklabel failed"
@@ -686,7 +686,7 @@ elif ((MODE==SD_MODE)); then
             ((${#PARTS[*]} > 3)) || error "partition 3 of $DEVICE does not exist"
             umount /dev/${PARTS[3]} 2>/dev/null
             findmnt /dev/${PARTS[3]} && error "partition 3 already mounted, cannot install rootfs"
-            dd if=$TMPDIR/rootfs/rootfs.ext4 of=/dev/${PARTS[3]} bs=1M status=none || \
+            dd if=$TMPDIR/rootfs/rootfs.ext4 of=/dev/${PARTS[3]} bs=1M 2>/dev/null || \
                 error "dd ext4 rootfs failed"
             e2label /dev/${PARTS[3]} ${LABEL}ROOTFS || \
                 (warn "ROOTFS label failed, disk label not set."; \
