@@ -8,8 +8,9 @@ workflow:
     - if: $CI_PIPELINE_SOURCE != "push"
 
 variables:
-  IVINSTALL_REL: out/ivinstall
-  IVINSTALL: ${CI_PROJECT_DIR}/${IVINSTALL_REL}
+  IVINSTALL_REL_PATH: out/ivinstall
+  IVINSTALL_ABS_PATH: ${CI_PROJECT_DIR}/${IVINSTALL_REL_PATH}
+  IVINSTALL_TGT: ivinstall-minimal
 
 build-job:
   stage: build
@@ -32,7 +33,7 @@ build-job:
 
     # These targets need to be rebuilt (if cached) in order to build in the
     # latest version stamp
-    CLEAN_TGTS: fsbl u-boot-xlnx linux-xlnx xilinx-bootbin ivinstall
+    CLEAN_TGTS: fsbl u-boot-xlnx linux-xlnx xilinx-bootbin ${IVINSTALL_TGT}
   timeout: 5h
   cache:
     paths:
@@ -72,14 +73,14 @@ build-job:
     - cd meta-iveia-project
     - echo "DL_DIR = \"${CI_PROJECT_DIR}/${DL_DIR}\"" >> build/conf/local.conf
     - echo "SSTATE_DIR = \"${CI_PROJECT_DIR}/${SSTATE_DIR}\"" >> build/conf/local.conf
-    - mkdir -p ${IVINSTALL}
+    - mkdir -p ${IVINSTALL_ABS_PATH}
     - |
       set -v # Required to force display multiline command
       SS="source setupsdk"
       for m in $MACHINES; do
         su builder -c "$SS && MACHINE=$m bitbake -c cleansstate ${CLEAN_TGTS}" || exit 1
-        su builder -c "$SS && MACHINE=$m bitbake ivinstall" || exit 1
-        cp -v build/tmp/deploy/images/$m/ivinstall-$m ${IVINSTALL} || exit 1
+        su builder -c "$SS && MACHINE=$m bitbake ${IVINSTALL_TGT}" || exit 1
+        cp -v build/tmp/deploy/images/$m/${IVINSTALL_TGT}-$m ${IVINSTALL_ABS_PATH} || exit 1
       done
     - |
       set -v # Required to force display multiline command
@@ -87,13 +88,13 @@ build-job:
       for s in $SDKS; do
         su builder -c "$SS && MACHINE=$s bitbake iveia-image-minimal -c populate_sdk" || exit 1
         IMG_PREFIX=build/tmp/deploy/sdk/petalinux-glibc-x86_64-iveia-image-minimal
-        cp -v ${IMG_PREFIX}-*-${s}-toolchain-*.sh ${IVINSTALL} || exit 1
+        cp -v ${IMG_PREFIX}-*-${s}-toolchain-*.sh ${IVINSTALL_ABS_PATH} || exit 1
       done
-    - ls -la ${IVINSTALL}
+    - ls -la ${IVINSTALL_ABS_PATH}
 
   artifacts:
     paths:
-      - ${IVINSTALL_REL}
+      - ${IVINSTALL_REL_PATH}
 
 test-job:
   stage: test
@@ -109,7 +110,7 @@ test-job:
 
     # link meta-iveia ivinstaller artifacts into ivtest dir
     - rm -rf ivinstall
-    - ln -sf ${IVINSTALL} ivinstall
+    - ln -sf ${IVINSTALL_ABS_PATH} ivinstall
     - ls -la ivinstall/
 
     # Install on all targets, then test all targets, and power everything off
