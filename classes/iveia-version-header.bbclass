@@ -32,20 +32,21 @@ do_pre_compile_version () {
     if [ -n "${IVEIA_VERSION_HEADER_FILE}" ]; then
         DECL='static char * __attribute__((used)) UID_734176a5a68b860afbe2293ae7ee22fd'
         cat <<-EOF | sed 's/^ *//' > "${IVEIA_VERSION_HEADER_FILE}"
-            ${DECL}_1 = "GREPPABLE_SRC_BUILD_HASH=${SRC_BUILD_HASH}";
-            ${DECL}_2 = "GREPPABLE_BUILD_DATE=${IVEIA_BUILD_DATE}";
-            ${DECL}_3 = "GREPPABLE_MACHINE=${MACHINE}";
+            ${DECL}_1001 = "GREPPABLE_SRC_BUILD_HASH=${SRC_BUILD_HASH},${PN}";
+            ${DECL}_1002 = "GREPPABLE_BUILD_DATE=${IVEIA_BUILD_DATE},${PN}";
+            ${DECL}_1003 = "GREPPABLE_MACHINE=${MACHINE},${PN}";
             #define IVEIA_SRC_BUILD_HASH "${SRC_BUILD_HASH}"
             #define IVEIA_BUILD_DATE "${IVEIA_BUILD_DATE}"
             #define IVEIA_MACHINE "${MACHINE}"
 			EOF
         for i in `seq $IVEIA_NUM_LAYERS`; do
-            INDIRECT_LAYER=IVEIA_META_${i}_LAYER
-            INDIRECT_BUILD_HASH=IVEIA_META_${i}_BUILD_HASH
-            echo "#define ${INDIRECT_LAYER} \"${!INDIRECT_LAYER}\"" \
-                >> "${IVEIA_VERSION_HEADER_FILE}"
-            echo "#define ${INDIRECT_BUILD_HASH} \"${!INDIRECT_BUILD_HASH}\"" \
-                >> "${IVEIA_VERSION_HEADER_FILE}"
+            H="${IVEIA_VERSION_HEADER_FILE}"
+            LAYER_VAR=IVEIA_META_${i}_LAYER
+            HASH_VAR=IVEIA_META_${i}_BUILD_HASH
+            echo "${DECL}_${i}b = \"GREPPABLE_META_${i}_LAYER=${!LAYER_VAR},${PN}\";" >> "${H}"
+            echo "${DECL}_${i}a = \"GREPPABLE_META_${i}_BUILD_HASH=${!HASH_VAR},${PN}\";" >> "${H}"
+            echo "#define ${LAYER_VAR} \"${!LAYER_VAR}\"" >> "${H}"
+            echo "#define ${HASH_VAR} \"${!HASH_VAR}\"" >> "${H}"
         done
     fi
 
