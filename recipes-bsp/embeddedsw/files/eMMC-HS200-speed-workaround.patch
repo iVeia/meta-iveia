@@ -1,0 +1,29 @@
+From 300b0a7e28a8ad89a5625b0e48850dc679162f73 Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Wed, 5 May 2021 16:54:23 -0400
+Subject: [PATCH] eMMC HS200 speed workaround
+
+eMMC reports supporting HS200 mode.  However, it hangs during HS200 CMD21
+tuning.
+
+This commit forces default speed (XSDPS_DEFAULT_SPEED_MODE)
+---
+ XilinxProcessorIPLib/drivers/sdps/src/xsdps_card.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/XilinxProcessorIPLib/drivers/sdps/src/xsdps_card.c b/XilinxProcessorIPLib/drivers/sdps/src/xsdps_card.c
+index d9335f9ed8..16619a44ae 100644
+--- a/XilinxProcessorIPLib/drivers/sdps/src/xsdps_card.c
++++ b/XilinxProcessorIPLib/drivers/sdps/src/xsdps_card.c
+@@ -1421,6 +1421,8 @@ void XSdPs_IdentifyEmmcMode(XSdPs *InstancePtr, const u8 *ExtCsd)
+ 		}
+ #endif
+ 	}
++
++	InstancePtr->Mode = XSDPS_DEFAULT_SPEED_MODE;
+ }
+ 
+ /*****************************************************************************/
+-- 
+2.25.1
+

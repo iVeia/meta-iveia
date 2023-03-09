@@ -1,4 +1,4 @@
-From 9e444e625724dd84033ea7d4e28b208c9f743459 Mon Sep 17 00:00:00 2001
+From e6b592016f1cebd70ea6cae125fa5a7248db2e88 Mon Sep 17 00:00:00 2001
 From: Brian Silverman <bsilverman@iveia.com>
 Date: Tue, 8 Jun 2021 15:28:52 -0400
 Subject: [PATCH] iveia version banner for zynq
@@ -8,10 +8,10 @@ Subject: [PATCH] iveia version banner for zynq
  1 file changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/lib/sw_apps/zynq_fsbl/src/main.c b/lib/sw_apps/zynq_fsbl/src/main.c
-index 43b5ce1..eed1e56 100644
+index 62a5b4dd64..276186aa21 100644
 --- a/lib/sw_apps/zynq_fsbl/src/main.c
 +++ b/lib/sw_apps/zynq_fsbl/src/main.c
-@@ -133,6 +133,7 @@
+@@ -113,6 +113,7 @@
  #include "xstatus.h"
  #include "fsbl_hooks.h"
  #include "xtime_l.h"
@@ -19,7 +19,7 @@ index 43b5ce1..eed1e56 100644
  
  #ifdef XPAR_XWDTPS_0_BASEADDR
  #include "xwdtps.h"
-@@ -286,10 +287,13 @@ int main(void)
+@@ -266,10 +267,13 @@ int main(void)
  	/*
  	 * Print the FSBL Banner
  	 */
@@ -35,6 +35,3 @@ index 43b5ce1..eed1e56 100644
  
  #ifdef XPAR_PS7_DDR_0_S_AXI_BASEADDR
  
--- 
-2.7.4
-

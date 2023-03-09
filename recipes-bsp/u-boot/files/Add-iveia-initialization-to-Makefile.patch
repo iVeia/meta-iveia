@@ -1,0 +1,24 @@
+From 211849b71831d925e3146574bf9d46957d683a2b Mon Sep 17 00:00:00 2001
+From: realmadsci <71108352+realmadsci@users.noreply.github.com>
+Date: Tue, 7 Mar 2023 16:05:48 -0500
+Subject: [PATCH] Add iveia initialization into xilinx/common/Makefile
+
+---
+ board/xilinx/common/Makefile | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/board/xilinx/common/Makefile b/board/xilinx/common/Makefile
+index 212028478c..2905e10092 100644
+--- a/board/xilinx/common/Makefile
++++ b/board/xilinx/common/Makefile
+@@ -8,3 +8,7 @@ obj-y	+= board.o
+ ifndef CONFIG_SPL_BUILD
+ obj-$(CONFIG_CMD_FRU) += fru.o fru_ops.o
+ endif
++
++# iveia customizations
++obj-y += iveia-init.o
++obj-$(CONFIG_EEPROM_IPMI_ALTERNATE_FOR_00130) += eeprom-ipmi-atlas-ii-z8p-hd.o
+-- 
+2.25.1
+

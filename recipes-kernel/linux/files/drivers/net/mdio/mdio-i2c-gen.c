@@ -12,7 +12,7 @@
 #include <linux/i2c.h>
 #include <linux/of_mdio.h>
 
-#include "mdio-i2c.h"
+#include <linux/mdio/mdio-i2c.h>
 
 static int mdio_i2c_gen_probe(struct i2c_client *client,
 				 const struct i2c_device_id *id)

@@ -1,7 +1,7 @@
-From 358b39914c3c7ffd43426861e5ecffc5237489b9 Mon Sep 17 00:00:00 2001
+From 8c71efbcab6ba85f7c1e3e4a7e9368320d3ddba0 Mon Sep 17 00:00:00 2001
 From: Brian Silverman <bsilverman@iveia.com>
 Date: Sun, 14 Feb 2021 12:21:21 -0500
-Subject: [PATCH] mtd: fix xilinx qspi mtd driver error (call trace)
+Subject: [PATCH 2/5] mtd: fix xilinx qspi mtd driver error (call trace)
 
 Wihtout this fix, when using QSPI MTD driver, I get the following error:
 
@@ -90,40 +90,40 @@ Finally, here's my device tree snippet:
     };
 };
 ---
- drivers/mtd/spi-nor/spi-nor.c | 6 +++---
+ drivers/mtd/spi-nor/core.c | 6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c
-index a352c90..71a4a0c 100644
---- a/drivers/mtd/spi-nor/spi-nor.c
-+++ b/drivers/mtd/spi-nor/spi-nor.c
-@@ -3503,7 +3503,7 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
- 	mtd->_erase = spi_nor_erase;
- 	mtd->_read = spi_nor_read;
- #ifdef CONFIG_OF
--	np_spi = of_get_next_parent(np);
-+	np_spi = of_get_parent(np);
- 	if ((of_property_match_string(np_spi, "compatible",
- 		    "xlnx,zynq-qspi-1.0") >= 0) ||
- 			(of_property_match_string(np_spi, "compatible",
-@@ -3658,7 +3658,7 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
- 		nor->addr_width = info->addr_width;
- 	} else if (mtd->size > 0x1000000) {
+diff --git a/drivers/mtd/spi-nor/core.c b/drivers/mtd/spi-nor/core.c
+index ffb4153808b1..a3fdf85edc9f 100644
+--- a/drivers/mtd/spi-nor/core.c
++++ b/drivers/mtd/spi-nor/core.c
+@@ -3372,7 +3372,7 @@ static int spi_nor_set_addr_width(struct spi_nor *nor)
+ 
+ 	if (nor->addr_width == 3 && (nor->mtd.size >> nor->shift) > 0x1000000) {
  #ifdef CONFIG_OF
 -		np_spi = of_get_next_parent(np);
 +		np_spi = of_get_parent(np);
  		if (of_property_match_string(np_spi, "compatible",
  					     "xlnx,zynq-qspi-1.0") >= 0) {
  			int status;
-@@ -3681,7 +3681,7 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
- 			    info->flags & SPI_NOR_4B_OPCODES)
- 				spi_nor_set_4byte_opcodes(nor, info);
- 			else {
+@@ -3410,7 +3410,7 @@ static int spi_nor_set_addr_width(struct spi_nor *nor)
+ 					~SPI_MASTER_U_PAGE;
+ 				}
+ 			} else {
 -				np_spi = of_get_next_parent(np);
 +				np_spi = of_get_parent(np);
  				if (of_property_match_string(np_spi,
- 						"compatible",
- 						"xlnx,xps-spi-2.00.a") >= 0) {
+ 							     "compatible",
+ 							     "xlnx,xps-spi-2.00.a") >= 0) {
+@@ -3574,7 +3574,7 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
+ 	mtd->_read = spi_nor_read;
+ 	nor->page_size = nor->params->page_size;
+ #ifdef CONFIG_OF
+-	np_spi = of_get_next_parent(np);
++	np_spi = of_get_parent(np);
+ 	if (((of_property_match_string(np_spi, "compatible",
+ 				       "xlnx,zynq-qspi-1.0") >= 0) ||
+ 		(of_property_match_string(np_spi, "compatible",
 -- 
-2.7.4
+2.25.1
 

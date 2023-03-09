@@ -1,14 +1,14 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI_append += "\
+SRC_URI:append += "\
     file://ams.hwmon \
     file://atlas-ii.hwmon \
     "
 
-do_install_append () {
+do_install:append () {
    install -d ${D}/media
 	install -Dm 0755 ${WORKDIR}/ams.hwmon ${D}/etc/sensors.d/ams.hwmon
 	install -Dm 0755 ${WORKDIR}/atlas-ii.hwmon ${D}/etc/sensors.d/atlas-ii.hwmon
 }
 
-FILES_${PN}_append = " /media/sd0 /media/sd1"
+FILES:${PN}:append = " /media/sd0 /media/sd1"

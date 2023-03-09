@@ -273,7 +273,7 @@ static struct of_device_id gic_match[] = {
 
 static struct device_node *gic_node;
 
-unsigned int xlate_irq(unsigned int hwirq)
+static unsigned int xlate_irq(unsigned int hwirq)
 {
         struct of_phandle_args irq_data;
         unsigned int irq;

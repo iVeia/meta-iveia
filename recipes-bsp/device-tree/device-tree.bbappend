@@ -12,7 +12,7 @@
 #       DT overlays for each ioboard from DTS source (files/ivio/*_overlay.dts)
 #
 IV_MB_DTSI = "machine/${MACHINE}.dtsi"
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += " \
     file://atlas-z7-inc.dtsi \
     file://atlas-z8-inc.dtsi \
@@ -30,10 +30,10 @@ python do_pre_configure_ivio() {
     d.setVar("IVIO", ivio)
 }
 
-do_configure_append() {
+do_configure:append() {
     # Create DTS for ${MACHINE}.dtb
-    echo "#include <${IV_MB_DTSI}>" >> ${DT_FILES_PATH}/system-top.dts
-    mv ${DT_FILES_PATH}/system-top.dts ${DT_FILES_PATH}/${MACHINE}.dts
+    echo "#include <${IV_MB_DTSI}>" >> ${DT_FILES_PATH}/${BASE_DTS}.dts
+    cp ${DT_FILES_PATH}/${BASE_DTS}.dts ${DT_FILES_PATH}/${MACHINE}.dts
 
     # Combo DTB.  Use IVIO from env var if available.
     if [ -n "${IVIO}" ]; then

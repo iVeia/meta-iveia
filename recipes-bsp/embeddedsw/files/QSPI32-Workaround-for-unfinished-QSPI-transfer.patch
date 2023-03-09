@@ -1,7 +1,7 @@
-From 9f3c7df25b97f974e8236b90f536cbcb9e483dbf Mon Sep 17 00:00:00 2001
+From d3d82e301aa3bb6011efeac43f151dfd27d968fe Mon Sep 17 00:00:00 2001
 From: Brian Silverman <bsilverman@iveia.com>
 Date: Thu, 25 Mar 2021 15:19:02 -0400
-Subject: [PATCH] QSPI32: Workaround for unfinished QSPI transfer
+Subject: [PATCH 1/2] QSPI32: Workaround for unfinished QSPI transfer
 
 In some cases, XFsbl_Qspi32Copy() returns before the transfer is complete.
 
@@ -14,14 +14,14 @@ This is a workaround, not a clean fix - but even a negligible usleep(0)
 resolves the issue.  We sleep a bit longer to be safe.  This adds a negligible
 time to the total boot time.
 ---
- lib/sw_apps/zynqmp_fsbl/src/xfsbl_qspi.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ lib/sw_apps/zynqmp_fsbl/src/xfsbl_qspi.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
 diff --git a/lib/sw_apps/zynqmp_fsbl/src/xfsbl_qspi.c b/lib/sw_apps/zynqmp_fsbl/src/xfsbl_qspi.c
-index f9770af..e531dea 100644
+index 54f01d53fd..bec2a24542 100644
 --- a/lib/sw_apps/zynqmp_fsbl/src/xfsbl_qspi.c
 +++ b/lib/sw_apps/zynqmp_fsbl/src/xfsbl_qspi.c
-@@ -54,6 +54,7 @@
+@@ -41,6 +41,7 @@
  #include "xfsbl_hw.h"
  #include "xparameters.h"
  #include "xil_cache.h"
@@ -29,7 +29,7 @@ index f9770af..e531dea 100644
  
  #ifdef XFSBL_QSPI
  #include "xqspipsu.h"
-@@ -876,6 +877,13 @@ u32 XFsbl_Qspi24Copy(u32 SrcAddress, PTRSIZE DestAddress, u32 Length)
+@@ -895,6 +896,13 @@ u32 XFsbl_Qspi24Copy(u32 SrcAddress, PTRSIZE DestAddress, u32 Length)
  		Status = XFSBL_SUCCESS;
  	}
  
@@ -43,11 +43,10 @@ index f9770af..e531dea 100644
  END:
  	return (u32)Status;
  }
-@@ -1409,6 +1417,14 @@ u32 XFsbl_Qspi32Copy(u32 SrcAddress, PTRSIZE DestAddress, u32 Length)
- 
+@@ -1490,6 +1498,13 @@ u32 XFsbl_Qspi32Copy(u32 SrcAddress, PTRSIZE DestAddress, u32 Length)
  	}
  	UStatus = XFSBL_SUCCESS;
-+
+ 
 +	/*
 +	 * Workaround for unfinished QSPI transfer above.  In some cases, this
 +	 * function returns before the transfer is complete.  This is a workaround,
@@ -59,5 +58,5 @@ index f9770af..e531dea 100644
  	return UStatus;
  }
 -- 
-2.7.4
+2.25.1
 

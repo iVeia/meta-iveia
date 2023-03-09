@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=d478fe1a3fa276aa27da65644e60b9fc"
 
 inherit module
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/:"
 SRC_URI = "file://src/"
 
 S = "${WORKDIR}/src"

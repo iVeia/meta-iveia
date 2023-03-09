@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += " \
     file://iveia-version-banner.patch \
     file://net-macb-Allow-eth-d-ordering-by-DTS-index-prop.patch \
@@ -27,7 +27,7 @@ SRC_URI += " \
     file://mdio-i2c-gen-add-driver-to-build.patch \
     file://mdio-i2c-gen-change-probe-order-of-i2c-before-net.patch \
     file://mdio-i2c-gen.cfg \
-    file://drivers/net/phy/mdio-i2c-gen.c;subdir=git \
+    file://drivers/net/mdio/mdio-i2c-gen.c;subdir=git \
     file://Documentation/devicetree/bindings/net/mdio-i2c-gen.txt;subdir=git \
     "
 

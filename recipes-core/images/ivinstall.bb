@@ -7,11 +7,11 @@ inherit deploy
 # depends on do_populate_sysroot, which ${IVIMG} doesn't have.
 IVIMG := "iveia-image-minimal"
 do_deploy[depends] = "${IVIMG}:do_build"
-DEPENDS_append = " fsbl u-boot-xlnx u-boot-uenv xilinx-bootbin device-tree linux-xlnx ivstartup"
-DEPENDS_append_zynqmp = " pmu-firmware arm-trusted-firmware"
+DEPENDS:append = " fsbl u-boot-xlnx u-boot-uenv xilinx-bootbin device-tree linux-xlnx ivstartup"
+DEPENDS:append:zynqmp = " pmu-firmware arm-trusted-firmware"
 
 LOCAL_FILES := "${THISDIR}/files"
-FILESEXTRAPATHS_prepend := "${LOCAL_FILES}:"
+FILESEXTRAPATHS:prepend := "${LOCAL_FILES}:"
 HEADER_DOC = "ivinstall-doc"
 HEADER_ORIG = "ivinstall-header.sh"
 HEADER = "ivinstall-header-final.sh"
@@ -56,7 +56,7 @@ do_compile() {
 }
 
 IS_ZYNQMP = "0"
-IS_ZYNQMP_zynqmp = "1"
+IS_ZYNQMP:zynqmp = "1"
 
 python do_deploy() {
     from functools import partial
@@ -101,7 +101,7 @@ python do_deploy() {
             dep_dir("Image") :                     {"arcname" : "boot/Image"},
             loc_dir("qspi-zynqmp.tcl") :           {"arcname" : "jtag/qspi.tcl"},
             loc_dir("ivinstall-zynqmp.tcl") :      {"arcname" : "jtag/ivinstall.tcl"},
-            dep_dir("pmu-" + machine + ".elf") :   {"arcname" : "elf/pmu.elf"},
+            dep_dir("pmu-firmware-" + machine + ".elf") :   {"arcname" : "elf/pmu.elf"},
             dep_dir("arm-trusted-firmware.elf") :  {"arcname" : "elf/atf.elf"},
         }
         tar_files.update(addtional_tar_files)

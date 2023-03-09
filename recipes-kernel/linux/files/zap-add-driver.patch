@@ -1,7 +1,7 @@
-From ea698e11316b837ca13944f013eb13446501079e Mon Sep 17 00:00:00 2001
+From b79d14140ad99aac2cc25d4458faee611857108e Mon Sep 17 00:00:00 2001
 From: Brian Silverman <bsilverman@iveia.com>
 Date: Wed, 22 Apr 2020 21:26:54 -0400
-Subject: [PATCH] zap: add driver
+Subject: [PATCH 3/5] zap: add driver
 
 Driver currently requires allocating DMA memory outside of Linux management via
 alloc_bootmem_pages().
@@ -13,7 +13,7 @@ Disable driver (and mem alloc) with kernel cmdline "nozap".
  2 files changed, 14 insertions(+)
 
 diff --git a/drivers/char/Makefile b/drivers/char/Makefile
-index b8d42b4e979b..3e43624ce541 100644
+index 264eb398fdd4..0005e283f297 100644
 --- a/drivers/char/Makefile
 +++ b/drivers/char/Makefile
 @@ -3,6 +3,7 @@
@@ -25,11 +25,11 @@ index b8d42b4e979b..3e43624ce541 100644
  obj-$(CONFIG_TTY_PRINTK)	+= ttyprintk.o
  obj-y				+= misc.o
 diff --git a/init/main.c b/init/main.c
-index 6e281285927b..a269a4cd7aaa 100644
+index 2ef2a23ec8fe..d3481da02f13 100644
 --- a/init/main.c
 +++ b/init/main.c
-@@ -529,6 +529,11 @@ static void __init mm_init(void)
- 	pti_init();
+@@ -932,6 +932,11 @@ static void __init print_unknown_bootoptions(void)
+ 	memblock_free_ptr(unknown_options, len);
  }
  
 +extern volatile void * tx_vaddr;
@@ -37,24 +37,24 @@ index 6e281285927b..a269a4cd7aaa 100644
 +bool nozap;
 +core_param(nozap, nozap, bool, 0644);
 +
- asmlinkage __visible void __init start_kernel(void)
+ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
  {
  	char *command_line;
-@@ -580,6 +585,14 @@ asmlinkage __visible void __init start_kernel(void)
- 		parse_args("Setting init args", after_dashes, NULL, 0, -1, -1,
- 			   NULL, set_init_arg);
+@@ -984,6 +989,14 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+ 		parse_args("Setting extra init args", extra_init_args,
+ 			   NULL, 0, -1, -1, NULL, set_init_arg);
  
 +    if (nozap) {
-+        pr_notice("zap: SKIPPING alloc_bootmem_pages()\n");
++        pr_notice("zap: SKIPPING memblock_alloc()\n");
 +    } else {
-+        pr_notice("zap: calling alloc_bootmem_pages()\n");
-+        rx_vaddr = alloc_bootmem_pages(128*1024*1024);
-+        tx_vaddr = alloc_bootmem_pages(4*1024*1024);
++        pr_notice("zap: calling memblock_alloc()\n");
++        rx_vaddr = memblock_alloc(128*1024*1024, PAGE_SIZE);
++        tx_vaddr = memblock_alloc(4*1024*1024, PAGE_SIZE);
 +    }
 +
- 	jump_label_init();
- 
  	/*
+ 	 * These use large bootmem allocations and must precede
+ 	 * kmem_cache_init()
 -- 
-2.17.1
+2.25.1
 

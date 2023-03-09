@@ -1,36 +1,35 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/../shared/files:"
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/../shared/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 # Kconfig
-SRC_URI_append = "\
+SRC_URI:append = "\
     file://include-iVeia-Kconfig.patch \
     file://Kconfig;subdir=git/board/iveia \
     "
 
 # C sources
-SRC_URI_append = "\
+SRC_URI:append = "\
     file://iveia-init.c;subdir=git/board/xilinx/common \
     file://iveia-ipmi.h;subdir=git/board/xilinx/common \
-    file://Makefile;subdir=git/board/xilinx/common \
     file://eeprom-ipmi-atlas-ii-z8p-hd.c;subdir=git/board/xilinx/common \
     file://iveia-config.h;subdir=git/include/configs \
+    file://Add-iveia-initialization-to-Makefile.patch \
     "
 
 # Patches & CFG
-SRC_URI_append = "\
-    file://setexpr-Add-explicit-support-for-32-and-64-bit-ints.patch \
+SRC_URI:append = "\
     file://Fix-saveenv-causes-next-boot-to-skip-board_late_init.patch \
     file://uboot.cfg \
     "
 
 # MACHINE specific patches
-SRC_URI_append_atlas-ii-z8p-hd = "\
+SRC_URI:append:atlas-ii-z8p-hd = "\
     file://uboot-atlas-ii-z8p-hd.cfg \
     "
-SRC_URI_append_zynq = "\
+SRC_URI:append:zynq = "\
     file://add-iveia-config-overriding-xilinx-zynq.patch \
     "
-SRC_URI_append_zynqmp = "\
+SRC_URI:append:zynqmp = "\
     file://add-iveia-config-overriding-xilinx-zynqmp.patch \
     "
 

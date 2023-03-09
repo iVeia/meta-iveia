@@ -32,13 +32,13 @@ IMAGE_INSTALL += "bdevmem"
 IMAGE_INSTALL += "busyloop"
 IMAGE_INSTALL += "kernel-module-ocp"
 
-IMAGE_CLASSES_remove = "image-types-xilinx-qemu qemuboot-xilinx"
+IMAGE_CLASSES:remove = "image-types-xilinx-qemu qemuboot-xilinx"
 
-IMAGE_FSTYPES_remove = " \
+IMAGE_FSTYPES:remove = " \
     cpio.gz cpio.bz2 cpio.gz \
     ext3 ext3.bz2 \
     tar.gz tar.bz2 \
     jffs2 \
     wic.qemu-sd \
     "
-IMAGE_FSTYPES_append = " ext4 tar.xz"
+IMAGE_FSTYPES:append = " ext4 tar.xz"
