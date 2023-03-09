@@ -40,13 +40,17 @@ do_pre_compile_version () {
             #define IVEIA_MACHINE "${MACHINE}"
 			EOF
         for i in `seq $IVEIA_NUM_LAYERS`; do
+            # Note: POSIX does not support bash/ksh variable indirect
+            # expansion, so we use the more cumbersome `eval` below
             H="${IVEIA_VERSION_HEADER_FILE}"
             LAYER_VAR=IVEIA_META_${i}_LAYER
+            LAYER=`eval "echo \\$$LAYER_VAR"`
             HASH_VAR=IVEIA_META_${i}_BUILD_HASH
-            echo "${DECL}_${i}b = \"GREPPABLE_META_${i}_LAYER=${!LAYER_VAR},${PN}\";" >> "${H}"
-            echo "${DECL}_${i}a = \"GREPPABLE_META_${i}_BUILD_HASH=${!HASH_VAR},${PN}\";" >> "${H}"
-            echo "#define ${LAYER_VAR} \"${!LAYER_VAR}\"" >> "${H}"
-            echo "#define ${HASH_VAR} \"${!HASH_VAR}\"" >> "${H}"
+            HASH=`eval "echo \\$$HASH_VAR"`
+            echo "${DECL}_${i}b = \"GREPPABLE_META_${i}_LAYER=${LAYER},${PN}\";" >> "${H}"
+            echo "${DECL}_${i}a = \"GREPPABLE_META_${i}_BUILD_HASH=${HASH},${PN}\";" >> "${H}"
+            echo "#define ${LAYER_VAR} \"${LAYER}\"" >> "${H}"
+            echo "#define ${HASH_VAR} \"${HASH}\"" >> "${H}"
         done
     fi
 

@@ -52,10 +52,14 @@ do_compile() {
     . "${B}/${PN}.versions"
     INSERT_VARS="${INSERT_VARS}IVEIA_NUM_LAYERS='${IVEIA_NUM_LAYERS}'\n"
     for i in `seq $IVEIA_NUM_LAYERS`; do
-        INDIRECT_LAYER=IVEIA_META_${i}_LAYER
-        INDIRECT_BUILD_HASH=IVEIA_META_${i}_BUILD_HASH
-        INSERT_VARS="${INSERT_VARS}${INDIRECT_LAYER}='${!INDIRECT_LAYER}'\n"
-        INSERT_VARS="${INSERT_VARS}${INDIRECT_BUILD_HASH}='${!INDIRECT_BUILD_HASH}'\n"
+        # Note: POSIX does not support bash/ksh variable indirect
+        # expansion, so we use the more cumbersome `eval` below
+        LAYER_VAR=IVEIA_META_${i}_LAYER
+        LAYER=`eval "echo \\$$LAYER_VAR"`
+        HASH_VAR=IVEIA_META_${i}_BUILD_HASH
+        HASH=`eval "echo \\$$HASH_VAR"`
+        INSERT_VARS="${INSERT_VARS}${LAYER_VAR}='${LAYER}'\n"
+        INSERT_VARS="${INSERT_VARS}${HASH_VAR}='${HASH}'\n"
     done
     INSERT_VARS="${INSERT_VARS}IVEIA_BUILD_DATE='${IVEIA_BUILD_DATE}'\n"
 
