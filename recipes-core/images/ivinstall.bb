@@ -56,7 +56,7 @@ do_compile() {
 }
 
 IS_ZYNQMP = "0"
-IS_ZYNQMP_zynqmp = "1"
+IS_ZYNQMP:zynqmp = "1"
 
 python do_deploy() {
     from functools import partial
