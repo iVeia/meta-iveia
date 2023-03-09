@@ -8,10 +8,10 @@ on_build_start() {
     pattern = "/meta-iveia(-[^/]*)?$"
     iveia_bblayers = [l for l in bblayers if re.search(pattern, l)]
 
-    from subprocess import run
+    from subprocess import run, PIPE
     from datetime import datetime as dt 
-    
     import os
+
     versions_file = d.getVar("META_IVEIA_VERSIONS_FILE")
     os.makedirs(os.path.dirname(versions_file), exist_ok=True)
     with open(versions_file, 'w') as f:
@@ -23,7 +23,7 @@ on_build_start() {
             f.write('IVEIA_META_{}_LAYER="{}"\n'.format(i + 1, layer_name))
 
             gitcmd = "git -C {} describe --long --tags --dirty".format(layer_path)
-            completetion = run(gitcmd, shell=True, capture_output=True)
+            completetion = run(gitcmd, shell=True, stdout=PIPE)
             first_line = completetion.stdout.decode().split('\n')[0]
             f.write('IVEIA_META_{}_BUILD_HASH="{}"\n'.format(i + 1, first_line))
 }
