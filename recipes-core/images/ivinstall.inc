@@ -48,8 +48,8 @@ do_compile() {
         INSERT_VARS="${INSERT_VARS}IOBOARDS='none'\n"
     fi
 
-    source "${META_IVEIA_VERSIONS_FILE}"
-    source "${B}/${PN}.versions"
+    . "${META_IVEIA_VERSIONS_FILE}"
+    . "${B}/${PN}.versions"
     INSERT_VARS="${INSERT_VARS}IVEIA_NUM_LAYERS='${IVEIA_NUM_LAYERS}'\n"
     for i in `seq $IVEIA_NUM_LAYERS`; do
         INDIRECT_LAYER=IVEIA_META_${i}_LAYER

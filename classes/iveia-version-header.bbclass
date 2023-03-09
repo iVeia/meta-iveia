@@ -13,7 +13,7 @@ IVEIA_VERSIONS_FILE = "${B}/${PN}.versions"
 
 do_compile[prefuncs] += "do_pre_compile_version"
 do_pre_compile_version () {
-    source ${META_IVEIA_VERSIONS_FILE}
+    . ${META_IVEIA_VERSIONS_FILE}
     
     TAINTED=""
     ls ${STAMP}.*.taint 2>/dev/null && TAINTED="(tainted)"
