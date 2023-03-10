@@ -57,11 +57,11 @@
  * Ioctl argument values.
  */
 /* FAKEY modes */
-#define ZAP_OPT_FAKEY_MODE_OFF           (0)
-#define ZAP_OPT_FAKEY_MODE_FIXED_PATT    (1)
-#define ZAP_OPT_FAKEY_MODE_COUNTING      (2)
-#define ZAP_OPT_FAKEY_MODE_LOOPBACK      (3)
-#define ZAP_OPT_FAKEY_MODE_DELAYED_RECV  (4)
+#define IV_ZAP_OPT_FAKEY_MODE_OFF           (0)
+#define IV_ZAP_OPT_FAKEY_MODE_FIXED_PATT    (1)
+#define IV_ZAP_OPT_FAKEY_MODE_COUNTING      (2)
+#define IV_ZAP_OPT_FAKEY_MODE_LOOPBACK      (3)
+#define IV_ZAP_OPT_FAKEY_MODE_DELAYED_RECV  (4)
 
 #define ZAP_DESC_FLAG_OVERFLOW_OOB              (0x02)
 #define ZAP_DESC_FLAG_OVERFLOW_DATA             (0x04)

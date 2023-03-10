@@ -270,33 +270,33 @@ int zap_read_procmem(char *buf, char **start, off_t offset, int count, int *eof,
  */
 int zap_open(struct inode *inode, struct file *filp)
 {
-	struct zap_dev * dev;
+	struct zap_dev *dev = container_of(inode->i_cdev, struct zap_dev, cdev);
+	bool is_tx = (bool)is_tx_device(filp);
+    int iDevice = zap_device_num(filp);
 	ssize_t retval = 0;
 	int err;
-    int iDevice;
+
+    dev_info(dev->dev, "%s() %s Device %d (%d)\n", __func__, is_tx ? "TX":"RX", iDevice,
+		    dev->fpga_params.num_interfaces);
+
+	if (iDevice >= dev->fpga_params.num_interfaces) {
+		return -ENXIO;
+	}
 	
-	dev = container_of(inode->i_cdev, struct zap_dev, cdev);
-	filp->private_data = dev;
-
-    iDevice = zap_device_num(filp);
-
-    dev_dbg(dev->dev, "%s(), Device %d\n", __func__, iDevice);
-
 	if (down_interruptible(&dev->sem)) 
         return -ERESTARTSYS;
 
 	if ( (filp->f_flags & O_ACCMODE) != O_RDONLY ) {
 
-		dma_ll_update_fpga_parameters(); //Incase FPGA Reprogram has occured
-
-        if (zap_device_num(filp) >= dev->fpga_params.num_interfaces) {
-            up(&dev->sem);
-            return -ENXIO;
-        }
-
         setup_multiple_pools(zap_devp->fpga_params.num_interfaces);
 
-        if (is_tx_device(filp)) {
+        if (is_tx) {
+		if (down_trylock(&dev->interface[iDevice].in_use_tx)) {
+    		dev_err(dev->dev, "%s() %s Device %d IN USE\n", __func__, is_tx ? "TX":"RX", iDevice);
+			retval = -EBUSY;
+			goto open_out;
+		}
+
 			dev->interface[iDevice].tx_payload_max_size = dev->fpga_params.tx_dat_fifo_size;
 
 	        err = pool_create(&zap_devp->interface[iDevice].tx_pool, (void *)zap_devp->interface[iDevice].tx_paddr, 
@@ -316,6 +316,12 @@ int zap_open(struct inode *inode, struct file *filp)
 				//goto fail;
 			}
 		} else {
+			if (down_trylock(&dev->interface[iDevice].in_use_rx)) {
+    			dev_err(dev->dev, "%s() %s Device %d IN USE\n", __func__, is_tx ? "TX":"RX", iDevice);
+				retval = -EBUSY;
+				goto open_out;
+			}
+
 			dev->interface[iDevice].rx_payload_max_size = dev->fpga_params.rx_dat_fifo_size;
 
 	        err = pool_create(&zap_devp->interface[iDevice].rx_pool, (void *)zap_devp->interface[iDevice].rx_paddr, 
@@ -338,7 +344,10 @@ int zap_open(struct inode *inode, struct file *filp)
 
 	}
 
+	filp->private_data = dev;
+
 	dev->open_count++;
+open_out:
 	up(&dev->sem);
 
 	return retval;
@@ -346,15 +355,17 @@ int zap_open(struct inode *inode, struct file *filp)
 
 int zap_release(struct inode *inode, struct file *filp)
 {
-	struct zap_dev * dev;
-    int iDevice;
+	struct zap_dev *dev = container_of(inode->i_cdev, struct zap_dev, cdev);
+    int iDevice = zap_device_num(filp);
+	bool is_tx = (bool)is_tx_device(filp);
 
-	dev = container_of(inode->i_cdev, struct zap_dev, cdev);
-	filp->private_data = dev;
+    dev_info(dev->dev, "%s() %s Device %d\n", __func__, is_tx ? "TX":"RX", iDevice);
 
-    iDevice = zap_device_num(filp);
+	if (iDevice >= dev->fpga_params.num_interfaces) {
+		return -ENXIO;
+	}
 
-    dev_dbg(dev->dev, "%s(), Device %d\n", __func__, iDevice);
+	//filp->private_data = dev;
 
     if (dma_tx_is_on(iDevice)) {
         dma_stop_tx(iDevice);
@@ -366,6 +377,12 @@ int zap_release(struct inode *inode, struct file *filp)
 
 	if (down_interruptible(&dev->sem)) {
         return -ERESTARTSYS;
+	}
+
+	if (is_tx) {
+		up(&dev->interface[iDevice].in_use_tx);
+	} else {
+		up(&dev->interface[iDevice].in_use_rx);
 	}
 
 	dev->open_count--;
@@ -1069,6 +1086,8 @@ static int zap_probe(struct platform_device *pdev)
     }
 
     for (i=0; i < zap_devp->num_devices; i++ ) {
+	sema_init(&zap_devp->interface[i].in_use_rx, 1);
+	sema_init(&zap_devp->interface[i].in_use_tx, 1);
 	    zap_devp->interface[i].rx_highwater = 0;
 	    zap_devp->interface[i].tx_highwater = 0;
 	    zap_devp->interface[i].rx_header_enable = 0;
@@ -1099,9 +1118,11 @@ static int zap_probe(struct platform_device *pdev)
 		printk(KERN_ERR "ZAP DMA init error %d\n", err);
 		goto fail;
 	}
+	dma_ll_update_fpga_parameters(); 
 
 	//ksym_arch_setup_dma_ops = (void *)kallsyms_lookup_name("arch_setup_dma_ops");
 	arch_setup_dma_ops(&zap_device, 0, 0, NULL,false);
+
 
 	return 0;
 
@@ -1112,7 +1133,7 @@ static int zap_probe(struct platform_device *pdev)
 
 
 static const struct of_device_id zap_of_match[] = {
-	{ .compatible = "iv,zap", },
+	{ .compatible = "iveia,zap", },
 	{ /* end of list */ }
 };
 MODULE_DEVICE_TABLE(of, zap_of_match);

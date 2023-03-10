@@ -10,7 +10,7 @@
 #include "zap.h"
 #include "pool.h"
 
-#define MODNAME "iv-zap"
+#define MODNAME "zap"
 
 #define ZAP_MAX_DEVICES 16
 
@@ -31,6 +31,8 @@ struct zap_fpga_parameters {
 };
 
 struct zap_if {
+	struct semaphore in_use_rx;
+	struct semaphore in_use_tx;
     int fakey;
     struct pool rx_pool;
     struct pool tx_pool;
