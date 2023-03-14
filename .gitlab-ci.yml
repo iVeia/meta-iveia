@@ -10,7 +10,7 @@ workflow:
 variables:
   IVINSTALL_REL_PATH: out/ivinstall
   IVINSTALL_ABS_PATH: ${CI_PROJECT_DIR}/${IVINSTALL_REL_PATH}
-  IVINSTALL_TGT: ivinstall-minimal
+  IVINSTALL_TGT: ivinstall-full
 
 build-job:
   stage: build
