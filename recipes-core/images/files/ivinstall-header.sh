@@ -558,9 +558,11 @@ elif ((MODE==SD_MODE)); then
         # Create partitions
         #
         info "Creating partitions"
-        P1_END=$FAT_SIZE
-        P2_END=$((P1_END + 1))
-        P3_END=$((P2_END + ROOTFS_SIZE))
+        SECTORS_PER_MB=2048
+        P1_START=$((1 * SECTORS_PER_MB))
+        P1_END=$((P1_START - 1  + FAT_SIZE * SECTORS_PER_MB))
+        P2_END=$((P1_END        + 1 * SECTORS_PER_MB))
+        P3_END=$((P2_END        + ROOTFS_SIZE * SECTORS_PER_MB))
         unmount_all
         if command -v wipefs &> /dev/null; then
             wipefs -a "$DEVICE" >/dev/null || error "wipefs failed.  Is device in use?"
@@ -570,11 +572,11 @@ elif ((MODE==SD_MODE)); then
                 error "Unable to wipe disk.  Is device in use?"
         fi
         parted -s "$DEVICE" mklabel msdos || error "mklabel failed"
-        MKPART="parted -s -a optimal "$DEVICE" mkpart primary"
-        ${MKPART} fat32 0%              $((P1_END + 1)) || error "failed to create partition 1"
-        ${MKPART} fat32 $((P1_END + 1)) $((P2_END + 1)) || error "failed to create partition 2"
-        ${MKPART} ext2  $((P2_END + 1)) $((P3_END + 1)) || error "failed to create partition 3"
-        ${MKPART} ext2  $((P3_END + 1)) 100%            || error "failed to create partition 4"
+        MKPART="parted -s "$DEVICE" mkpart primary"
+        ${MKPART} fat32 $((P1_START))s   $((P1_END))s || error "failed to create partition 1"
+        ${MKPART} fat32 $((P1_END + 1))s $((P2_END))s || error "failed to create partition 2"
+        ${MKPART} ext2  $((P2_END + 1))s $((P3_END))s || error "failed to create partition 3"
+        ${MKPART} ext2  $((P3_END + 1))s 100%         || error "failed to create partition 4"
         parted -s "$DEVICE" set 1 boot on || error "could not make partition 1 bootable"
     fi
 
