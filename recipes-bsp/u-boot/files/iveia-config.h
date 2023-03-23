@@ -45,7 +45,7 @@
     "    setexpr other_targets gsub \" ${first_target} \" ' ' \" ${boot_targets} \"; \n" \
     "    setenv break; \n" \
     "    for tgt in ${first_target} ${other_targets}; do \n" \
-    "        if test -z \"${break}\"; then " \
+    "        if test -z \"${break}\"; then \n" \
     "            echo Attempting load of ${bootenv_file} from ${tgt}...; \n" \
     "            run loadtgt; \n" \
     "            if test -n \"${bootenv_cmd}\"; then \n" \
