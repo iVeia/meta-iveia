@@ -185,7 +185,7 @@ if ((DO_EXTRACT)); then
         TMPDIR=$(mktemp -d)
     fi
     tail -n+$ARCHIVE_START "$CMD" | tar -xz -C "$TMPDIR" || error "Untar failed"
-    head -n+$((ARCHIVE_START-1)) "$CMD" > "$TMPDIR"/.header || error "Header extract failed"
+    head -$((ARCHIVE_START-1)) "$CMD" > "$TMPDIR"/.header || error "Header extract failed"
 
     echo "Contents extracted to:"
     echo "    $TMPDIR"
