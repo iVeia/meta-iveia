@@ -679,18 +679,18 @@ elif ((MODE==SD_MODE)); then
             cp -v $TMPDIR/rootfs/initrd "$MNT" || error "copy initrd failed"
         elif ((!SKIP_ROOTFS)); then
             verify e2label findmnt
-   			if [ -n "$DO_COPY_SELF" ]; then
-            	info "Copying ivinstall script to ext4 rootfs"
-				ext4_sz=$(stat --printf="%s" $TMPDIR/rootfs/rootfs.ext4)
-				ivinstall_sz=$(stat --printf="%s" $0)
-				resize2fs $TMPDIR/rootfs/rootfs.ext4 $((($ext4_sz + $ivinstall_sz)/1024))K
-				mkdir $TMPDIR/rootfs/mnt
-				mount -o loop $TMPDIR/rootfs/rootfs.ext4 $TMPDIR/rootfs/mnt
-				mkdir -p $TMPDIR/rootfs/mnt/home/root
-				cp $0 $TMPDIR/rootfs/mnt/home/root
-				sync
-				umount $TMPDIR/rootfs/mnt
-			fi
+            if [ -n "$DO_COPY_SELF" ]; then
+                info "Copying ivinstall script to ext4 rootfs"
+                ext4_sz=$(stat --printf="%s" $TMPDIR/rootfs/rootfs.ext4)
+                ivinstall_sz=$(stat --printf="%s" $0)
+                resize2fs $TMPDIR/rootfs/rootfs.ext4 $((($ext4_sz + $ivinstall_sz)/1024))K
+                mkdir $TMPDIR/rootfs/mnt
+                mount -o loop $TMPDIR/rootfs/rootfs.ext4 $TMPDIR/rootfs/mnt
+                mkdir -p $TMPDIR/rootfs/mnt/home/root
+                cp $0 $TMPDIR/rootfs/mnt/home/root
+                sync
+                umount $TMPDIR/rootfs/mnt
+            fi
             info "Copying ext4 rootfs to DEVICE ($DEVICE) partition 3"
             ((${#PARTS[*]} > 3)) || error "partition 3 of $DEVICE does not exist"
             umount /dev/${PARTS[3]} 2>/dev/null
