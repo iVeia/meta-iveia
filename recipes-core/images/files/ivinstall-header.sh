@@ -76,11 +76,12 @@ SAVEARGS="$*"
 unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_QSPI_ONLY DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD
 unset JTAG_REMOTE MODE SKIP_ROOTFS SSH_TARGET USE_INITRD USER_FAT_SIZE USER_LABEL USER_ROOTFS_SIZE
 unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE REPLACE REPLACE_STARTUP_SCRIPT REPLACE_EXTRA_IMAGE
+unset PREPARTITION_ONLY POSTPARTITION_ONLY
 SD_MODE=0
 SSH_MODE=1
 JTAG_MODE=2
 MODE=$SD_MODE
-while getopts "a:A:B:b:cCde:fhi:jJ:kn:oqQr:R:s:vxX:zZ" opt; do
+while getopts "a:A:B:b:cCde:fhi:jJ:kn:opPqQr:R:s:vxX:zZ" opt; do
     case "${opt}" in
         a) JTAG_ADAPTER="$OPTARG" ;;
         A) DO_ASSEMBLE=1; EXTRACT_DIR="$OPTARG"; ;;
@@ -98,6 +99,8 @@ while getopts "a:A:B:b:cCde:fhi:jJ:kn:oqQr:R:s:vxX:zZ" opt; do
         k) DO_COPY=1; SKIP_ROOTFS=1 ;;
         n) DO_FORMAT=1; USER_LABEL="$OPTARG"; ;;
         o) ONLY_BOOT=1 ;;
+        p) PREPARTITION_ONLY=1; DO_FORMAT=1 ;;
+        P) POSTPARTITION_ONLY=1; DO_FORMAT=1 ;;
         q) DO_QSPI=1 ;;
         Q) DO_QSPI_ONLY=1 ;;
         r) REPLACE=1; REPLACE_STARTUP_SCRIPT="$OPTARG"; ;;
@@ -557,7 +560,7 @@ elif ((MODE==SD_MODE)); then
         fi
     fi
 
-    if ((DO_FORMAT)); then
+    if ((DO_FORMAT && !POSTPARTITION_ONLY)); then
         verify mount umount parted mkfs.vfat mkfs.ext4 blockdev
 
         BLOCKDEV_BYTES=$(blockdev --getsize64 "$DEVICE")
@@ -632,13 +635,16 @@ elif ((MODE==SD_MODE)); then
         unmount_all
         # Create array of partition names (including primary device first)
         info "Formatting partition 1 as FAT32"
-        mkfs.vfat -F 32 -n "${LABEL}BOOT" /dev/${PARTS[1]} || error "failed to format partition 1"
-        info "Formatting partition 2 as raw"
-        dd status=none if=/dev/zero of=/dev/${PARTS[2]} 2>/dev/null
-        info "Formatting partition 3 as ext4"
-        mkfs.ext4 -q -F -L "${LABEL}ROOTFS" /dev/${PARTS[3]}   || error "failed to format partition 3"
-        info "Formatting partition 4 as ext4"
-        mkfs.ext4 -q -F -L "${LABEL}DATA" /dev/${PARTS[4]} || error "failed to format partition 4"
+        mkfs.vfat -F 32 -n "${LABEL}BOOT" /dev/${PARTS[1]} || error "failed to format part 1"
+
+        if ((!PREPARTITION_ONLY)); then
+            info "Formatting partition 2 as raw"
+            dd status=none if=/dev/zero of=/dev/${PARTS[2]} 2>/dev/null
+            info "Formatting partition 3 as ext4"
+            mkfs.ext4 -q -F -L "${LABEL}ROOTFS" /dev/${PARTS[3]} || error "failed to format part 3"
+            info "Formatting partition 4 as ext4"
+            mkfs.ext4 -q -F -L "${LABEL}DATA" /dev/${PARTS[4]} || error "failed to format part 4"
+        fi
     fi
 
     if ((DO_COPY || DO_QSPI)); then

@@ -145,6 +145,15 @@ FORMAT OPTIONS
     -f
         Partition and format the SD card.
 
+    -p
+        Pre partition/format the card.  Fully partitions the card, but formats
+        only the first partition (FAT).  The -p and -P options together are
+        equivalent to -f.
+
+    -P
+        Post partition/format the card.  Formats partitions 2-4 only (assumes
+        partitioning already done). Complimentary to the -p option.
+
     -k
         Skip copying rootfs for faster install.  Implies -c (copy).
 
