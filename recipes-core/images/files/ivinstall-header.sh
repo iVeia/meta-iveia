@@ -444,52 +444,56 @@ if ((MODE==SD_MODE)); then
 fi
 
 #
-# JTAG is used to fully load Linux and the run the ivinstall script.
+# JTAG is used to fully load Linux and then run the ivinstall script.
 #
 # The concept is to load all images to RAM via JTAG, and then boot.  Images are
 # then found during boot at the specific locations where they were stored.
 # Some images need to encode their length, and so have a header added (via
 # add_header()) that includes the image len and CRC.
 #
+# The ivinstall image itself is to large to store and extract in memory.
+# Instead, it is stored on the SD/eMMC that is specified as the target DEVICE.
+# This means that the target DEVICE will get overwritten, so this process only
+# works if the DEVICE is being formatted (-f).
+#
 # The process in brief:
 #   - Using xsdb (via ivinstall.tcl) load and run images to RAM:
-#       - A startup.sh script that runs ivinstall with user's arguments ($*)
-#       - ivinstall script (with a header added) in memory above Linux (via mem=xxx)
+#       - A tarball of:
+#           - A startup.sh script that runs ivinstall with user's arguments
+#           - The full ivinstall script
+#           - The ivinstall script modified to run via -p (prepartition) option
+#               and with images removed
 #       - A special uEnv.txt (with a header added) (named uEnv.ivinstall.txt)
 #       - Linux images (Image, DTB, initrd)
 #       - bootloader elf files (fsbl, ..., u-boot)
 #   - xsdb will get boot running up to U-Boot, which then:
 #       - runs the default boot command
 #       - runs loadenv_jtag, which finds/validates special uEnv.txt in RAM via JTAG
-#       - runs uEnv.txt's bootenv_cmd
-#       - insert a special startup script into device-tree/chosen
-#       - boot Linux from images already loaded in RAM via JTAG
+#       - runs uEnv.txt's bootenv_cmd, which:
+#           - writes the tarball from RAM to SD/eMMC
+#           - inserts a special startup script into device-tree/chosen
+#           - boots Linux from images already loaded in RAM via JTAG
 #   - Linux boots, and then:
 #       - runs ivstartup init.d script which finds chosen/startup
-#       - chosen/startup loads/validates startup
-#       - chosen/startup loads/validates ivinstall
-#       - run startup, which ivinstalls with user's args
+#       - chosen/startup:
+#           - partially partitions/formats the SD/eMMC, avoiding the tarball
+#           - extracts tarball from SD/eMMC into the first partition
+#       - run startup.sh, which ivinstalls with user's args, plus -P
+#           (postpartition) and -t (extract to specific temp location)
 #
 # Rough mem layout for Zynq vs ZynqMP:
 #   Zynq                    ZynqMP
 #   MB      ADDR            MB      ADDR
 #   0       0x00000000      "       "           Mem bottom
-#   5       0x00500000      "       "           JTAG magic flag (zynq only)
+#   5       0x00500000      NA      NA          JTAG magic flag (zynq only)
 #   6       0x00600000      "       "           uEnv.txt (with pre-header)
 #   7       0x00700000      "       "           DTB
 #   8       0x00800000      "       "           Kernel
 #   64      0x04000000      128     0x08000000  U-Boot
 #   128     0x80000000      256     0x10000000  initrd
-#   <383    0x17f00000      NA      NA          Relocated initrd by U-Boot using fdt_high
-#   <384    0x18000000      NA      NA          Relocated DTB by U-Boot using initrd_high
-#   384     0x18000000      768     0x30000000  Top of mem allocated to Linux (via mem=xxx)
-#   384     0x18000000      768     0x30000000  startup.sh (with header)
-#   385     0x18100000      769     0x30100000  extra_image (with header)
+#   256     0x10000000      512     0x20000000  tarball (with header)
 #   ...
 #   >=512   0x40000000      >=1024  0x80000000  Phys mem top (up to 4GB on some boards)
-#
-# On Zynq, our minimum memory is 512M, so layout is tighter and required
-# relocation fdt/initrd.  This decreases the max initrd size available.
 #
 # Xilinx changed the default U-Boot location from 64M to 128MB when going from
 # Zynq to ZynqMP, and we use that default.  If not for that change, we'd be
@@ -498,9 +502,6 @@ fi
 # The items with the pre-header above are shifted down by the header amount.
 # See add_header().  Also, see the tcl scripts and uEnv.txt for the exact
 # values used.
-#
-# The extra_image can be an ivinstall image, a tarball or anything.  It is
-# extracted from above Linux mem to /tmp/extra_image
 #
 if ((MODE==JTAG_MODE)); then
     setup_jtag
@@ -511,17 +512,25 @@ if ((MODE==JTAG_MODE)); then
     else
         extract_archive_to_TMPDIR
     fi
+    cp "$CMD" $TMPDIR || error "Cannot copy ivinstall image to TMPDIR"
     cd $TMPDIR
     if ((ONLY_BOOT)); then
-        echo > startup.sh
-        echo > extra_image
+        echo
+    else
+        echo "bash ./ivinstall -Z -t ivtmp -P $SAVEARGS" > startup.sh
+        mv $(basename "$CMD") ivinstall
+        echo "set -- -p $DEVICE" > ivinstall.preformat
+        head -$((ARCHIVE_START-1)) ivinstall >> ivinstall.preformat \
+            || error "Preformat extract failed"
+        tar czf tarball.tgz startup.sh ivinstall.preformat ivinstall
+        echo tarball_devnum=${DEVICE:0-1} >> jtag/uEnv.ivinstall.txt
+        echo tarball_sect_offset=$(printf "0x%x" ${P2_START}) >> jtag/uEnv.ivinstall.txt
     fi
-    add_header startup.sh startup.sh.bin
-    add_header extra_image extra_image.bin
     add_header jtag/uEnv.ivinstall.txt uEnv.ivinstall.txt.bin
+    add_header tarball.tgz tarball.tgz.bin
     cp devicetree/$MACHINE.dtb system.dtb
 
-    JTAG_FILES="startup.sh.bin uEnv.ivinstall.txt.bin extra_image.bin jtag/ivinstall.tcl"
+    JTAG_FILES="tarball.tgz.bin uEnv.ivinstall.txt.bin jtag/ivinstall.tcl"
     JTAG_FILES+=" elf/* boot/*Image rootfs/initrd system.dtb"
     run_jtag_tcl ivinstall.tcl $JTAG_FILES
 
@@ -552,6 +561,13 @@ elif ((MODE==SD_MODE)); then
         fi
     fi
 
+    #
+    # Formatting is split into two parts:
+    #   1) create all partition and only format first partition (FAT)
+    #   2) format the rest of the partitions
+    # This is used for JTAG programming, and is an undocumented CLI option.  By
+    # default, when formatting both parts are done.
+    #
     if ((DO_FORMAT && !POSTPARTITION_ONLY)); then
         verify mount umount parted mkfs.vfat mkfs.ext4 blockdev
 
@@ -625,9 +641,10 @@ elif ((MODE==SD_MODE)); then
         #
         sleep 1 # Ensure parted done
         unmount_all
-        # Create array of partition names (including primary device first)
-        info "Formatting partition 1 as FAT32"
-        mkfs.vfat -F 32 -n "${LABEL}BOOT" /dev/${PARTS[1]} || error "failed to format part 1"
+        if ((!POSTPARTITION_ONLY)); then
+            info "Formatting partition 1 as FAT32"
+            mkfs.vfat -F 32 -n "${LABEL}BOOT" /dev/${PARTS[1]} || error "failed to format part 1"
+        fi
 
         if ((!PREPARTITION_ONLY)); then
             info "Formatting partition 2 as raw"
