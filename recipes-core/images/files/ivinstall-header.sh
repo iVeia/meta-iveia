@@ -75,13 +75,13 @@ getfilesize()
 SAVEARGS="$*"
 unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_QSPI_ONLY DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD
 unset JTAG_REMOTE MODE SKIP_ROOTFS SSH_TARGET USE_INITRD USER_FAT_SIZE USER_LABEL USER_ROOTFS_SIZE
-unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE REPLACE REPLACE_STARTUP_SCRIPT REPLACE_EXTRA_IMAGE
+unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE USER_TMPDIR
 unset PREPARTITION_ONLY POSTPARTITION_ONLY
 SD_MODE=0
 SSH_MODE=1
 JTAG_MODE=2
 MODE=$SD_MODE
-while getopts "a:A:B:b:cCde:fhi:jJ:kn:opPqQr:R:s:vxX:zZ" opt; do
+while getopts "a:A:B:b:cCde:fhi:jJ:kn:opPqQs:t:vxX:zZ" opt; do
     case "${opt}" in
         a) JTAG_ADAPTER="$OPTARG" ;;
         A) DO_ASSEMBLE=1; EXTRACT_DIR="$OPTARG"; ;;
@@ -103,9 +103,8 @@ while getopts "a:A:B:b:cCde:fhi:jJ:kn:opPqQr:R:s:vxX:zZ" opt; do
         P) POSTPARTITION_ONLY=1; DO_FORMAT=1 ;;
         q) DO_QSPI=1 ;;
         Q) DO_QSPI_ONLY=1 ;;
-        r) REPLACE=1; REPLACE_STARTUP_SCRIPT="$OPTARG"; ;;
-        R) REPLACE=1; REPLACE_EXTRA_IMAGE="$OPTARG"; ;;
         s) MODE=$SSH_MODE; SSH_TARGET="$OPTARG" ;;
+        t) USER_TMPDIR="$OPTARG"; ;;
         v) DO_VERSION=1 ;;
         x) DO_EXTRACT=1 ;;
         X) DO_EXTRACT=1; EXTRACT_DIR="$OPTARG"; ;;
@@ -179,7 +178,12 @@ fi
 
 extract_archive_to_TMPDIR()
 {
-    TMPDIR=$(mktemp -d)
+    if [ -n "$1" ]; then
+        TMPDIR="$1"
+        mkdir -p "$TMPDIR" || error "Could not create TMPDIR"
+    else
+        TMPDIR=$(mktemp -d)
+    fi
     on_exit() { rm -rf $TMPDIR; }
     trap on_exit EXIT
     tail -n+$ARCHIVE_START "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
@@ -424,14 +428,14 @@ fi
 # From here on out, we're copying/formatting, and the device is required
 # (unless -q alone)
 #
-# Another exception: if ONLY_BOOT or REPLACE, then we don't care about other
-# options (except that it is JTAG mode)
+# Another exception: if ONLY_BOOT, then we don't care about other options
+# (except that it is JTAG mode)
 #
 if ((DO_FORMAT || DO_COPY)); then
     [[ -n "$DEVICE" ]] || error "DEVICE was not specified"
 fi
-if ((ONLY_BOOT || REPLACE)); then
-    ((MODE==JTAG_MODE)) || error "The -o, -r and -R options can only be used in JTAG mode (-j)"
+if ((ONLY_BOOT)); then
+    ((MODE==JTAG_MODE)) || error "The -o option can only be used in JTAG mode (-j)"
 else
     ((DO_FORMAT || DO_COPY || DO_QSPI)) || error "Either -f, -c, or -q required (or a combination)"
 fi
@@ -502,27 +506,15 @@ if ((MODE==JTAG_MODE)); then
     setup_jtag
 
     info "Extracting Image Archive for JTAG mode..."
-    extract_archive_to_TMPDIR
-    cp "$CMD" $TMPDIR || error "Cannot copy ivinstall image to TMPDIR"
-    if [[ -n "$REPLACE_STARTUP_SCRIPT" ]]; then
-        cp "$REPLACE_STARTUP_SCRIPT" $TMPDIR/startup.sh \
-            || error "Cannot copy STARTUP_SCRIPT \"$REPLACE_STARTUP_SCRIPT\" to TMPDIR"
-    fi
-    if [[ -n "$REPLACE_EXTRA_IMAGE" ]]; then
-        cp "$REPLACE_EXTRA_IMAGE" $TMPDIR/extra_image \
-            || error "Cannot copy EXTRA_IMAGE \"$REPLACE_EXTRA_IMAGE\" to TMPDIR"
+    if [[ -n "$USER_TMPDIR" ]]; then
+        extract_archive_to_TMPDIR "$USER_TMPDIR"
+    else
+        extract_archive_to_TMPDIR
     fi
     cd $TMPDIR
     if ((ONLY_BOOT)); then
         echo > startup.sh
         echo > extra_image
-    else
-        if [[ -z "$REPLACE_STARTUP_SCRIPT" ]]; then
-            echo "bash /tmp/extra_image -Z $SAVEARGS" > startup.sh
-        fi
-        if [[ -z "$REPLACE_EXTRA_IMAGE" ]]; then
-            mv $(basename "$CMD") extra_image
-        fi
     fi
     add_header startup.sh startup.sh.bin
     add_header extra_image extra_image.bin

@@ -3,8 +3,6 @@ USAGE:
     ivinstall -s SSH_TARGET [FORMAT OPTIONS] DEVICE
     ivinstall -j [-J JTAG_REMOTE] [-a JTAG_ADAPTER] [FORMAT OPTIONS] DEVICE
     ivinstall -jo [-J JTAG_REMOTE] [-a JTAG_ADAPTER]
-    ivinstall -j [-J JTAG_REMOTE] [-a JTAG_ADAPTER] [ -r STARTUP_SCRIPT ]
-              [ -R EXTRA_IMAGE ]
     ivinstall -Q [-J JTAG_REMOTE] [-a JTAG_ADAPTER]
     ivinstall -v
     ivinstall -x
@@ -103,14 +101,7 @@ MODE OPTIONS
         even if it is bricked or the network is not available.
 
         Works by loading all images needed for Linux boot into RAM via JTAG,
-        and then booting.  In addition, a shell sourceable STARTUP_SCRIPT and
-        EXTRA_IMAGE are loaded into high RAM, and extracted once Linux boots.
-        After booting, the STARTUP_SCRIPT is sourced by the shell.  By default,
-        the EXTRA_IMAGE is the ivinstall script itself (this program), and the
-        STARTUP_SCRIPT launches the ivinstall script with user provided
-        arguments.  However, the STARTUP_SCRIPT and EXTRA_IMAGE can either be
-        ignored (with the -o option) or replaced (with the -r and/or -R
-        options).
+        and then booting.
 
         Can only be run on a host.  The DEVICE refers to the device name on the
         target (see DESCRIPTION).
@@ -225,13 +216,12 @@ OTHER OPTIONS
         Can be used with JTAG_REMOTE option, to run from a remote host computer
         that has a directly connected JTAG target.
 
-    -r
-        Replace the startup script with the given file STARTUP_SCRIPT.  Only
-        valid in JTAG mode.  See the -j option.
-
-    -R
-        Replace the extra image with the given file EXTRA_IMAGE.  Only valid in
-        JTAG mode.  See the -j option.
+    -t USER_TMPDIR
+        Temp dir for extracting files.  When formatting/copying images, by
+        default files are extracted to a temp dir created via `mktemp -d`.
+        This option overrides that default, and instead copies files to the
+        given USER_TMPDIR.  USER_TMPDIR must not exist before running this
+        command.  Temp dirs are removed on program exit.
 
     -v
         Report version from which images were built and md5sums of all images
