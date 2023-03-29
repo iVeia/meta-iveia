@@ -123,8 +123,7 @@ FORMAT OPTIONS
     an option that implies -c).
 
     -b SIZE
-        Size in MB of FAT boot partition, default 4GB (or 512MB for SD cards
-        less than 16GB).
+        Size in MB of FAT boot partition, default 4GB.
 
     -B SIZE
         Size in MB of rootfs partition, default 1024MB.

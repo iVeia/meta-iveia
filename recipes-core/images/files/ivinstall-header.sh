@@ -139,6 +139,32 @@ IS_TARGET=$((IS_ZYNQMP_TARGET || IS_ZYNQ_TARGET))
 if [[ -n "$IOBOARD" ]]; then
     grep -q "\<$IOBOARD\>" <<<"$IOBOARDS" || error 'invalid ioboard "'$IOBOARD'"'
 fi
+if ((USER_FAT_SIZE)); then
+    FAT_SIZE=$USER_FAT_SIZE
+else
+    FAT_SIZE=$((4*1024))
+fi
+if ((USER_ROOTFS_SIZE)); then
+    ROOTFS_SIZE=$USER_ROOTFS_SIZE
+else
+    ROOTFS_SIZE=1024
+fi
+if [[ -n "$USER_LABEL" ]]; then
+    LABEL="$USER_LABEL-"
+else
+    LABEL="IVEIA-"
+fi
+
+#
+# Define partition layout.  P[1-4]_START/END are in num sectors.
+# FAT/PART2/ROOTFS sizes are in MB.
+#
+SECTORS_PER_MB=2048
+PART2_SIZE=1
+P1_START=$((1 * SECTORS_PER_MB));   P1_END=$((P1_START - 1 + FAT_SIZE * SECTORS_PER_MB))
+P2_START=$((P1_END + 1));           P2_END=$((P2_START - 1 + PART2_SIZE * SECTORS_PER_MB))
+P3_START=$((P2_END + 1));           P3_END=$((P3_START - 1 + ROOTFS_SIZE * SECTORS_PER_MB))
+P4_START=$((P3_END + 1))
 
 #
 # FORCE_SD_MODE can be easily prepended to the arg list to use SD mode,
@@ -536,33 +562,13 @@ elif ((MODE==SD_MODE)); then
 
         BLOCKDEV_BYTES=$(blockdev --getsize64 "$DEVICE")
         BLOCKDEV_MB=$((BLOCKDEV_BYTES/1024/1024))
-        if ((USER_FAT_SIZE)); then
-            FAT_SIZE=$USER_FAT_SIZE
-        elif ((BLOCKDEV_MB > 12000)); then
-            FAT_SIZE=$((4*1024))
-        else
-            FAT_SIZE=512
-        fi
-        if ((USER_ROOTFS_SIZE)); then
-            ROOTFS_SIZE=$USER_ROOTFS_SIZE
-        else
-            ROOTFS_SIZE=1024
-        fi
-        if [[ -n "$USER_LABEL" ]]; then
-            LABEL="$USER_LABEL-"
-        else
-            LABEL="IVEIA-"
-        fi
+        ((BLOCKDEV_MB > FAT_SIZE + ROOTFS_SIZE + 100)) \
+            || error "DEVICE size must be greater than FAT + ROOTFS sizes"
 
         #
         # Create partitions
         #
         info "Creating partitions"
-        SECTORS_PER_MB=2048
-        P1_START=$((1 * SECTORS_PER_MB))
-        P1_END=$((P1_START - 1  + FAT_SIZE * SECTORS_PER_MB))
-        P2_END=$((P1_END        + 1 * SECTORS_PER_MB))
-        P3_END=$((P2_END        + ROOTFS_SIZE * SECTORS_PER_MB))
         unmount_all
         if command -v wipefs &> /dev/null; then
             wipefs -a "$DEVICE" >/dev/null || error "wipefs failed.  Is device in use?"
@@ -573,10 +579,10 @@ elif ((MODE==SD_MODE)); then
         fi
         parted -s "$DEVICE" mklabel msdos || error "mklabel failed"
         MKPART="parted -s "$DEVICE" mkpart primary"
-        ${MKPART} fat32 $((P1_START))s   $((P1_END))s || error "failed to create partition 1"
-        ${MKPART} fat32 $((P1_END + 1))s $((P2_END))s || error "failed to create partition 2"
-        ${MKPART} ext2  $((P2_END + 1))s $((P3_END))s || error "failed to create partition 3"
-        ${MKPART} ext2  $((P3_END + 1))s 100%         || error "failed to create partition 4"
+        ${MKPART} fat32 $((P1_START))s $((P1_END))s || error "failed to create partition 1"
+        ${MKPART} fat32 $((P2_START))s $((P2_END))s || error "failed to create partition 2"
+        ${MKPART} ext2  $((P3_START))s $((P3_END))s || error "failed to create partition 3"
+        ${MKPART} ext2  $((P4_START))s 100%         || error "failed to create partition 4"
         parted -s "$DEVICE" set 1 boot on || error "could not make partition 1 bootable"
     fi
 
