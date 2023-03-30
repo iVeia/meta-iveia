@@ -73,7 +73,7 @@ getfilesize()
 # However, long opts not supported, SAD!
 #
 SAVEARGS="$*"
-unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_QSPI_ONLY DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD
+unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_QSPI_DIRECT DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD
 unset JTAG_REMOTE MODE SKIP_ROOTFS SSH_TARGET USE_INITRD USER_FAT_SIZE USER_LABEL USER_ROOTFS_SIZE
 unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE USER_TMPDIR
 unset PREPARTITION_ONLY POSTPARTITION_ONLY
@@ -102,7 +102,7 @@ while getopts "a:A:B:b:cCde:fhi:jJ:kn:opPqQs:t:vxX:zZ" opt; do
         p) PREPARTITION_ONLY=1; DO_FORMAT=1 ;;
         P) POSTPARTITION_ONLY=1; DO_FORMAT=1 ;;
         q) DO_QSPI=1 ;;
-        Q) DO_QSPI_ONLY=1 ;;
+        Q) DO_QSPI_DIRECT=1 ;;
         s) MODE=$SSH_MODE; SSH_TARGET="$OPTARG" ;;
         t) USER_TMPDIR="$OPTARG"; ;;
         v) DO_VERSION=1 ;;
@@ -404,7 +404,7 @@ unmount_all()
 # booted into Linux.  iVeia boards all (mostly) boot from QSPI mode, so the TCL
 # script resets the processor into JTAG mode.
 #
-if ((DO_QSPI_ONLY)); then
+if ((DO_QSPI_DIRECT)); then
     setup_jtag
 
     info "Extracting archive..."
