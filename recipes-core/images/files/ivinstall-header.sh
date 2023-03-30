@@ -744,8 +744,15 @@ elif ((MODE==SD_MODE)); then
     # Sync just in case user does unsafe eject
     sync
 
-    endmsg
-    info "Done"
+    #
+    # Don not display Done message when PREPARTITION_ONLY (-p) as that option
+    # is intended to be used in in conjunction with POSTPARTITION_ONLY (-P).
+    # POSTPARTITION_ONLY displays the Done message.
+    #
+    if ((!PREPARTITION_ONLY)); then
+        endmsg
+        info "Done"
+    fi
 fi
 
 exit 0
