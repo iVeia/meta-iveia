@@ -100,8 +100,15 @@ MODE OPTIONS
         requires no user intervention, and can completely reformat a target
         even if it is bricked or the network is not available.
 
-        Works by loading all images needed for Linux boot into RAM via JTAG,
-        and then booting.
+        Works by loading the ivinstall image (this program) and all images
+        needed for Linux boot into RAM via JTAG.  Because the ivinstall image
+        can be large (>100MB), RAM size is not always sufficient to both hold
+        the ivinstall image and it's extracted files.  Therefore, this mode
+        uses the DEVICE as a temporary hoding space for the ivinstall image.
+        As such, it overwrites existing data on the DEVICE, and so can only be
+        used with the -f (format) option when copying files to the DEVICE.
+        Other options that do not write to the DEVICE (like -o and -Q) do not
+        require using -f.
 
         Can only be run on a host.  The DEVICE refers to the device name on the
         target (see DESCRIPTION).
@@ -135,15 +142,6 @@ FORMAT OPTIONS
 
     -f
         Partition and format the SD card.
-
-    -p
-        Pre partition/format the card.  Fully partitions the card, but formats
-        only the first partition (FAT).  The -p and -P options together are
-        equivalent to -f.
-
-    -P
-        Post partition/format the card.  Formats partitions 2-4 only (assumes
-        partitioning already done). Complimentary to the -p option.
 
     -k
         Skip copying rootfs for faster install.  Implies -c (copy).
