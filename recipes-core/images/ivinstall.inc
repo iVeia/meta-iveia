@@ -109,6 +109,7 @@ python do_deploy() {
         dep_dir(rootfs_base + ".ext4") :           {"arcname" : "rootfs/rootfs.ext4"},
         dep_dir("startup.sh") :                    {"arcname" : "boot/startup.sh"},
         loc_dir("uEnv.ivinstall.txt") :            {"arcname" : "jtag/uEnv.ivinstall.txt"},
+        loc_dir("uEnv.boot.txt") :                 {"arcname" : "jtag/uEnv.boot.txt"},
         loc_dir("uEnv.qspi.txt") :                 {"arcname" : "jtag/uEnv.qspi.txt"},
     }
 

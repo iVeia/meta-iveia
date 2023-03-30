@@ -47,7 +47,7 @@ after 5000
 stop
 
 # Load Images - see ivinstall script for details on image locations
-dow -data uEnv.ivinstall.txt.bin 0x5ffff4
+dow -data uEnv.txt.bin 0x5ffff4
 dow -data system.dtb 0x700000
 dow -data Image 0x800000
 dow -data initrd 0x10000000

@@ -30,7 +30,7 @@ con
 mwr 0x500000 0x4a544147
 
 # Load Images - see ivinstall script for details on image locations
-dow -data uEnv.ivinstall.txt.bin 0x5ffff4
+dow -data uEnv.txt.bin 0x5ffff4
 dow -data system.dtb 0x700000
 dow -data uImage 0x800000
 dow -data initrd 0x8000000

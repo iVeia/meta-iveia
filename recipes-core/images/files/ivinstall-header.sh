@@ -442,6 +442,9 @@ fi
 if ((MODE==SD_MODE)); then
     ((DO_QSPI && !IS_TARGET)) && error "QSPI mode can only run on target"
 fi
+if ((MODE==JTAG_MODE && !DO_FORMAT)); then
+    ((ONLY_BOOT)) || error "JTAG mode requires -f"
+fi
 
 #
 # JTAG is used to fully load Linux and then run the ivinstall script.
@@ -515,7 +518,9 @@ if ((MODE==JTAG_MODE)); then
     cp "$CMD" $TMPDIR || error "Cannot copy ivinstall image to TMPDIR"
     cd $TMPDIR
     if ((ONLY_BOOT)); then
-        echo
+        # Use empty tarball.tgz.bin - we don't use it when only booting
+        echo > tarball.tgz.bin
+        add_header jtag/uEnv.boot.txt uEnv.txt.bin
     else
         echo "bash ./ivinstall -Z -t ivtmp -P $SAVEARGS" > startup.sh
         mv $(basename "$CMD") ivinstall
@@ -525,12 +530,12 @@ if ((MODE==JTAG_MODE)); then
         tar czf tarball.tgz startup.sh ivinstall.preformat ivinstall
         echo tarball_devnum=${DEVICE:0-1} >> jtag/uEnv.ivinstall.txt
         echo tarball_sect_offset=$(printf "0x%x" ${P2_START}) >> jtag/uEnv.ivinstall.txt
-    fi
-    add_header jtag/uEnv.ivinstall.txt uEnv.ivinstall.txt.bin
-    add_header tarball.tgz tarball.tgz.bin
-    cp devicetree/$MACHINE.dtb system.dtb
 
-    JTAG_FILES="tarball.tgz.bin uEnv.ivinstall.txt.bin jtag/ivinstall.tcl"
+        add_header tarball.tgz tarball.tgz.bin
+        add_header jtag/uEnv.ivinstall.txt uEnv.txt.bin
+    fi
+    cp devicetree/$MACHINE.dtb system.dtb
+    JTAG_FILES+=" tarball.tgz.bin uEnv.txt.bin jtag/ivinstall.tcl"
     JTAG_FILES+=" elf/* boot/*Image rootfs/initrd system.dtb"
     run_jtag_tcl ivinstall.tcl $JTAG_FILES
 
