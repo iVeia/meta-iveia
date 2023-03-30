@@ -30,8 +30,8 @@ error()
 {
     sync
     endmsg
-    echo "ERROR: $1"
-    echo "Run ""'""$CMD -h""'"" for usage"
+    echo "ERROR: $1" 1>&2
+    echo "Run ""'""$CMD -h""'"" for usage" 1>&2
     exit 1
 }
 
@@ -231,12 +231,12 @@ if ((DO_EXTRACT)); then
 fi
 
 if ((DO_ASSEMBLE)); then
-    # stdout intended to be redirected to a file, so all messages
+    # stdout intended to be redirected to a file, so info messages
     # must go to stderr
     info "Reassemlble Image Archive from \"$EXTRACT_DIR\"..." 1>&2
-    cd "$EXTRACT_DIR"
-    cat .header || error "header not found" 1>&2
-    tar cvzf - * || error "tar failed" 1>&2
+    cd "$EXTRACT_DIR" 2>/dev/null || error "archive directory not found"
+    cat .header || error "header not found"
+    tar cvzf - * || error "tar failed"
     exit 0
 fi
 
