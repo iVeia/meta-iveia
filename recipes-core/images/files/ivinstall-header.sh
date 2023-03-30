@@ -73,6 +73,7 @@ getfilesize()
 # However, long opts not supported, SAD!
 #
 SAVEARGS="$*"
+unset ONLY_OPTION
 unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_QSPI_DIRECT DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD
 unset JTAG_REMOTE MODE SKIP_ROOTFS SSH_TARGET USE_INITRD USER_FAT_SIZE USER_LABEL USER_ROOTFS_SIZE
 unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE USER_TMPDIR
@@ -84,7 +85,7 @@ MODE=$SD_MODE
 while getopts "a:A:B:b:cCde:fhi:jJ:kn:opPqQs:t:vxX:zZ" opt; do
     case "${opt}" in
         a) JTAG_ADAPTER="$OPTARG" ;;
-        A) DO_ASSEMBLE=1; EXTRACT_DIR="$OPTARG"; ;;
+        A) DO_ASSEMBLE=1; EXTRACT_DIR="$OPTARG"; ONLY_OPTION="$opt"; break ;;
         b) USER_FAT_SIZE="$OPTARG"; ;;
         B) USER_ROOTFS_SIZE="$OPTARG"; ;;
         c) DO_COPY=1; ;;
@@ -92,7 +93,7 @@ while getopts "a:A:B:b:cCde:fhi:jJ:kn:opPqQs:t:vxX:zZ" opt; do
         d) DO_COPY=1; USE_INITRD=1 ;;
         e) ENDMSG="$OPTARG"; ;;
         f) DO_FORMAT=1; ;;
-        h) help ;;
+        h) help; ONLY_OPTION="$opt" ;;
         i) DO_COPY=1; IOBOARD="$OPTARG"; ;;
         j) MODE=$JTAG_MODE ;;
         J) JTAG_REMOTE="$OPTARG" ;;
@@ -105,16 +106,20 @@ while getopts "a:A:B:b:cCde:fhi:jJ:kn:opPqQs:t:vxX:zZ" opt; do
         Q) DO_QSPI_DIRECT=1 ;;
         s) MODE=$SSH_MODE; SSH_TARGET="$OPTARG" ;;
         t) USER_TMPDIR="$OPTARG"; ;;
-        v) DO_VERSION=1 ;;
-        x) DO_EXTRACT=1 ;;
-        X) DO_EXTRACT=1; EXTRACT_DIR="$OPTARG"; ;;
+        v) DO_VERSION=1; ONLY_OPTION="$opt"; break ;;
+        x) DO_EXTRACT=1; ONLY_OPTION="$opt"; break ;;
+        X) DO_EXTRACT=1; EXTRACT_DIR="$OPTARG"; ONLY_OPTION="$opt"; break ;;
         z) MODE=$SD_MODE ;;
         Z) FORCE_SD_MODE=1 ;;   # Undocumented option
-        \?) error "Invalid option: -$OPTARG" 1>&2; ;;
-        :) error "Invalid option: -$OPTARG requires an argument" 1>&2; ;;
+        \?) error "Invalid option: -$OPTARG" ;;
+        :) error "Invalid option: -$OPTARG requires an argument" ;;
     esac
 done
-shift $((OPTIND -1))
+ARGS_PROCESSED=$((OPTIND -1))
+if [[ -n "$ONLY_OPTION" ]] && (($# > ARGS_PROCESSED)); then
+    error "Option \"-$ONLY_OPTION\" must be used without other options"
+fi
+shift $ARGS_PROCESSED
 
 DEVICE="$1"
 shift
