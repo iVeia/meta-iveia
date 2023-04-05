@@ -544,6 +544,11 @@ if ((MODE==JTAG_MODE)); then
     JTAG_FILES+=" elf/* boot/*Image rootfs/initrd system.dtb"
     run_jtag_tcl ivinstall.tcl $JTAG_FILES
 
+    echo
+    info "JTAG load complete, device will now boot to Linux and run ivinstall."
+    info "Watch the serial console to confirm command completion."
+    echo
+
 elif ((MODE==SSH_MODE)); then
     verify ssh scp
     scp ${SSH_OPTS} $CMD ${SSH_TARGET}:/tmp || error "scp failed"
