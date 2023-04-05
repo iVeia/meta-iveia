@@ -7,7 +7,7 @@
 fdt_addr=0x700000
 kernel_addr=0x800000
 bootenv_cmd=run board_config write_tarball defargs set_fdt_chosen boot_kernel
-defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon mem=${kernel_mem_mb}M nozap
+defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon nozap
 
 # write_tarball - write the tarball loaded in RAM to SD/eMMC just after the
 # partition 1 end
