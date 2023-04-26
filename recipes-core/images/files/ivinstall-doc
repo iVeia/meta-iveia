@@ -216,7 +216,7 @@ OTHER OPTIONS
 
     -t USER_TMPDIR
         Temp dir for extracting files.  When formatting/copying images, by
-        default files are extracted to a temp dir created via `mktemp -d`.
+        default files are extracted to a temp dir created via "mktemp -d".
         This option overrides that default, and instead copies files to the
         given USER_TMPDIR.  USER_TMPDIR must not exist before running this
         command.  Temp dirs are removed on program exit.
