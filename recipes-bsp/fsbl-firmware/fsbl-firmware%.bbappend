@@ -7,6 +7,7 @@ SRC_URI_append_zynqmp = "\
     "
 SRC_URI_append_zynq = "\
     file://iveia-version-banner-zynq.patch \
+    file://weaken-fsbl-hooks-zynq.patch \
     "
 
 SRC_URI_append_atlas-i-z8 = " file://eMMC-HS200-speed-workaround.patch"
@@ -45,6 +46,9 @@ FSBL_SRCS_zynqmp := "\
     ${THISDIR}/files/iv_z8_sequence_boot.h \
     ${THISDIR}/files/iv_z8_user_boot_sequence.c \
     ${THISDIR}/../shared/files/iveia-ipmi.h \
+    "
+FSBL_SRCS_zynq := "\
+    ${THISDIR}/files/zynq-hooks.c \
     "
 FSBL_SRCS_append_atlas-iii-z8e := " ${THISDIR}/files/${MACHINE}.c"
 FSBL_SRCS_append_atlas-iii-z8 := " ${THISDIR}/files/${MACHINE}.c"

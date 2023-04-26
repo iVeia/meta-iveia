@@ -1,0 +1,35 @@
+diff -urN git/lib/sw_apps/zynq_fsbl/src/fsbl_hooks.c git.new/lib/sw_apps/zynq_fsbl/src/fsbl_hooks.c
+--- git/lib/sw_apps/zynq_fsbl/src/fsbl_hooks.c	2023-04-25 11:53:43.856890324 -0400
++++ git.new/lib/sw_apps/zynq_fsbl/src/fsbl_hooks.c	2023-04-25 12:02:00.693579898 -0400
+@@ -47,6 +47,7 @@
+ *		- XST_FAILURE.to indicate failure
+ *
+ ****************************************************************************/
++__attribute__((weak))
+ u32 FsblHookBeforeBitstreamDload(void)
+ {
+ 	u32 Status;
+@@ -74,6 +75,7 @@
+ *		- XST_FAILURE.to indicate failure
+ *
+ ****************************************************************************/
++__attribute__((weak))
+ u32 FsblHookAfterBitstreamDload(void)
+ {
+ 	u32 Status;
+@@ -101,6 +103,7 @@
+ *		- XST_FAILURE.to indicate failure
+ *
+ ****************************************************************************/
++__attribute__((weak))
+ u32 FsblHookBeforeHandoff(void)
+ {
+ 	u32 Status;
+@@ -125,6 +128,7 @@
+ * @return None
+ *
+ ****************************************************************************/
++__attribute__((weak))
+ void FsblHookFallback(void)
+ {
+ 	/*
