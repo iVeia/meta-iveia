@@ -215,8 +215,7 @@ OTHER OPTIONS
         that has a directly connected JTAG target.
 
     -v
-        Report version from which images were built and md5sums of all images
-        in the archive and then exit.
+        Report version from which images were built and then exit.
 
     -x
         Extract only.  Extract contents of this installer to temp directory
