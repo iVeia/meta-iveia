@@ -214,13 +214,6 @@ OTHER OPTIONS
         Can be used with JTAG_REMOTE option, to run from a remote host computer
         that has a directly connected JTAG target.
 
-    -t USER_TMPDIR
-        Temp dir for extracting files.  When formatting/copying images, by
-        default files are extracted to a temp dir created via "mktemp -d".
-        This option overrides that default, and instead copies files to the
-        given USER_TMPDIR.  USER_TMPDIR must not exist before running this
-        command.  Temp dirs are removed on program exit.
-
     -v
         Report version from which images were built and md5sums of all images
         in the archive and then exit.
