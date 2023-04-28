@@ -9,7 +9,7 @@
 &gem0 {
     status = "okay";
     phy-handle = <&phy0>;
-    phy-mode = "sgmii";
+    phy-mode = "rgmii-id";
 };
 
 &mdio0 {
