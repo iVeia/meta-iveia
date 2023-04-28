@@ -26,6 +26,7 @@ IMAGE_INSTALL += "socat"
 IMAGE_INSTALL += "tree"
 IMAGE_INSTALL += "gdbserver"
 IMAGE_INSTALL += "net-tools"
+IMAGE_INSTALL += "tcpdump"
 
 #IMAGE_INSTALL += "python3"
 
