@@ -189,3 +189,42 @@ u32 FsblHookBeforeHandoff(void)
 
 	return XST_SUCCESS;
 }
+
+
+#define USB_RST_CTRL    0xF8000210
+#define USB0_CPU1X_RST  0x00000001
+#define USB1_CPU1X_RST  0x00000002
+
+/*
+ * Hold USB0/1 controllers in reset (if `active`)
+ */
+static void usb_reset(int active)
+{
+    const u32 mask = USB0_CPU1X_RST | USB1_CPU1X_RST;
+
+    SlcrUnlock();
+    Xil_Out32(USB_RST_CTRL, (Xil_In32(USB_RST_CTRL) & ~mask) | (active ? mask : 0));
+    SlcrLock();
+}
+
+
+/*
+ * Overridden hook from just BEFORE ps7_init()
+ */
+void ps7_init_prehook()
+{
+    /*
+     * USB must be held in reset while pins are configured, otherwise ULPI
+     * interface can get out of whack, and linux drivers will not see PHY.
+     */
+    usb_reset(1);
+}
+
+
+/*
+ * Overridden hook from just AFTER ps7_init()
+ */
+void ps7_init_posthook()
+{
+    usb_reset(0);
+}

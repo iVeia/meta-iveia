@@ -1,0 +1,37 @@
+From 1eb9bbdc83483fd4b4c4e56ac57e11d891eb762e Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Tue, 2 May 2023 16:41:53 -0400
+Subject: [PATCH] ps7_init pre and post hooks
+
+---
+ lib/sw_apps/zynq_fsbl/src/main.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/lib/sw_apps/zynq_fsbl/src/main.c b/lib/sw_apps/zynq_fsbl/src/main.c
+index 88b6e34321..ac2f81dedc 100644
+--- a/lib/sw_apps/zynq_fsbl/src/main.c
++++ b/lib/sw_apps/zynq_fsbl/src/main.c
+@@ -197,6 +197,10 @@ extern u8 BitstreamFlag;
+ #ifdef XPAR_PS7_QSPI_LINEAR_0_S_AXI_BASEADDR
+ extern u32 QspiFlashSize;
+ #endif
++
++__attribute__((weak)) void ps7_init_prehook(void) {}
++__attribute__((weak)) void ps7_init_posthook(void) {}
++
+ /*****************************************************************************/
+ /**
+ *
+@@ -221,7 +225,9 @@ int main(void)
+ 	/*
+ 	 * PCW initialization for MIO,PLL,CLK and DDR
+ 	 */
++    ps7_init_prehook();
+ 	Status = ps7_init();
++    ps7_init_posthook();
+ 	if (Status != FSBL_PS7_INIT_SUCCESS) {
+ 		fsbl_printf(DEBUG_GENERAL,"PS7_INIT_FAIL : %s\r\n",
+ 						getPS7MessageInfo(Status));
+-- 
+2.25.1
+

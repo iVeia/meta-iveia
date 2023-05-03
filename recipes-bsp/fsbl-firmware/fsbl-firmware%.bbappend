@@ -8,6 +8,7 @@ SRC_URI_append_zynqmp = "\
 SRC_URI_append_zynq = "\
     file://iveia-version-banner-zynq.patch \
     file://weaken-fsbl-hooks-zynq.patch \
+    file://ps7_init-pre-and-post-hooks.patch \
     "
 
 SRC_URI_append_atlas-i-z8 = " file://eMMC-HS200-speed-workaround.patch"
