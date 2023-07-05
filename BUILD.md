@@ -16,20 +16,17 @@ iVeia provides the primary target `iveia-image-*`, described in the next
 section.  In addition is provides an `ivinstall` target that creates a single
 installable image.
 
-Tagged iVeia versions are based off of a specific Xilinx version included in
-the tag followed by an iVeia version number, e.g. `2019.2-1.0`.
-
 The first time download and build steps are as shown below.  For convenience, a
 download script is avaiable to simplify the process - see
 [README](README.md).
+
 ```
-IVEIA_TAG=<CHOOSE THE LATEST TAGGED VERSION, I.E. 2019.2-M.N>
-repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-v2019.2          # Xilinx step
-repo sync                                                                        # Xilinx step
-git clone -b $IVEIA_TAG git://github.com/iVeia/meta-iveia.git sources/meta-iveia # clone meta-iveia
-source setupsdk                                                                  # Xilinx step
-bitbake-layers add-layer ../sources/meta-iveia                                   # add meta-iveia
-MACHINE=<CHOOSE FROM SUPPORTED MACHINES ABOVE> bitbake ivinstalll                # build iveia target
+repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-v2021.2     # Xilinx step
+repo sync                                                                   # Xilinx step
+git clone git://github.com/iVeia/meta-iveia.git sources/meta-iveia          # clone meta-iveia
+source setupsdk                                                             # Xilinx step
+bitbake-layers add-layer ../sources/meta-iveia                              # add meta-iveia
+MACHINE=<CHOOSE FROM SUPPORTED MACHINES> bitbake ivinstall                  # build iveia target
 ```
 
 After the first run, all future runs require `source setupsdk` to setup
