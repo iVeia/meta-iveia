@@ -10,6 +10,7 @@ workflow:
     - if: $CI_COMMIT_TAG    
 
 variables:
+  IVTEST_REL_PATH: out/ivtest
   IVINSTALL_REL_PATH: out/ivinstall
   IVINSTALL_ABS_PATH: ${CI_PROJECT_DIR}/${IVINSTALL_REL_PATH}
   IVINSTALL_TGT: ivinstall-full
@@ -132,7 +133,7 @@ test-job:
     - grep ^INFO ivlog/latest/logfile
 
     # Artifacts
-    - cp -r ivlog/latest/ ${CI_PROJECT_DIR}/out/ivtest
+    - cp -r ivlog/latest/ ${CI_PROJECT_DIR}/${IVTEST_REL_PATH}
 
     # Verify zero test failures
     - cat ivlog/latest/fails
@@ -141,7 +142,7 @@ test-job:
   artifacts:
     when: always
     paths:
-      - out/ivtest
+      - ${IVTEST_REL_PATH}
     reports:
       dotenv: vars.env
 
@@ -156,8 +157,10 @@ release-job:
     - echo 'Running release-job'
   release:
     tag_name: $CI_COMMIT_TAG
-    description: out/ivtest/shortsummary.md
+    description: ${IVTEST_REL_PATH}/shortsummary.md
     assets:
        links:
-         - name: 'Artifact Browser'
-           url: "$TEST_JOB_URL/artifacts/browse/out"
+         - name: 'Test Results'
+           url: "${TEST_JOB_URL}/artifacts/browse/${IVTEST_REL_PATH}"
+         - name: 'Build Artifacts'
+           url: "${BUILD_JOB_URL}/artifacts/browse/${IVINSTALL_REL_PATH}"
