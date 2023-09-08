@@ -7,11 +7,23 @@
 #include <dt-bindings/phy/phy.h>
 
 &gem0 {
-    status = "disabled";
+    status = "okay";
+    index = <1>; /* Use eth1 */
+    phy-mode = "sgmii";
+    fixed-link {
+          speed = <1000>;
+          full-duplex;
+    };
 };
 
 &gem1 {
-    status = "disabled";
+    status = "okay";
+    index = <2>; /* Use eth2 */
+    phy-mode = "sgmii";
+    fixed-link {
+          speed = <1000>;
+          full-duplex;
+    };
 };
 
 &gem2 {
