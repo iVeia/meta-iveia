@@ -54,3 +54,8 @@
         reg = <0x48>;
     };
 };
+
+&dwc3_0 {
+    dr_mode = "otg";
+    maximum-speed = "high-speed";
+};
