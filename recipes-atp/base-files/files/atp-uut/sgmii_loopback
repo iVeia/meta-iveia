@@ -1,0 +1,30 @@
+#!/bin/bash
+# Source: https://serverfault.com/a/309442
+
+IFACE1=eth1
+IFACE2=eth2
+
+ifconfig $IFACE1 10.50.0.1/24
+ifconfig $IFACE2 10.50.1.1/24
+
+# nat source IP 10.50.0.1 -> 10.60.0.1 when going to 10.60.1.1
+iptables -t nat -A POSTROUTING -s 10.50.0.1 -d 10.60.1.1 -j SNAT --to-source 10.60.0.1
+
+# nat inbound 10.60.0.1 -> 10.50.0.1
+iptables -t nat -A PREROUTING -d 10.60.0.1 -j DNAT --to-destination 10.50.0.1
+
+# nat source IP 10.50.1.1 -> 10.60.1.1 when going to 10.60.0.1
+iptables -t nat -A POSTROUTING -s 10.50.1.1 -d 10.60.0.1 -j SNAT --to-source 10.60.1.1
+
+# nat inbound 10.60.1.1 -> 10.50.1.1
+iptables -t nat -A PREROUTING -d 10.60.1.1 -j DNAT --to-destination 10.50.1.1
+
+ip route add 10.60.1.1 dev $IFACE1
+arp -i $IFACE1 -s 10.60.1.1 $(cat /sys/class/net/$IFACE2/address) # eth3's mac address
+
+ip route add 10.60.0.1 dev $IFACE2
+arp -i $IFACE2 -s 10.60.0.1 $(cat /sys/class/net/$IFACE1/address) # eth2's mac address
+
+# Direction 1
+iperf -B 10.50.1.1 -s -P 1 -D 1> /dev/null 2>&1
+iperf -B 10.50.0.1 -c 10.60.1.1 -t 5 -i 10 -f M -r

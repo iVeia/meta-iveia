@@ -1,0 +1,8 @@
+#!/bin/bash
+
+uut-gpio slot-id-0 > /dev/null
+bit0=$?
+uut-gpio slot-id-1 > /dev/null
+bit1=$?
+slot_id=$(echo "ibase=2;$bit1$bit0" | bc)
+echo 'Slot ID (0-3):' $slot_id

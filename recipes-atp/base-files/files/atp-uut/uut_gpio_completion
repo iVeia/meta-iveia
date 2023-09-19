@@ -1,0 +1,20 @@
+_uut_gpio_complete()
+{
+    local cur prev opts
+ 
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+ 
+    case "${prev}" in
+    uut-gpio)
+	opts="help list status "	
+	opts+=`uut-gpio list`
+        ;;
+    *)
+       ;;
+    esac
+ 
+    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+}
+complete -F _uut_gpio_complete uut-gpio
