@@ -82,7 +82,7 @@ SD_MODE=0
 SSH_MODE=1
 JTAG_MODE=2
 MODE=$SD_MODE
-while getopts "a:A:B:b:cCde:fhi:jJ:kn:opPqQs:t:vxX:zZ" opt; do
+while getopts "a:A:B:b:cCde:fhi:jJ:kn:opPqQs:t:vV:xX:zZ" opt; do
     case "${opt}" in
         a) JTAG_ADAPTER="$OPTARG" ;;
         A) DO_ASSEMBLE=1; EXTRACT_DIR="$OPTARG"; ONLY_OPTION="$opt"; break ;;
@@ -107,6 +107,7 @@ while getopts "a:A:B:b:cCde:fhi:jJ:kn:opPqQs:t:vxX:zZ" opt; do
         s) MODE=$SSH_MODE; SSH_TARGET="$OPTARG" ;;
         t) USER_TMPDIR="$OPTARG"; ;;
         v) DO_VERSION=1; ONLY_OPTION="$opt"; break ;;
+        V) XILINX_VIRTUAL_CABLE="$OPTARG"; break ;;
         x) DO_EXTRACT=1; ONLY_OPTION="$opt"; break ;;
         X) DO_EXTRACT=1; EXTRACT_DIR="$OPTARG"; ONLY_OPTION="$opt"; break ;;
         z) MODE=$SD_MODE ;;
@@ -368,6 +369,20 @@ run_jtag_tcl()
         rm -rf iv_staging
         mkdir iv_staging
         cp $JTAG_FILES iv_staging/
+
+        #
+        # On the fly modification of TCL script to support XVC
+        #
+        # Patch script to convert `connect` to `connect -xvc-url <arg>`.
+        # This allows the command "./ivinstall -Q -V <IPADDR>:<PORT>"
+        # to program QSPI flash over XVC.
+        #
+        # In addition, XVC doesn't support `jtag frequency`, so remove it.
+        #
+        if [[ -n "$XILINX_VIRTUAL_CABLE" ]]; then
+            sed -i "s/^ *connect.*/connect -xvc-url $XILINX_VIRTUAL_CABLE/" "iv_staging/$TCL"
+            sed -i "s/^ *jtag .*frequency.*//" "iv_staging/$TCL"
+        fi
 
         #
         # Must run from iv_staging dir, but must leave this function in
