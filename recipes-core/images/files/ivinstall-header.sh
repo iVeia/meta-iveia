@@ -366,9 +366,8 @@ run_jtag_tcl()
         fi
     else
         verify xsdb
-        rm -rf iv_staging
-        mkdir iv_staging
-        cp $JTAG_FILES iv_staging/
+        TMPDIR=$(mktemp -d)
+        cp $JTAG_FILES $TMPDIR/
 
         #
         # On the fly modification of TCL script to support XVC
@@ -380,21 +379,23 @@ run_jtag_tcl()
         # In addition, XVC doesn't support `jtag frequency`, so remove it.
         #
         if [[ -n "$XILINX_VIRTUAL_CABLE" ]]; then
-            sed -i "s/^ *connect.*/connect -xvc-url $XILINX_VIRTUAL_CABLE/" "iv_staging/$TCL"
-            sed -i "s/^ *jtag .*frequency.*//" "iv_staging/$TCL"
+            sed -i "s/^ *connect.*/connect -xvc-url $XILINX_VIRTUAL_CABLE/" "$TMPDIR/$TCL"
+            sed -i "s/^ *jtag .*frequency.*//" "$TMPDIR/$TCL"
         fi
 
         #
-        # Must run from iv_staging dir, but must leave this function in
+        # Must run from $TMPDIR dir, but must leave this function in
         # original dir - so run in subshell
         #
         # DO NOT USE double-quote for $JTAG_ADAPTER!  If it is blank, then xsdb
         # will still see it as a parameter, and the number of args will fail
         # (this mean JTAG_ADAPTER can't have spaces)
         (
-            cd iv_staging
+            cd $TMPDIR
             xsdb "$TCL" $JTAG_ADAPTER
         ) || error "Failed running TCL script to program QSPI flash"
+
+        rm -rf $TMPDIR
     fi
 }
 
