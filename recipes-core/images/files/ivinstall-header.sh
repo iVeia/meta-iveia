@@ -379,7 +379,7 @@ run_jtag_tcl()
         # In addition, XVC doesn't support `jtag frequency`, so remove it.
         #
         if [[ -n "$XILINX_VIRTUAL_CABLE" ]]; then
-            sed -i "s/^ *connect.*/connect -xvc-url $XILINX_VIRTUAL_CABLE/" "$TMPDIR/$TCL"
+            sed -i "s/^ *connect.*/connect -port ${XILINX_VIRTUAL_CABLE#*:} -xvc-url $XILINX_VIRTUAL_CABLE/" "$TMPDIR/$TCL"
             sed -i "s/^ *jtag .*frequency.*//" "$TMPDIR/$TCL"
         fi
 
