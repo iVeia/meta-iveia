@@ -2,6 +2,7 @@ stages:
   - build
   - test
   - release
+  - deploy
 
 workflow:
   rules:
@@ -152,7 +153,7 @@ release-job:
   tags:
     - docker
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_TAG    
   script:
     - echo 'Running release-job'
   release:
@@ -164,3 +165,22 @@ release-job:
            url: "${TEST_JOB_URL}/artifacts/browse/${IVTEST_REL_PATH}"
          - name: 'Build Artifacts'
            url: "${BUILD_JOB_URL}/artifacts/browse/${IVINSTALL_REL_PATH}"
+
+deploy-job:
+  stage: deploy
+  tags:
+    - nas
+  rules:
+    - if: $CI_COMMIT_TAG    
+  script:
+    # Verify NAS mountpoint
+    - NAS="$HOME/nas"
+    - mountpoint "$NAS"
+    - QA_DIR="$HOME/nas/SoftwareQA/ivinstall/$CI_COMMIT_TAG"
+    # Create deploy dir and deploy artifacts
+    - mkdir -p "$QA_DIR"
+    - BROWSE_URL="$CI_PROJECT_URL/-/releases/$CI_COMMIT_TAG"
+    - echo "<meta http-equiv='Refresh' content='0; url=$BROWSE_URL' />" > "$QA_DIR/${CI_COMMIT_TAG}.html"
+    - cp -r out/* "$QA_DIR"
+
+
