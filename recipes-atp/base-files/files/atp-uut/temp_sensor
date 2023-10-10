@@ -1,0 +1,5 @@
+#!/bin/bash
+
+val=$(cat /sys/class/hwmon/hwmon0/temp1_input)
+val=$(echo "scale=3;$val / 1000.0" | bc)
+echo TMP112: $val °C

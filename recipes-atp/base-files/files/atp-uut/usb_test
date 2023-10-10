@@ -1,0 +1,75 @@
+#!/bin/bash
+
+port=$1
+
+echo Initializing USB
+uut-gpio usb-0-id-lo 1
+uut-gpio usb-1-id-lo 1
+sleep 2
+
+instance=0
+# USB port 0 => Zynq USB 1 instance
+# USB port 1 => Zynq USB 0 instance
+if [ "$port" = "0" ]; then
+	instance=1;
+fi
+
+for path in /dev/sd*1; do
+	inst=$(udevadm info -q path -n $path | sed 's/.*\.usb\([0-9]\)\/.*/\1/g')
+	if [ "$inst" = "$instance" ]; then
+		req=$path
+		break
+	fi
+done
+
+if [ "$req" = "" ]; then
+	echo Device not found
+	exit 1
+fi
+
+SIZE_MB=1024
+TMPDIR="/mnt/usb"
+
+echo Mounting $req to $TMPDIR
+mkdir -p $TMPDIR
+umount $req 2>/dev/null
+umount $TMPDIR 2>/dev/null
+mount $req $TMPDIR
+
+TMPFILE=`mktemp -p $TMPDIR -t usb_test.XXXXXX` || {
+        echo "Failed to create temporary file in $PATH. Please make sure the path exists and try again."
+        exit -1
+}
+echo "Writing $SIZE_MB MiB of data from /dev/zero to USB drive (Temp file: $TMPFILE)"
+start=`date +%s`
+dd if=/dev/zero of=$TMPFILE bs=1M count=$SIZE_MB > /dev/null 2>&1
+sync
+end=`date +%s`
+duration=$(echo "$end - $start" | bc -l)
+if [ "$duration" != "0" ]; then
+        speed_MBps=$(echo "scale=3; $SIZE_MB / $duration" | bc -l)
+else
+        speed_MBps=0
+fi
+echo "Write Speed (MB/s): $speed_MBps"
+echo "Write Duration (s): $duration"
+
+echo 3 > /proc/sys/vm/drop_caches
+echo "Reading back the data from the USB drive"
+start=`date +%s`
+dd if=$TMPFILE of=/dev/null bs=1M count=$SIZE_MB > /dev/null 2>&1
+end=`date +%s`
+duration=$(echo "$end - $start" | bc -l)
+if [ "$duration" != "0" ]; then
+        speed_MBps=$(echo "scale=3; $SIZE_MB / $duration" | bc -l)
+else
+        speed_MBps=0
+fi
+echo "Read Speed (MB/s): $speed_MBps"
+echo "Read Duration (s): $duration"
+
+echo
+echo "Removing temporary file $TMPFILE."
+rm $TMPFILE
+
+umount $req

@@ -1,0 +1,61 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/pinctrl-zynqmp.h>
+#include <dt-bindings/phy/phy.h>
+
+&gem0 {
+    status = "okay";
+    index = <1>; /* Use eth1 */
+    phy-mode = "sgmii";
+    fixed-link {
+          speed = <1000>;
+          full-duplex;
+    };
+};
+
+&gem1 {
+    status = "okay";
+    index = <2>; /* Use eth2 */
+    phy-mode = "sgmii";
+    fixed-link {
+          speed = <1000>;
+          full-duplex;
+    };
+};
+
+&gem2 {
+    status = "disabled";
+};
+
+&gem3 {
+    status = "okay";
+    index = <0>; /* Use eth0 */
+    phy-handle = <&ethernet_phy0>;
+    phy-mode = "sgmii";
+    is-internal-pcspma = "true";
+    ethernet_phy0: ethernet-phy@0 {
+        reg = <0>;
+    };
+};
+
+&i2c0 {
+    tca6424@22 {
+        compatible = "ti,tca6424";
+        reg = <0x22>;
+        gpio-controller;
+        #gpio-cells = <0x02>;
+    };
+
+    tmp112@48 {
+        compatible = "ti,tmp112";
+        reg = <0x48>;
+    };
+};
+
+&dwc3_0 {
+    dr_mode = "otg";
+    maximum-speed = "high-speed";
+};

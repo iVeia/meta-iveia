@@ -1,0 +1,51 @@
+signals=("master" "ready" "enable" "pcie-persist-n" "pcie-wake-n")
+
+echo Initial states \(MIO\):
+for signal in "${signals[@]}"; do
+	uut-gpio $signal-mio in > /dev/null
+	echo -e "\t$signal: $?"
+done
+echo
+ok=1
+for signal in "${signals[@]}"; do
+	uut-gpio $signal-mio in > /dev/null
+	out=$?
+	if [ "$out" != "1" ]; then
+		ok=0
+		echo -e "\tERROR: $signal is initially LOW"
+	fi
+done
+if [ "$ok" = "1" ]; then
+	echo -e "\tNO ERRORS"
+fi
+echo
+
+for signal in "${signals[@]}"; do
+	echo Setting {$signal = LOW, others = Hi-Z} at GPIO expander
+	echo Values at MIO pins:
+	uut-gpio $signal-exp 0 > /dev/null
+	for checksignal in "${signals[@]}"; do
+		uut-gpio $checksignal-mio in > /dev/null
+		echo -e "\t$checksignal: $?"
+	done
+	echo
+	ok=1
+	for checksignal in "${signals[@]}"; do
+		uut-gpio $checksignal-mio in > /dev/null
+		out=$?
+		if [ "$signal" = "$checksignal" -a "$out" != "0" ]; then
+			ok=0
+			echo -e "\tERROR: Expected $signal @ MIO to be LOW, but it is not."
+		fi
+		if [ "$signal" != "$checksignal" -a "$out" = "0" ]; then
+			ok=0
+			echo -e "\tERROR: Expected $checksignal @ MIO to be HIGH, but it is not."
+		fi
+	done
+	if [ "$ok" = "1" ]; then
+		echo -e "\tNO ERRORS"
+	fi
+	uut-gpio $signal-exp in > /dev/null
+	echo
+done
+

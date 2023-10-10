@@ -1,0 +1,45 @@
+#!/bin/bash
+
+port=$1
+ok=1
+
+echo Initializing USB
+uut-gpio usb-0-id-lo 1
+uut-gpio usb-1-id-lo 1
+sleep 2
+
+echo Making sure USB $port LD is disabled
+uut-gpio usb-$port-ld-en 0 > /dev/null
+
+uut-gpio usb-$port-fault-n in > /dev/null
+fault=$?
+echo Fault state: $fault
+
+if [ "$fault" != "1" ]; then
+	echo ERROR: Fault is asserted even when LD is disabled.
+	ok=0
+fi
+
+echo Enabling USB $port LD
+uut-gpio usb-$port-ld-en 1 > /dev/null
+
+sleep 1
+
+uut-gpio usb-$port-fault-n in > /dev/null
+fault=$?
+echo Fault state: $fault
+
+if [ "$fault" != "0" ]; then
+	echo ERROR: Fault is NOT asserted when LD is enabled.
+	ok=0
+fi
+
+echo Disabling USB $port LD
+uut-gpio usb-$port-ld-en 0 > /dev/null
+
+if [ "$ok" = "1" ]; then
+	echo Overcurrent test: SUCCESS
+else
+	echo Overcurrent test: FAIL
+fi
+
