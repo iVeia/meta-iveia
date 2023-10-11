@@ -30,9 +30,18 @@ build-job:
     SSTATE_DIR: cache/sstate-cache
 
     MACHINES: >-
-      atlas-ii-z8ev
-      atlas-ii-z8-hp
+      #atlas-i-z7e
       atlas-ii-z7x
+      #helios-z7
+      #atlas-i-z8
+      atlas-ii-z8
+      atlas-ii-z8-hp
+      atlas-ii-z8ev
+      atlas-ii-z8p-hd
+      atlas-iii-z8
+      atlas-iii-z8e
+      helios-z8
+
     SDKS: >-
       atlas-z7
       atlas-z8
