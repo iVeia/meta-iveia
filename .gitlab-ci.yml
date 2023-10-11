@@ -29,11 +29,10 @@ build-job:
     DL_DIR: cache/downloads
     SSTATE_DIR: cache/sstate-cache
 
+    # MACHINE list.  TODO: add the following MACHINEs that currently have 
+    # broken builds: atlas-i-z7e helios-z7 atlas-i-z8 
     MACHINES: >-
-      #atlas-i-z7e
       atlas-ii-z7x
-      #helios-z7
-      #atlas-i-z8
       atlas-ii-z8
       atlas-ii-z8-hp
       atlas-ii-z8ev
