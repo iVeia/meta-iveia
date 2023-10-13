@@ -22,6 +22,12 @@ SRC_URI_append = "\
     file://Fix-saveenv-causes-next-boot-to-skip-board_late_init.patch \
     file://add-iv-ipmi-fdt-hooks.patch \
     file://uboot.cfg \
+    file://include-ivfru-command.patch \
+    file://ivfru.c;subdir=git/cmd \
+    file://ivfru_common.h;subdir=git/cmd \
+    file://ivfru_common.c;subdir=git/cmd \
+    file://ivfru_plat.h;subdir=git/cmd \
+    file://ivfru_plat.c;subdir=git/cmd \
     "
 
 # MACHINE specific patches
