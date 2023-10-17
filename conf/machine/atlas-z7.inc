@@ -15,3 +15,5 @@ UBOOT_MACHINE = "xilinx_zynq_virt_config"
 SERIAL_CONSOLE = "115200 ttyPS0"
 SERIAL_CONSOLES_CHECK = "${SERIAL_CONSOLES}"
 
+ERROR_QA_remove = "version-going-backwards"
+

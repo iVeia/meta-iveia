@@ -17,7 +17,8 @@ UBOOT_MACHINE = "xilinx_zynqmp_virt_defconfig"
 SERIAL_CONSOLE = "115200 ttyPS0"
 SERIAL_CONSOLES_CHECK = "${SERIAL_CONSOLES}"
 
+ERROR_QA_remove = "version-going-backwards"
+
 PREFERRED_PROVIDER_virtual/kernel ?= "linux-xlnx"
 PREFERRED_PROVIDER_virtual/bootloader ?= "u-boot-xlnx"
-
 
