@@ -15,6 +15,7 @@
 #include <spi.h>
 #include <spi_flash.h>
 #include <iveia_version.h>
+#include <ivfru_common.h>
 #include "iveia-ipmi.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -150,56 +151,6 @@ static int iv_io_board_ord_match(char * s)
                     IV_BOARD_SUBFIELD_PN_ORDINAL, s);
 }
 
-/*
- * read_ipmi_i2c() - Read a specific IPMI struct on a I2C EEPROM.
- */
-static int read_ipmi_i2c(int bus, int addr, int offset, struct iv_ipmi * p_iv_ipmi)
-{
-    int err;
-	struct udevice *dev;
-
-	err = i2c_get_chip_for_busnum(bus, addr, 2, &dev);
-    if (err != 0)
-	{
-		printf("%s() - i2c_get_chip_for_busnum ERR %d\n", __func__, err);
-        return err;
-	}
-
-    err = dm_i2c_read(dev, 0, (uchar *) p_iv_ipmi, sizeof(*p_iv_ipmi));
-    if (err != 0)
-	{
-		printf("%s() - dm_i2c_read ERR %d\n", __func__, err);
-        return err;
-	}
-
-    return err;
-}
-
-/*
- * read_ipmi_qspi() - Read a specific IPMI struct on QSPI 
- */
-static int read_ipmi_qspi(int bus, int cs, int offset, struct iv_ipmi * p_iv_ipmi)
-{
-    int err;
-    struct spi_flash *board_flash;
-    struct udevice *dev;
-
-    /* speed and mode will be read from DT */
-    err = spi_flash_probe_bus_cs(bus, cs, 3000000, 0, &dev);
-    if (err) {
-	    printf("!spi_flash_probe_bus_cs() failed");
-	    return -1;
-    }
-
-    board_flash = dev_get_uclass_priv(dev);
-
-    err = spi_flash_read(board_flash, offset, sizeof(*p_iv_ipmi), (uchar *) p_iv_ipmi);
-    if (err)
-        printf("%s() - spi_flash_read ERR %d\n", __func__, err);
-
-    return err;
-}
-
 static void strcpy_ipmi_field(char * dest, char * src, int len)
 {
     int i;
@@ -266,7 +217,7 @@ static void print_board_info(IV_BOARD_CLASS class)
 /*
  * set_ipmi_env() - Read the IPMI struct, and env_set() based on part/serial read.
  */
-static void set_ipmi_env(IV_BOARD_CLASS class, struct iv_ipmi *iv_ipmi, void *fdt )
+static void set_ipmi_env(IV_BOARD_CLASS class, char *product_raw, int product_len, char *sn_raw, int sn_len, char *pn_raw, int pn_len, void *fdt )
 {
     char pn[MAX_KERN_CMDLINE_FIELD_LEN];
     char sn[MAX_KERN_CMDLINE_FIELD_LEN];
@@ -292,12 +243,9 @@ static void set_ipmi_env(IV_BOARD_CLASS class, struct iv_ipmi *iv_ipmi, void *fd
     sprintf(forced_varname, "%s_forced", varname);
     ipmi_string = env_get(forced_varname);
     if (ipmi_string == NULL || strlen(ipmi_string) == 0) {
-        strcpy_ipmi_field(pn, iv_ipmi->board_area.board_part_number,
-            sizeof(iv_ipmi->board_area.board_part_number));
-        strcpy_ipmi_field(sn, iv_ipmi->board_area.board_serial_number,
-            sizeof(iv_ipmi->board_area.board_serial_number));
-        strcpy_ipmi_field(name, iv_ipmi->board_area.board_product_name,
-            sizeof(iv_ipmi->board_area.board_product_name));
+        strcpy_ipmi_field(pn, pn_raw, pn_len);
+        strcpy_ipmi_field(sn, sn_raw, sn_len);
+        strcpy_ipmi_field(name, product_raw, product_len);
         sprintf(ipmi_string_buf, "%s,%s,%s", pn, sn, name);
 
         ipmi_string = ipmi_string_buf;
@@ -451,87 +399,36 @@ static void set_mac_addrs(void)
     }
 }
 
+static enum ivfru_board boardclass2board( IV_BOARD_CLASS brd_class )
+{
+    return brd_class - 1;
+}
 
 static int board_scan_ipmi( IV_BOARD_CLASS brd_class, void *fdt )
 {
-    int ipmi_node, class_node;
-    int bus = -1, addr = 0, offset = 0; 
-	const fdt32_t *val;
-    struct iv_ipmi iv_ipmi;
-    char *class_node_name;
-    
-	ipmi_node = fdt_node_offset_by_compatible(fdt, 0, "iv,ipmi");
-    if ( ipmi_node < 0 )
-    {
-        return -ENOENT;
-    }
+    char *product_raw;
+    char *sn_raw;
+    char *pn_raw;
+    int product_len;
+    int sn_len;
+    int pn_len;
 
-    class_node_name = class2string( brd_class );
+    enum ivfru_board board = boardclass2board(brd_class);
+    int ivfru_len;
+	ivfru_get_size_from_storage(board, &ivfru_len);
 
-    class_node = fdt_subnode_offset(fdt, ipmi_node, class_node_name);
-    if (class_node < 0) {
-        //printf("IV IPMI: %s DT NODE NOT FOUND\n", class_node_name);
-        return -ENXIO;
-    }
+    char iv_ipmi[ivfru_len];
+    if(ivfru_read(board, &iv_ipmi, 1) != IVFRU_RET_SUCCESS)
+        return -EIO;
 
-    if ( (val = fdt_getprop(fdt, class_node, "i2c", NULL) )) {
-        bus = fdt32_to_cpu(*(val + 0));
-        addr = fdt32_to_cpu(*(val + 1));
-        offset = fdt32_to_cpu(*(val + 2));
-        read_ipmi_i2c(bus, addr, offset, &iv_ipmi);
-    } else if ( (val = fdt_getprop(fdt, class_node, "qspi", NULL) )) {
-        int cs  = -1; 
-        bus = fdt32_to_cpu(*(val + 0));
-        cs = fdt32_to_cpu(*(val + 1));
-        offset = fdt32_to_cpu(*(val + 2));
-        read_ipmi_qspi( bus, cs, offset, &iv_ipmi );
-    } else {
-        printf("IV IPMI: %s DT NODE PROPERTY UNSUPPORTED\n", class_node_name);
-        return -EOPNOTSUPP;
-    }
+    if(ivfru_validate(&iv_ipmi, NULL, 0) != IVFRU_RET_SUCCESS)
+        return -EBADMSG;
 
-    int err = 0;
-
-    /*
-     * Validate IPMI checksums and format
-     */
-    unsigned char *p, sum;
-    int i;
-
-    p = (unsigned char *)&iv_ipmi.common_header;
-    for (i = 0, sum = 0; i < sizeof(iv_ipmi.common_header); i++) {
-        sum += p[i];
-    }
-    if (sum != 0 ) {
-        err = -EBADMSG;
-        goto out;
-    }
-
-    p = (unsigned char *)&iv_ipmi.board_area;
-    for (i = 0, sum = 0; i < sizeof(iv_ipmi.board_area); i++) {
-        sum += p[i];
-    }
-    if (sum != 0 ) {
-        err = -EBADMSG;
-        goto out;
-    }
-
-    /*
-     * Validate board area format version.
-     */
-    if (iv_ipmi.board_area.format_version != 1) {
-        err = -EBADMSG;
-        goto out;
-    }
-    
-out:
-    if ( err != 0 )
-        memset( &iv_ipmi, 0x00, sizeof(iv_ipmi) );
-
-    set_ipmi_env(brd_class, &iv_ipmi, fdt);
+    ivfru_get_bia_predefined_fields(&iv_ipmi, &product_raw, &product_len, &sn_raw, &sn_len, &pn_raw, &pn_len);
+    set_ipmi_env(brd_class, product_raw, product_len, sn_raw, sn_len, pn_raw, pn_len, fdt);
     print_board_info(brd_class);
 
-    return err;
+    return 0;
 }
 
 

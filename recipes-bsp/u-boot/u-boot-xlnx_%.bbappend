@@ -24,7 +24,7 @@ SRC_URI_append = "\
     file://uboot.cfg \
     file://include-ivfru-command.patch \
     file://ivfru.c;subdir=git/cmd \
-    file://ivfru_common.h;subdir=git/cmd \
+    file://ivfru_common.h;subdir=git/include \
     file://ivfru_common.c;subdir=git/cmd \
     file://ivfru_plat.h;subdir=git/cmd \
     file://ivfru_plat.c;subdir=git/cmd \
