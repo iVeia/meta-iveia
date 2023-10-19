@@ -12,9 +12,9 @@ the full suite of software requires:
 
 See [Xilinx's instructions](https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18841862/Install+and+Build+with+Xilinx+Yocto) for more information about the meta-xilinx layer and build process.
 
-iVeia provides the primary target `iveia-image-*`, described in the next
-section.  In addition is provides an `ivinstall` target that creates a single
-installable image.
+The primary targets are `ivinstall-minimal` and `ivinstall-full`, which both
+create a single installable image that includes all of the binaries described
+in the next section.  See [INSTALL](INSTALL.md) for more information.
 
 The first time download and build steps are as shown below.  For convenience, a
 download script is avaiable to simplify the process - see
@@ -26,7 +26,7 @@ repo sync                                                                   # Xi
 git clone git://github.com/iVeia/meta-iveia.git sources/meta-iveia          # clone meta-iveia
 source setupsdk                                                             # Xilinx step
 bitbake-layers add-layer ../sources/meta-iveia                              # add meta-iveia
-MACHINE=<CHOOSE FROM SUPPORTED MACHINES> bitbake ivinstall                  # build iveia target
+MACHINE=<CHOOSE FROM SUPPORTED MACHINES> bitbake ivinstall-full             # build iveia target
 ```
 
 After the first run, all future runs require `source setupsdk` to setup
@@ -63,8 +63,7 @@ final build products are:
   boot process.
 
 The `MACHINE` used above maps directly to an iVeia SoM. For example, the
-Atlas-II-Z8 HP (board 00122), with the canonical name "atlas-ii-z8-hp", is also
-used as the `MACHINE`.
+Atlas-II-Z8 HP (board 00122), uses the name `MACHINE=00122`.
 
 The `IVIO` variable is optional, and can be specified as a command line
 environment variable or a configuration setting.  It defines an iVeia IO board

@@ -12,6 +12,11 @@ indicates the BOM variant of the board, and the two character `RR` indicates the
 
 On boot, the full part number is displayed in the form `205-NNNNN-VV-RR`.
 
+A description of all `MACHINE`s can be displayed with:
+```
+grep @DESCRIPTION conf/machine/*
+```
+
 ## Building
 
 The `MACHINE` is used when building an image, for example:

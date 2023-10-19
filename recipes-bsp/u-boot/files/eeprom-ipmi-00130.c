@@ -3,7 +3,8 @@
  * Brian Silverman <bsilverman@iveia.com>
  *
  * Read and process non-iVeia EEPROM IPMI-based board info, specific to the
- * atlas-ii-z8p-hd for some configurations.  Required to determine MAC address.
+ * 00130 (atlas-ii-z8p-hd) for some configurations.  Required to determine MAC
+ * address.
  *
  * Note: currently uses CONFIG_DM_I2C_COMPAT for accessing I2C bus - this
  * method is deprecated.

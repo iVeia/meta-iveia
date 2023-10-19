@@ -2,12 +2,12 @@
 
 / {
     model = "Helios Z8";
-    compatible = "iveia,helios-z8", "iveia,atlas-z8", "xlnx,zynqmp";
+    compatible = "iveia,00126", "iveia,atlas-z8", "xlnx,zynqmp";
 };
 
 / {
     aliases {
-        /* uart0 is console, revert change from atlas-z8.dtsi */
+        /* uart0 is console, revert change from atlas-z8-inc.dtsi */
         serial0 = &uart0;
         serial1 = &uart1;
     };

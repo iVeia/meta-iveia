@@ -10,11 +10,14 @@ need to be installed.
 # Supported Boards/Machines
 
 iVeia Mainboard SoM part numbers (`MACHINE`) supported by this layer:
-- 00104
-- atlas-ii-z8-hp (PN 00122)
-- atlas-ii-z8ev (PN 00127)
-- atlas-iii-z8e (PN 00114) (bare-metal only)
-- atlas-i-z8 (PN 00108) (bare-metal only)
+- 00068 (Atlas-II Z7x)
+- 00090 (Atlas-II Z8)
+- 00104 (Atlas-III Z8)
+- 00114 (Atlas-III Z8e)
+- 00122 (Atlas-II Z8 HP)
+- 00126 (Helios Z8)
+- 00127 (Atlas-II Z8ev)
+- 00130 (Atlas-II Z8p HD PS)
 
 iVeia IO boards (`IVIO`) supported by this layer:
 - io-captiva (PN 00074)

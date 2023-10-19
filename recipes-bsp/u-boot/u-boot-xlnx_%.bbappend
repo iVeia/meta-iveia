@@ -11,7 +11,7 @@ SRC_URI_append = "\
 SRC_URI_append = "\
     file://iveia-init.c;subdir=git/board/xilinx/common \
     file://iveia-ipmi.h;subdir=git/board/xilinx/common \
-    file://eeprom-ipmi-atlas-ii-z8p-hd.c;subdir=git/board/xilinx/common \
+    file://eeprom-ipmi-00130.c;subdir=git/board/xilinx/common \
     file://iveia-config.h;subdir=git/include/configs \
     "
 
@@ -25,8 +25,8 @@ SRC_URI_append = "\
     "
 
 # MACHINE specific patches
-SRC_URI_append_atlas-ii-z8p-hd = "\
-    file://uboot-atlas-ii-z8p-hd.cfg \
+SRC_URI_append_00130 = "\
+    file://uboot-00130.cfg \
     "
 SRC_URI_append_zynq = "\
     file://add-iveia-config-overriding-xilinx-zynq.patch \
