@@ -26,11 +26,7 @@ SRC_URI += " \
     file://Documentation/devicetree/bindings/net/mdio-i2c-gen.txt;subdir=git \
     "
 
-SRC_URI_append_atlas-ii-z7x = " \
+SRC_URI_append_00068 = " \
     file://pca953x.cfg \
     "
-
-#SRC_URI_append_helios-z7 = " \
-#    file://helios-z7.cfg \
-#	"
 

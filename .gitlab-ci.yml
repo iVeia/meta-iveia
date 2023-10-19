@@ -30,16 +30,16 @@ build-job:
     SSTATE_DIR: cache/sstate-cache
 
     # MACHINE list.  TODO: add the following MACHINEs that currently have 
-    # broken builds: atlas-i-z7e helios-z7 atlas-i-z8 
+    # broken builds: 00049 00102 00108
     MACHINES: >-
-      atlas-ii-z7x
-      atlas-ii-z8
-      atlas-ii-z8-hp
-      atlas-ii-z8ev
-      atlas-ii-z8p-hd
-      atlas-iii-z8
-      atlas-iii-z8e
-      helios-z8
+      00068
+      00090
+      00104
+      00114
+      00122
+      00126
+      00127
+      00130
 
     SDKS: >-
       atlas-z7

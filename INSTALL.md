@@ -2,8 +2,9 @@
 
 ## Install
 
-ivinstall is a bitbake build target that creates a single installable image
-that includes all of the necessary images for the target.
+`ivinstall-minimal` and `ivinstall-full` are bitbake build targets that creates
+a single installable image that includes all of the necessary images for the
+target.
 
 The installer can install binaries to an SD card, over the network, or over
 JTAG.  In addition, it can install to the eMMC on the SoM (if available), and

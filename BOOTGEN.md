@@ -45,15 +45,15 @@ defines all the bootloaders up to and including U-Boot:
 
 ```
 the_ROM_image:{ 
-	[bootloader] fsbl-atlas-iii-z8e.elf
-	[destination_cpu=pmu] pmu-atlas-iii-z8e.elf
+	[bootloader] fsbl-00114.elf
+	[destination_cpu=pmu] pmu-00114.elf
 	[destination_cpu=a5x-0] arm-trusted-firmware.elf
 	[destination_cpu=a53-0, exception_level = el-2] u-boot.elf
 }
 ```
 
 The above assumes that the current working directory is the deploy directory
-previously defined, and that the `MACHINE` used is the `atlas-iii-z8e`.
+previously defined, and that the `MACHINE` used is the `00114`.
 
 To rebuild your own `boot.bin`, you can run `bootgen` with:
 ```
@@ -69,8 +69,8 @@ the PMUFW, you could use:
 
 ```
 the_ROM_image:{ 
-	[bootloader] fsbl-atlas-iii-z8e.elf
-	[destination_cpu=pmu] pmu-atlas-iii-z8e.elf
+	[bootloader] fsbl-00114.elf
+	[destination_cpu=pmu] pmu-00114.elf
 	[destination_device=pl] xilinx.bit
 	[destination_cpu=a5x-0] arm-trusted-firmware.elf
 	[destination_cpu=a53-0, exception_level = el-2] u-boot.elf

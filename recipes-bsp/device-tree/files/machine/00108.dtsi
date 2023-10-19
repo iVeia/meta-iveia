@@ -1,8 +1,8 @@
 #include <atlas-z8-inc.dtsi>
 
 / {
-    model = "Atlas-III Z8e";
-    compatible = "iveia,atlas-iii-z8e", "iveia,atlas-z8", "xlnx,zynqmp";
+    model = "Atlas-I Z8";
+    compatible = "iveia,00108", "iveia,atlas-z8", "xlnx,zynqmp";
 };
 
 &usb0 {

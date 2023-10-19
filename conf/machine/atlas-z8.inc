@@ -1,7 +1,5 @@
 SOC_VARIANT ?= "eg"
 
-#require conf/machine/include/xilinx-soc-family.inc
-#require conf/machine/include/machine-xilinx-default.inc
 require conf/machine/include/soc-zynqmp.inc
 require conf/machine/include/machine-xilinx-default.inc
 
