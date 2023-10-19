@@ -149,5 +149,4 @@ Other information can be found in the docs in this repo, e.g.:
 Please submit any patches against the meta-iveia layer to the maintainers:
 
 * Brian Silverman <bsilverman@iveia.com>
-* Rick Rogers <rrogers@iveia.com>
 
