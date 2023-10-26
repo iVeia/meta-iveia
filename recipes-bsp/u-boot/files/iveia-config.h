@@ -2,9 +2,9 @@
     "bootenv_addr=0x600000\0" \
     "bootenv_file=uEnv.txt\0" \
     "boot_targets=mmc0 mmc1 dhcp\0" \
-    "loadenv_mmc0=load mmc 0 ${bootenv_addr} ${bootenv_file}\0" \
-    "loadenv_mmc1=load mmc 1 ${bootenv_addr} ${bootenv_file}\0" \
-    "loadenv_dhcp=dhcp ${bootenv_addr} ${bootenv_file}\0" \
+    "loadenv_mmc0=load mmc 0 ${bootenv_addr} ${altpath}/${bootenv_file}\0" \
+    "loadenv_mmc1=load mmc 1 ${bootenv_addr} ${altpath}/${bootenv_file}\0" \
+    "loadenv_dhcp=dhcp ${bootenv_addr} ${altpath}/${bootenv_file}\0" \
     "jtag_boot_magic=4a544147\0" \
     "loadenv_jtag=\n" \
     "    setexpr scratch_addr  ${bootenv_addr} - 0x10; \n" \
@@ -46,7 +46,7 @@
     "    setenv break; \n" \
     "    for tgt in ${first_target} ${other_targets}; do \n" \
     "        if test -z \"${break}\"; then \n" \
-    "            echo Attempting load of ${bootenv_file} from ${tgt}...; \n" \
+    "            echo Attempting load of ${altpath}/${bootenv_file} from ${tgt}...; \n" \
     "            run loadtgt; \n" \
     "            if test -n \"${bootenv_cmd}\"; then \n" \
     "                run bootenv_cmd; \n" \
