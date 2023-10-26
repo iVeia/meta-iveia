@@ -33,6 +33,8 @@ This section details the fastest way to get started.
 iVeia follows the Xilinx tools in regards to supported OS versions, currently
 including Ubuntu 16.04 and 18.04.
 
+meta-iveia is currently compatible with **Xilinx tools version: "2021.2"**.
+
 ## Download & Build
 
 For convenience, this layer includes a script to download all dependent Xilinx
@@ -41,8 +43,7 @@ files.  For more information, see the [BUILD](BUILD.md) doc.
 To download this repo and the rest of the Xilinx sources (this step only needs
 to be run once):
 ```
-IVEIA_TAG=<CHOOSE THE LATEST TAGGED VERSION, I.E. 2019.2-M.N>
-git clone -b $IVEIA_TAG https://github.com/iVeia/meta-iveia.git meta-iveia
+git clone https://github.com/iVeia/meta-iveia.git meta-iveia
 meta-iveia/download
 ```
 Note: the **download** script will move the meta-iveia layer directory into the
@@ -85,27 +86,27 @@ console should display something similar to:
 
 ```
 Xilinx Zynq MP First Stage Boot Loader
-Release 2019.2   Feb  1 2021  -  21:34:26
+Release 20xx.x   Feb  1 2021  -  21:34:26
 Machine:     iVeia atlas-ii-z8ev
-Src commit:  xilinx-v2019.2-0-ge8db5fb(tainted)
-Meta commit: 2019.2-1.5-16-g5df9c39-dirty
+Src commit:  xilinx-v20xx.x-0-ge8db5fb(tainted)
+Meta commit: 20xx.x-1.5-16-g5df9c39-dirty
 iVeia seq boot mode (0x00000001): QSPI24, NORM
 Searching SD0 for valid boot image...
 Good image found, resetting...
 
 �Xilinx Zynq MP First Stage Boot Loader
-Release 2019.2   Feb  2 2021  -  16:23:31
+Release 20xx.x   Feb  2 2021  -  16:23:31
 Machine:     iVeia atlas-ii-z8ev
-Src commit:  xilinx-v2019.2-0-ge8db5fb
-Meta commit: 2019.2-1.5-12-gd3a39a3
+Src commit:  xilinx-v20xx.x-0-ge8db5fb
+Meta commit: 20xx.x-1.5-12-gd3a39a3
 
 IVEIA SEQ BOOT MODE (0x00003103): SD0, ALT
-PMU Firmware 2019.2     Feb  2 2021   16:24:47
+PMU Firmware 20xx.x     Feb  2 2021   16:24:47
 PMU_ROM Version: xpbr-v8.1.0-0
 
 ...
 
-U-Boot 2019.01 (Feb 02 2021 - 16:23:28 +0000)
+U-Boot 20xx.01 (Feb 02 2021 - 16:23:28 +0000)
 
 Model: Atlas-II Z8
 Board: Xilinx ZynqMP
@@ -116,15 +117,18 @@ DRAM:  4 GiB
 Starting kernel ...
 
 [    0.000000] Booting Linux on physical CPU 0x0000000000 [0x410fd034]
-[    0.000000] Linux version 4.19.0-xilinx-v2019.2 (oe-user@oe-host) (gcc version 8.2.0 (GCC)) #1 SMP Tue Feb 2 16:06:40 UTC 2021
-[    0.000000] Src commit:  xlnx_rebase_v4.19_2019.2-0-gb983d5f
-[    0.000000] Meta commit: 2019.2-1.5-12-gd3a39a3
+[    0.000000] Linux version 4.19.0-xilinx-v20xx.x (oe-user@oe-host) (gcc version 8.2.0 (GCC)) #1 SMP Tue Feb 2 16:06:40 UTC 2021
+[    0.000000] Src commit:  xlnx_rebase_v4.19_20xx.x-0-gb983d5f
+[    0.000000] Meta commit: 20xx.x-1.5-12-gd3a39a3
 
 ...
 
 root@atlas-ii-z8ev:~#
 
 ```
+
+Note: Version numbers in the above output have been modified to make them
+generic.
 
 # Package support
 

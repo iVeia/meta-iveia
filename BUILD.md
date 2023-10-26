@@ -17,11 +17,12 @@ create a single installable image that includes all of the binaries described
 in the next section.  See [INSTALL](INSTALL.md) for more information.
 
 The first time download and build steps are as shown below.  For convenience, a
-download script is avaiable to simplify the process - see
-[README](README.md).
+download script is avaiable to simplify the process.  The Xilinx version
+(YYYY.M) in the first step MUST be replaced by the compatible Xilinx version
+specified in the [README](README.md).
 
 ```
-repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-v2021.2     # Xilinx step
+repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-vYYYY.M     # Xilinx step
 repo sync                                                                   # Xilinx step
 git clone git://github.com/iVeia/meta-iveia.git sources/meta-iveia          # clone meta-iveia
 source setupsdk                                                             # Xilinx step
