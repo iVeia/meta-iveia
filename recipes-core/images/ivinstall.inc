@@ -10,8 +10,7 @@ do_deploy[depends] = "${IVIMG}:do_build"
 DEPENDS_append = " fsbl u-boot-xlnx u-boot-uenv xilinx-bootbin device-tree linux-xlnx ivstartup"
 DEPENDS_append_zynqmp = " pmu-firmware arm-trusted-firmware"
 
-LOCAL_FILES := "${THISDIR}/files"
-FILESEXTRAPATHS_prepend := "${LOCAL_FILES}:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 HEADER_DOC = "ivinstall-doc"
 HEADER_ORIG = "ivinstall-header.sh"
 HEADER = "ivinstall-header-final.sh"
@@ -25,6 +24,43 @@ B = "${S}"
 
 VARS_INSERT_STR = "__INSERT_YOCTO_VARS_HERE_DO_NOT_REMOVE_THIS_LINE__"
 DOC_INSERT_STR = "__INSERT_YOCTO_DOC_HERE_DO_NOT_REMOVE_THIS_LINE__"
+
+#
+# Create IV_TAR_FILE_MAP.  Format:
+#   TAR_FILE_MAP="PATH1:ARCNAME1 PATH2:ARCNAME2 ... PATHn:ARCNAMEn"
+# where
+#   PATHn is the full path of the file or directory to include in the archive
+#   ARCNAMEn is the relative path in the archive of the file or directory
+#
+# whitespace is allowed before and after the colon for readability.
+#
+IV_TAR_FILE_MAP = "\
+    ${DEPLOY_DIR_IMAGE}/fsbl-${MACHINE}.elf                 :   elf/fsbl.elf \
+    ${DEPLOY_DIR_IMAGE}/u-boot.elf                          :   elf/u-boot.elf \
+    ${DEPLOY_DIR_IMAGE}/boot.bin                            :   boot/boot.bin \
+    ${DEPLOY_DIR_IMAGE}/uEnv.txt                            :   boot/uEnv.txt \
+    ${DEPLOY_DIR_IMAGE}/devicetree                          :   devicetree \
+    ${DEPLOY_DIR_IMAGE}/${IVIMG}-${MACHINE}.cpio.gz.u-boot  :   rootfs/initrd \
+    ${DEPLOY_DIR_IMAGE}/${IVIMG}-${MACHINE}.ext4            :   rootfs/rootfs.ext4 \
+    ${DEPLOY_DIR_IMAGE}/startup.sh                          :   boot/startup.sh \
+    ${THISDIR}/files/uEnv.ivinstall.txt                     :   jtag/uEnv.ivinstall.txt \
+    ${THISDIR}/files/uEnv.boot.txt                          :   jtag/uEnv.boot.txt \
+    ${THISDIR}/files/uEnv.qspi.txt                          :   jtag/uEnv.qspi.txt \
+    "
+
+IV_TAR_FILE_MAP_append_zynqmp = "\
+    ${DEPLOY_DIR_IMAGE}/Image                               :   boot/Image \
+    ${THISDIR}/files/qspi-zynqmp.tcl                        :   jtag/qspi.tcl \
+    ${THISDIR}/files/ivinstall-zynqmp.tcl                   :   jtag/ivinstall.tcl \
+    ${DEPLOY_DIR_IMAGE}/pmu-firmware-${MACHINE}.elf         :   elf/pmu.elf \
+    ${DEPLOY_DIR_IMAGE}/arm-trusted-firmware.elf            :   elf/atf.elf \
+    "
+
+IV_TAR_FILE_MAP_append_zynq = "\
+    ${DEPLOY_DIR_IMAGE}/uImage                              :   boot/uImage \
+    ${THISDIR}/files/qspi-zynq.tcl                          :   jtag/qspi.tcl \
+    ${THISDIR}/files/ivinstall-zynq.tcl                     :   jtag/ivinstall.tcl \
+    "
 
 inherit iveia-version-header
 
@@ -70,69 +106,38 @@ do_compile() {
         > ${B}/${HEADER}
 }
 
-IS_ZYNQMP = "0"
-IS_ZYNQMP_zynqmp = "1"
+python do_build() {
+    bb.plain("do_build")
+    d.setVar("TAR_FILE_MAP", "dude frood")
+}
 
 python do_deploy() {
     from functools import partial
     import shutil
     import tarfile
     import stat
+    import re
 
     # get necessary env vars
     build_dir = d.getVar("B")
     header = d.getVar("HEADER")
     machine = d.getVar("MACHINE")
     deploy_dir = d.getVar("DEPLOY_DIR_IMAGE")
-    local_files_dir = d.getVar("LOCAL_FILES")
-    ivimg = d.getVar("IVIMG")
     image_type = d.getVar("IMAGE_TYPE")
-    is_zynqmp = int(d.getVar("IS_ZYNQMP"))
 
     tarball = os.path.join(deploy_dir, "ivinstall-%s-image.tgz" % image_type)
     ivinstall_header = os.path.join(build_dir, header)
-    rootfs_base = ivimg + "-" + machine 
 
     #
-    # Full list of filenames to be added to tarball, with src_dir and keyword
-    # args to used for tarfile.add()
+    # Convert IV_TAR_FILE_MAP into a list of filepath/archpath tuples.
     #
-    dep_dir = partial(os.path.join, deploy_dir)
-    loc_dir = partial(os.path.join, local_files_dir)
-    tar_files = {
-        dep_dir("fsbl-" + machine + ".elf") :      {"arcname" : "elf/fsbl.elf"},
-        dep_dir("u-boot.elf") :                    {"arcname" : "elf/u-boot.elf"},
-        dep_dir("boot.bin") :                      {"arcname" : "boot/boot.bin"},
-        dep_dir("uEnv.txt") :                      {"arcname" : "boot/uEnv.txt"},
-        dep_dir("devicetree") :                    {"arcname" : "devicetree"},  # recursive dir
-        dep_dir(rootfs_base + ".cpio.gz.u-boot") : {"arcname" : "rootfs/initrd"},
-        dep_dir(rootfs_base + ".ext4") :           {"arcname" : "rootfs/rootfs.ext4"},
-        dep_dir("startup.sh") :                    {"arcname" : "boot/startup.sh"},
-        loc_dir("uEnv.ivinstall.txt") :            {"arcname" : "jtag/uEnv.ivinstall.txt"},
-        loc_dir("uEnv.boot.txt") :                 {"arcname" : "jtag/uEnv.boot.txt"},
-        loc_dir("uEnv.qspi.txt") :                 {"arcname" : "jtag/uEnv.qspi.txt"},
-    }
-
-    if is_zynqmp:
-        addtional_tar_files = {
-            dep_dir("Image") :                     {"arcname" : "boot/Image"},
-            loc_dir("qspi-zynqmp.tcl") :           {"arcname" : "jtag/qspi.tcl"},
-            loc_dir("ivinstall-zynqmp.tcl") :      {"arcname" : "jtag/ivinstall.tcl"},
-            dep_dir("pmu-firmware-" + machine + ".elf") :   {"arcname" : "elf/pmu.elf"},
-            dep_dir("arm-trusted-firmware.elf") :  {"arcname" : "elf/atf.elf"},
-        }
-        tar_files.update(addtional_tar_files)
-    else:
-        addtional_tar_files = {
-            dep_dir("uImage") :                    {"arcname" : "boot/uImage"},
-            loc_dir("qspi-zynq.tcl") :             {"arcname" : "jtag/qspi.tcl"},
-            loc_dir("ivinstall-zynq.tcl") :        {"arcname" : "jtag/ivinstall.tcl"},
-        }
-        tar_files.update(addtional_tar_files)
+    tar_file_map = d.getVar("IV_TAR_FILE_MAP")
+    tar_file_map = re.sub(" *: *", ":", tar_file_map)
+    tar_file_map = (pair.split(':') for pair in tar_file_map.split())
 
     with tarfile.open(tarball, "w:gz", dereference=True) as tar:
-        for f in tar_files:
-            tar.add(f, **tar_files[f])
+        for filepath, archpath in tar_file_map:
+            tar.add(filepath, arcname=archpath)
 
     out_script = os.path.join(deploy_dir, "ivinstall" + "-" + image_type + "-" + machine)
     with open(out_script, "wb") as fext:
