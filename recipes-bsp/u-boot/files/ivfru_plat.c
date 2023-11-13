@@ -7,10 +7,64 @@
 #include <asm-generic/gpio.h>
 #include <linux/delay.h>
 #include <command.h>
+#include <dm/uclass.h>
 
 #define IPMI_NODE_STR "iv,ipmi"
 
 DECLARE_GLOBAL_DATA_PTR;
+
+static int get_qspi_info_from_label(const char *ipmi_label, int *bus, int *cs, int *part_offset)
+{
+	const void *fdt = gd->fdt_blob;
+	struct uclass *sfuc;
+	struct udevice *flashdev;
+	const fdt32_t *val;
+
+	int ret = uclass_get(UCLASS_SPI_FLASH, &sfuc);
+	if(ret < 0)
+		return IVFRU_RET_INVALID_DEVICE_TREE;
+
+	*bus = -1;
+	*cs = -1;
+	*part_offset = -1;
+
+	uclass_foreach_dev(flashdev, sfuc) {
+		int flash_ofnode = dev_of_offset(flashdev);
+		int part_ofnode;
+		fdt_for_each_subnode(part_ofnode, fdt, flash_ofnode) {
+			if(strncmp(fdt_get_name(fdt, part_ofnode, NULL), "partition", 9) != 0)
+				continue;
+			char *label = fdt_getprop(fdt, part_ofnode, "label", NULL);
+			if(!label)
+				continue;
+			if(strcmp(ipmi_label, label) != 0)
+				continue;
+
+			// Get SPI bus
+			struct udevice *spidev = flashdev->parent;
+			*bus = spidev->seq;
+			if(*bus < 0)
+				*bus = spidev->req_seq;
+			if(*bus < 0)
+				continue;
+
+			// Get CS of SPI flash
+			val = fdt_getprop(fdt, flash_ofnode, "reg", NULL);
+			if(!val)
+				continue;
+			*cs = fdt32_to_cpu(*val);
+
+			// Get offset of FRU image in the flash
+			val = fdt_getprop(fdt, part_ofnode, "reg", NULL);
+			if(!val)
+				continue;
+			*part_offset = fdt32_to_cpu(*val);
+		}
+	}
+	if(*part_offset < 0)
+		return IVFRU_RET_INVALID_DEVICE_TREE;
+	return IVFRU_RET_SUCCESS;
+}
 
 static int ivfru_read_i2c(int bus, int addr, int offset, void *data, int size)
 {
@@ -93,10 +147,11 @@ int ivfru_plat_read_from_board(enum ivfru_board board, void *mem, int offset, in
 	int ipmi_node;
 	int class_node;
 	int bus = -1;
-	int addr = 0;
+	int addr = -1;
 	int cs  = -1;
-	int ipmi_offset = 0;
+	int ipmi_offset = -1;
 	const fdt32_t *val;
+	char *ipmi_label = "";
 	const void *fdt = gd->fdt_blob;
 
 	ipmi_node = fdt_node_offset_by_compatible(fdt, 0, IPMI_NODE_STR);
@@ -127,15 +182,17 @@ int ivfru_plat_read_from_board(enum ivfru_board board, void *mem, int offset, in
 		addr = fdt32_to_cpu(*(val + 1));
 		ipmi_offset = fdt32_to_cpu(*(val + 2));
 
-		if(ivfru_read_i2c(bus, addr, ipmi_offset + offset, (void *) mem, size) == IVFRU_RET_SUCCESS)
-			return IVFRU_RET_SUCCESS;
-	} else if ( (val = fdt_getprop(fdt, class_node, "qspi", NULL) )) {
-		bus = fdt32_to_cpu(*(val + 0));
-		cs = fdt32_to_cpu(*(val + 1));
-		ipmi_offset = fdt32_to_cpu(*(val + 2));
-
-		if(ivfru_read_qspi(bus, cs, ipmi_offset + offset, (void *) mem, size) == IVFRU_RET_SUCCESS)
-			return IVFRU_RET_SUCCESS;
+		if(ivfru_read_i2c(bus, addr, ipmi_offset + offset, (void *) mem, size) != IVFRU_RET_SUCCESS)
+			return IVFRU_RET_IO_ERROR;
+	} else if ( (ipmi_label = fdt_getprop(fdt, class_node, "qspi", NULL) )) {
+		if(get_qspi_info_from_label(ipmi_label, &bus, &cs, &ipmi_offset) != IVFRU_RET_SUCCESS) {
+			printf("Error: Failed to get a match for the IPMI qspi partition label!\n");
+			return IVFRU_RET_INVALID_DEVICE_TREE;
+		}
+		if(ivfru_read_qspi(bus, cs, ipmi_offset + offset, (void *) mem, size) != IVFRU_RET_SUCCESS) {
+			printf("Error: Failed to read from qspi storage!\n");
+			return IVFRU_RET_IO_ERROR;
+		}
 	} else {
 		if(!quiet)
 			printf("Error: Failed to find valid storage info (i2c/qspi) from the device tree!\n");
@@ -150,9 +207,10 @@ int ivfru_plat_write_to_board(enum ivfru_board board, void *mem, int size)
 	int ipmi_node;
 	int class_node;
 	int bus = -1;
-	int addr = 0;
+	int addr = -1;
 	int cs  = -1;
-	int ipmi_offset = 0;
+	int ipmi_offset = -1;
+	char *ipmi_label = "";
 	const fdt32_t *val, *val2;
 	const void *fdt = gd->fdt_blob;
 
@@ -252,14 +310,14 @@ int ivfru_plat_write_to_board(enum ivfru_board board, void *mem, int size)
 			printf("Error: Failed to write to i2c storage!\n");
 			return IVFRU_RET_IO_ERROR;
 		}
-	} else if ( (val = fdt_getprop(fdt, class_node, "qspi", NULL) )) {
-		bus = fdt32_to_cpu(*(val + 0));
-		cs = fdt32_to_cpu(*(val + 1));
-		ipmi_offset = fdt32_to_cpu(*(val + 2));
-
-		if(ivfru_write_qspi(bus, cs, ipmi_offset, (void *) mem, size) == IVFRU_RET_SUCCESS) {
+	} else if ( (ipmi_label = fdt_getprop(fdt, class_node, "qspi", NULL) )) {
+		if(get_qspi_info_from_label(ipmi_label, &bus, &cs, &ipmi_offset) != IVFRU_RET_SUCCESS) {
+			printf("Error: Failed to get a match for the IPMI qspi partition label!\n");
+			return IVFRU_RET_INVALID_DEVICE_TREE;
+		}
+		if(ivfru_write_qspi(bus, cs, ipmi_offset, (void *) mem, size) != IVFRU_RET_SUCCESS) {
 			printf("Error: Failed to write to qspi storage!\n");
-			return IVFRU_RET_SUCCESS;
+			return IVFRU_RET_IO_ERROR;
 		}
 	} else {
 		printf("Error: Failed to find valid storage info (i2c/qspi) from the device tree!\n");
