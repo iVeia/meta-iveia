@@ -13,6 +13,13 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+static void *image_buffer;
+
+/*
+ * get_qspi_info_from_label - Extracts the IPMI QSPI info from the device tree.
+ *
+ * Returns IVFRU_RET_SUCCESS iff the info was extracted successfully.
+ */
 static int get_qspi_info_from_label(const char *ipmi_label, int *bus, int *cs, int *part_offset)
 {
 	const void *fdt = gd->fdt_blob;
@@ -66,6 +73,11 @@ static int get_qspi_info_from_label(const char *ipmi_label, int *bus, int *cs, i
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * ivfru_read_i2c - Reads data from I2C EEPROM given offset and size
+ *
+ * Returns IVFRU_RET_SUCCESS iff the data was read successfully.
+ */
 static int ivfru_read_i2c(int bus, int addr, int offset, void *data, int size)
 {
 	int err = IVFRU_RET_SUCCESS;
@@ -82,6 +94,11 @@ static int ivfru_read_i2c(int bus, int addr, int offset, void *data, int size)
 	return err;
 }
 
+/*
+ * ivfru_write_i2c - Writes data to I2C EEPROM at given offset and size
+ *
+ * Returns IVFRU_RET_SUCCESS iff the data was written successfully.
+ */
 static int ivfru_write_i2c(int bus, int addr, int offset, void *data, int size)
 {
 	int err = IVFRU_RET_SUCCESS;
@@ -104,6 +121,11 @@ static int ivfru_write_i2c(int bus, int addr, int offset, void *data, int size)
 	return err;
 }
 
+/*
+ * ivfru_read_qspi - Reads data from QSPI flash given bus, cs, offset and size.
+ *
+ * Returns IVFRU_RET_SUCCESS iff the data was read successfully.
+ */
 static int ivfru_read_qspi(int bus, int cs, int offset, void *data, int size)
 {
 	int err = IVFRU_RET_SUCCESS;
@@ -124,6 +146,11 @@ static int ivfru_read_qspi(int bus, int cs, int offset, void *data, int size)
 	return err;
 }
 
+/*
+ * ivfru_write_qspi - Writes data to the QSPI flash given bus, cs, offset and size.
+ *
+ * Returns IVFRU_RET_SUCCESS iff the data was written successfully.
+ */
 static int ivfru_write_qspi(int bus, int cs, int offset, void *data, int size)
 {
 	char cmd[100];
@@ -142,6 +169,38 @@ static int ivfru_write_qspi(int bus, int cs, int offset, void *data, int size)
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * ivfru_plat_read_from_location - Reads data from location (memory address) to
+ * the static buffer.
+ *
+ * In the case of U-Boot implementation, it is a noop. This function is added
+ * for compatibility with linux implementation.
+ *
+ * Returns IVFRU_RET_SUCCESS iff the data was read successfully.
+ */
+int ivfru_plat_read_from_location(void *location)
+{
+	return IVFRU_RET_SUCCESS;
+}
+
+/*
+ * ivfru_plat_write_to_location - Writes buffer data to location (memory address)
+ *
+ * In the case of U-Boot implementation, it is a noop. This function is added
+ * for compatibility with linux implementation.
+ *
+ * Returns IVFRU_RET_SUCCESS iff the data was written successfully.
+ */
+int ivfru_plat_write_to_location(void *location)
+{
+	return IVFRU_RET_SUCCESS;
+}
+
+/*
+ * ivfru_plat_read_from_board - Reads IPMI data of given board ID to memory
+ *
+ * Returns IVFRU_RET_SUCCESS iff the data was read successfully.
+ */
 int ivfru_plat_read_from_board(enum ivfru_board board, void *mem, int offset, int size, int quiet)
 {
 	int ipmi_node;
@@ -202,6 +261,11 @@ int ivfru_plat_read_from_board(enum ivfru_board board, void *mem, int offset, in
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * ivfru_plat_read_from_board - Writes IPMI data to given board ID from memory
+ *
+ * Returns IVFRU_RET_SUCCESS iff the data was written successfully.
+ */
 int ivfru_plat_write_to_board(enum ivfru_board board, void *mem, int size)
 {
 	int ipmi_node;
@@ -327,16 +391,66 @@ int ivfru_plat_write_to_board(enum ivfru_board board, void *mem, int size)
 	return IVFRU_RET_SUCCESS;
 }
 
-int ivfru_plat_reserve_memory(void *mem, int size)
+/*
+ * ivfru_plat_set_buffer - Set the static buffer pointer.
+ *
+ * Returns IVFRU_RET_SUCCESS.
+ */
+int ivfru_plat_set_buffer(void *buffer)
+{
+	image_buffer = buffer;
+	return IVFRU_RET_SUCCESS;
+}
+
+/*
+ * ivfru_plat_get_buffer - Gets the static buffer pointer.
+ *
+ * Returns the buffer pointer (NULL if not set).
+ */
+void *ivfru_plat_get_buffer()
+{
+	return image_buffer;
+}
+
+/*
+ * ivfru_plat_reserve_memory - Reserves memory space for the static buffer.
+ *
+ * In the case of U-Boot implementation, it is a noop because we use the same
+ * memory location provided by the user for the output and it is unmanaged.
+ *
+ * Returns IVFRU_RET_SUCCESS.
+ */
+int ivfru_plat_reserve_memory(int size)
 {
 	return IVFRU_RET_SUCCESS;
 }
 
-int ivfru_plat_set_image_size(void *mem, int size)
+/*
+ * ivfru_plat_set_image_size - Sets the size of the IPMI FRU image in the static
+ * buffer.
+ *
+ * Sets the 'filesize' U-Boot environment variable with this value.
+ *
+ * Returns IVFRU_RET_SUCCESS.
+ */
+int ivfru_plat_set_image_size(int size)
 {
 	char sizestr[20];
 	sprintf(sizestr, "%d", size);
 	env_set("filesize", sizestr);
 
 	return IVFRU_RET_SUCCESS;
+}
+
+/*
+ * ivfru_plat_get_image_size - Gets the size of the IPMI FRU image in the static
+ * buffer.
+ *
+ * Not implemented/required in the U-Boot implementation.
+ *
+ * Returns 0.
+ */
+int ivfru_plat_get_image_size()
+{
+	return 0;
 }

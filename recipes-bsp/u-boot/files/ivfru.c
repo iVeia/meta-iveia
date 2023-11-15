@@ -19,6 +19,7 @@ static int do_ivfru_read(struct cmd_tbl *cmdtp, int flag, int argc,
 		return CMD_RET_USAGE;
 
 	location = (void *)simple_strtoul(argv[2], NULL, 16);
+	ivfru_plat_set_buffer(location);
 
 	int err = ivfru_read(board, location, 0);
 
@@ -41,6 +42,7 @@ static int do_ivfru_write(struct cmd_tbl *cmdtp, int flag, int argc,
 		return CMD_RET_USAGE;
 
 	location = (void *)simple_strtoul(argv[2], NULL, 16);
+	ivfru_plat_set_buffer(location);
 
 	int err = ivfru_write(board, location);
 
@@ -58,6 +60,7 @@ static int do_ivfru_display(struct cmd_tbl *cmdtp, int flag, int argc,
 		return CMD_RET_USAGE;
 
 	location = (void *)simple_strtoul(argv[1], NULL, 16);
+	ivfru_plat_set_buffer(location);
 
 	ivfru_display(location);
 
@@ -73,6 +76,7 @@ static int do_ivfru_fix(struct cmd_tbl *cmdtp, int flag, int argc,
 		return CMD_RET_USAGE;
 
 	location = (void *)simple_strtoul(argv[1], NULL, 16);
+	ivfru_plat_set_buffer(location);
 
 	ivfru_fix(location);
 
@@ -93,6 +97,7 @@ static int do_ivfru_create(struct cmd_tbl *cmdtp, int flag, int argc,
 		return CMD_RET_USAGE;
 
 	location = (void *)simple_strtoul(argv[1], NULL, 16);
+	ivfru_plat_set_buffer(location);
 	mfgdate = argv[2];
 	product = argv[3];
 	sn = argv[4];

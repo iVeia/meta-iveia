@@ -8,18 +8,29 @@
 #define MIN_YEAR 1996
 #define FRU_END_MARKER 0xC1
 
+/*
+ * The default CH structure.
+ */
 const struct ivfru_common_header CH_DEFAULT = {
 	.format_version = 0x01,
 	.board_info_area = 0x01,
 	.checksum = 0xFE,
 };
 
+/*
+ * The default CH structure in old format.
+ */
 const struct ivfru_common_header CH_OLD = {
 	.format_version = 0x01,
 	.board_info_area = 0x08,
 	.checksum = 0xF7,
 };
 
+/*
+ * fru_make_tl_byte - Formats a IPMI type-length byte at given address.
+ *
+ * Returns IVFRU_RET_SUCCESS on successful execution.
+ */
 static int fru_make_tl_byte(const char *data, int length, enum ivfru_tlb_type type, char *tl)
 {
 	if(type != IVFRU_TLB_TYPE_11) {
@@ -40,6 +51,11 @@ static int fru_make_tl_byte(const char *data, int length, enum ivfru_tlb_type ty
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * fru_tl_get_length - Extracts the length of the IPMI type-length field.
+ *
+ * Returns the field length.
+ */
 static int fru_tl_get_length(const char *address)
 {
 	if(*address == FRU_END_MARKER)
@@ -48,6 +64,15 @@ static int fru_tl_get_length(const char *address)
 	return (*address) & 0x3F;
 }
 
+/*
+ * fru_area_format_field - Formats the IPMI type-length field at the given
+ * address with the given data.
+ *
+ * The next pointer will be set to the address after the currently formatted
+ * field.
+ *
+ * Returns IVFRU_RET_SUCCESS on successful execution.
+ */
 static int fru_area_format_field(char *address, const char *data, int len, char **next)
 {
 	char tl;
@@ -69,6 +94,15 @@ static int fru_area_format_field(char *address, const char *data, int len, char 
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * fru_area_format_field - Extracts the data at the IPMI field at the given
+ * address into the given buffer.
+ *
+ * The next pointer will be set to the address after the currently formatted
+ * field.
+ *
+ * Returns IVFRU_RET_SUCCESS.
+ */
 static int fru_area_get_field_at_address(char *address, char *data, char **next)
 {
 	int length = fru_tl_get_length(address);
@@ -80,6 +114,12 @@ static int fru_area_get_field_at_address(char *address, char *data, char **next)
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * fru_calculate_checksum - Calculates the checksum of the given region and
+ * writes it into the given location.
+ *
+ * Returns IVFRU_RET_SUCCESS.
+ */
 static int fru_calculate_checksum(char *address, int size, char *checksum)
 {
 	int sum = 0;
@@ -94,6 +134,11 @@ static int fru_calculate_checksum(char *address, int size, char *checksum)
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * ipmi_time_to_date - Converts the IPMI datetime string into day, month, year.
+ *
+ * Returns IVFRU_RET_SUCCESS.
+ */
 static int ipmi_time_to_date(char *time, int *day, int *month, int *year)
 {
 	int days_per_month[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
@@ -126,6 +171,11 @@ static int ipmi_time_to_date(char *time, int *day, int *month, int *year)
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * date_to_ipmi_time - Converts day, month, year to IPMI datetime format.
+ *
+ * Returns IVFRU_RET_SUCCESS on successful execution.
+ */
 static int date_to_ipmi_time(int day, int month, int year, char *time)
 {
 #define MINUTES_PER_DAY 1440
@@ -169,6 +219,11 @@ static int date_to_ipmi_time(int day, int month, int year, char *time)
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * fru_get_total_length - Gets the total length of thd FRU image in memory.
+ *
+ * Returns the FRU image length.
+ */
 static int fru_get_total_length(void *location)
 {
 	struct ivfru_common_header *ch = (struct ivfru_common_header *) location;
@@ -186,6 +241,12 @@ static int fru_get_total_length(void *location)
 	return length;
 }
 
+/*
+ * fru_is_old_format - Checks if the FRU image at the given address is in the
+ * old length format.
+ *
+ * Returns 0 if the image is not in the old format, 1 otherwise.
+ */
 static int fru_is_old_format(void *location)
 {
 	if(memcmp(location, &CH_OLD, sizeof(CH_OLD)) != 0)
@@ -194,6 +255,11 @@ static int fru_is_old_format(void *location)
 	return 1;
 }
 
+/*
+ * date2dmy - Converts date string (DD-MM-YYYY) into day, month, year.
+ *
+ * Returns IVFRU_RET_SUCCESS on successful execution.
+ */
 static int date2dmy(const char *date, int *day, int *month, int *year)
 {
 	*day = 0;
@@ -247,6 +313,12 @@ static int date2dmy(const char *date, int *day, int *month, int *year)
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * display_validation_errors - Displays validation errors prints based on
+ * validation result.
+ *
+ * Returns nothing.
+ */
 static void display_validation_errors(enum validation_result res)
 {
 	if(res & VAL_RES_CH_INVALID_FORMAT_VERSION)
@@ -281,7 +353,11 @@ static char *ivfru_board_str[] = {
 };
 _Static_assert(sizeof(ivfru_board_str) / sizeof(ivfru_board_str[0]) == MAX_IVFRU_BOARD,
 			   "Board string should be defined for all boards.");
-
+/*
+ * ivfru_board2str - Converts the board ID enum value to a string.
+ *
+ * Returns the string pointer.
+ */
 char *ivfru_board2str(enum ivfru_board board)
 {
 	if(board >= 0 && board < sizeof(ivfru_board_str) / sizeof(ivfru_board_str[0]))
@@ -290,6 +366,12 @@ char *ivfru_board2str(enum ivfru_board board)
 	return NULL;
 }
 
+/*
+ * ivfru_str2board - Converts a board string to the board ID enum value.
+ *
+ * Returns the board ID if a valid string is provided or MAX_IVFRU_BOARD
+ * otherwise.
+ */
 enum ivfru_board ivfru_str2board(char *str)
 {
 	for(int i = 0; i < MAX_IVFRU_BOARD; i++)
@@ -298,6 +380,15 @@ enum ivfru_board ivfru_str2board(char *str)
 	return MAX_IVFRU_BOARD;
 }
 
+/*
+ * ivfru_bia_validate - Validates the BIA region at the given address.
+ *
+ * The function normally returns on finding any erorr. The ignore flag can be
+ * used to ignore errors and continue validating the full area.
+ * The validation errors found is stored in the result variable.
+ *
+ * Returns IVFRU_RET_SUCCESS if no errors were found.
+ */
 int ivfru_bia_validate(char *biaaddress, int old_format, enum validation_result *result, int ignore)
 {
 	enum validation_result res = VAL_RES_SUCCESS;
@@ -399,6 +490,15 @@ end:
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * ivfru_validate - Validates the FRU image at the given address.
+ *
+ * The function normally returns on finding any erorr. The ignore flag can be
+ * used to ignore errors and continue validating the full area.
+ * The validation errors found is stored in the result variable.
+ *
+ * Returns IVFRU_RET_SUCCESS if no errors were found.
+ */
 int ivfru_validate(char *location, enum validation_result *result, int ignore)
 {
 	struct ivfru_common_header *ch = (struct ivfru_common_header *) location;
@@ -442,6 +542,12 @@ end:
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * ivfru_get_size_from_storage - Gets the size of the FRU image by reading size
+ * fields.
+ *
+ * Returns IVFRU_RET_SUCCESS on successful execution.
+ */
 int ivfru_get_size_from_storage(enum ivfru_board board, int *size)
 {
 	int err;
@@ -468,6 +574,12 @@ int ivfru_get_size_from_storage(enum ivfru_board board, int *size)
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * ivfru_get_bia_predefined_fields - Extract the pre-defined BIA fields from the
+ * FRU image at the given address.
+ *
+ * Returns IVFRU_RET_SUCCESS.
+ */
 int ivfru_get_bia_predefined_fields(void *location, char **product, int *product_len, char **sn, int *sn_len, char **pn, int *pn_len)
 {
 	struct ivfru_common_header *ch = (struct ivfru_common_header *) location;
@@ -502,21 +614,36 @@ int ivfru_get_bia_predefined_fields(void *location, char **product, int *product
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * ivfru_read - Reads the FRU image from the board storage into the given
+ * location.
+ *
+ * Returns IVFRU_RET_SUCCESS on successful execution.
+ */
 int ivfru_read(enum ivfru_board board, void *location, int quiet)
 {
 	int err = IVFRU_RET_SUCCESS;
-	struct ivfru_common_header *ch = (struct ivfru_common_header *) location;
-	struct ivfru_board_info_area *bia = (struct ivfru_board_info_area *) (location + sizeof(*ch));
+	struct ivfru_common_header *ch = NULL;
+	struct ivfru_board_info_area *bia = NULL;
 	int read_len = sizeof(*ch) + sizeof(*bia);
+	void *mem = NULL;
 
-	if(ivfru_plat_reserve_memory(location, read_len) != IVFRU_RET_SUCCESS) {
+	if(ivfru_plat_reserve_memory(read_len) != IVFRU_RET_SUCCESS) {
 		if(!quiet)
 			printf("Error: Failed to reserve memory.\n");
 		return IVFRU_RET_MEM_ERROR;
 	}
+	mem = ivfru_plat_get_buffer();
+	if(mem == NULL) {
+		if(!quiet)
+			printf("Error: Failed to get memory.\n");
+		return IVFRU_RET_MEM_ERROR;
+	}
+	ch = (struct ivfru_common_header *) mem;
+	bia = (struct ivfru_board_info_area *) (mem + sizeof(*ch));
 
 	// Read CH + fixed length BIA fields
-	err = ivfru_plat_read_from_board(board, location, 0, read_len, quiet);
+	err = ivfru_plat_read_from_board(board, mem, 0, read_len, quiet);
 	if(err != IVFRU_RET_SUCCESS)
 		goto error;
 
@@ -531,21 +658,33 @@ int ivfru_read(enum ivfru_board board, void *location, int quiet)
 	rem_size -= sizeof(*bia);
 
 	read_len += rem_size;
-	if(ivfru_plat_reserve_memory(location, read_len) != IVFRU_RET_SUCCESS) {
+
+	if(ivfru_plat_reserve_memory(read_len) != IVFRU_RET_SUCCESS) {
 		printf("Error: Failed to reserve memory.\n");
 		return IVFRU_RET_MEM_ERROR;
 	}
+	mem = ivfru_plat_get_buffer();
+	if(mem == NULL) {
+		if(!quiet)
+			printf("Error: Failed to get memory.\n");
+		return IVFRU_RET_MEM_ERROR;
+	}
+	ch = (struct ivfru_common_header *) mem;
+	bia = (struct ivfru_board_info_area *) (mem + sizeof(*ch));
 
-	err = ivfru_plat_read_from_board(board, location + rem_offset, rem_offset, rem_size, quiet);
+	err = ivfru_plat_read_from_board(board, mem + rem_offset, rem_offset, rem_size, quiet);
 	if(err != IVFRU_RET_SUCCESS)
 		goto error;
 
 	if(!quiet) {
-		if(ivfru_plat_set_image_size(location, read_len) != IVFRU_RET_SUCCESS) {
+		if(ivfru_plat_set_image_size(read_len) != IVFRU_RET_SUCCESS) {
 			printf("Error: Failed to set image size.\n");
 			return IVFRU_RET_MEM_ERROR;
 		}
 	}
+
+	if(ivfru_plat_write_to_location(location) != IVFRU_RET_SUCCESS)
+		return IVFRU_RET_IO_ERROR;
 
 	return IVFRU_RET_SUCCESS;
 
@@ -555,26 +694,41 @@ error:
 	return IVFRU_RET_IO_ERROR;
 }
 
+/*
+ * ivfru_write - Writes the FRU image at the given location into the board
+ * storage.
+ *
+ * Returns IVFRU_RET_SUCCESS on successful execution.
+ */
 int ivfru_write(enum ivfru_board board, void *location)
 {
-	if(fru_is_old_format(location)) {
+	if(ivfru_plat_read_from_location(location) != IVFRU_RET_SUCCESS)
+		return IVFRU_RET_IO_ERROR;
+
+	void *mem = ivfru_plat_get_buffer();
+	if(mem == NULL) {
+		printf("Error: Failed to get memory.\n");
+		return IVFRU_RET_MEM_ERROR;
+	}
+
+	if(fru_is_old_format(mem)) {
 		printf("Error: The FRU image is in the old format. Please use the fix subcommand to convert to the new format and try again.\n");
 		return IVFRU_RET_FRU_OLD_FORMAT;
 	}
 
-	if(ivfru_validate(location, NULL, 0) != IVFRU_RET_SUCCESS) {
+	if(ivfru_validate(mem, NULL, 0) != IVFRU_RET_SUCCESS) {
 		printf("Error: The FRU image is invalid. Please fix manually and try again.\n");
 		return IVFRU_RET_INVALID_FRU_DATA;
 	}
 
-	int length = fru_get_total_length(location);
-	int err = ivfru_plat_write_to_board(board, location, length);
+	int length = fru_get_total_length(mem);
+	int err = ivfru_plat_write_to_board(board, mem, length);
 	if(err != IVFRU_RET_SUCCESS) {
 		printf("Error: Write failed!\n");
 		return IVFRU_RET_IO_ERROR;
 	}
 
-	if(ivfru_plat_set_image_size(location, length) != IVFRU_RET_SUCCESS) {
+	if(ivfru_plat_set_image_size(length) != IVFRU_RET_SUCCESS) {
 		printf("Error: Failed to set image size.\n");
 		return IVFRU_RET_MEM_ERROR;
 	}
@@ -582,21 +736,36 @@ int ivfru_write(enum ivfru_board board, void *location)
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * ivfru_display - Displays the information contained in the FRU image at the
+ * given location.
+ *
+ * Returns IVFRU_RET_SUCCESS on successful execution.
+ */
 int ivfru_display(void *location)
 {
-	struct ivfru_common_header *ch = (struct ivfru_common_header *) location;
-	struct ivfru_board_info_area *bia = (struct ivfru_board_info_area *) (location + sizeof(*ch));
+	if(ivfru_plat_read_from_location(location) != IVFRU_RET_SUCCESS)
+		return IVFRU_RET_IO_ERROR;
+
+	void *mem = ivfru_plat_get_buffer();
+	if(mem == NULL) {
+		printf("Error: Failed to get memory.\n");
+		return IVFRU_RET_MEM_ERROR;
+	}
+
+	struct ivfru_common_header *ch = (struct ivfru_common_header *) mem;
+	struct ivfru_board_info_area *bia = (struct ivfru_board_info_area *) (mem + sizeof(*ch));
 	int day, month, year;
 
 	enum validation_result valres = VAL_RES_SUCCESS;
-	ivfru_validate(location, &valres, 1);
+	ivfru_validate(mem, &valres, 1);
 	display_validation_errors(valres);
 
 	int length = bia->length;
-	if(!fru_is_old_format(location))
+	if(!fru_is_old_format(mem))
 		length *= 8;
 
-	if(ivfru_plat_set_image_size(location, length) != IVFRU_RET_SUCCESS) {
+	if(ivfru_plat_set_image_size(length) != IVFRU_RET_SUCCESS) {
 		printf("Error: Failed to set image size.\n");
 	}
 
@@ -661,15 +830,30 @@ int ivfru_display(void *location)
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * ivfru_fix - Fixes the length/offset fields in the FRU image at the given
+ * location to the new format.
+ *
+ * Returns IVFRU_RET_SUCCESS on successful execution.
+ */
 int ivfru_fix(void *location)
 {
-	if(!fru_is_old_format(location)) {
+	if(ivfru_plat_read_from_location(location) != IVFRU_RET_SUCCESS)
+		return IVFRU_RET_IO_ERROR;
+
+	void *mem = ivfru_plat_get_buffer();
+	if(mem == NULL) {
+		printf("Error: Failed to get memory.\n");
+		return IVFRU_RET_MEM_ERROR;
+	}
+
+	if(!fru_is_old_format(mem)) {
 		printf("Error: The FRU image is already in the correct format. No need to fix.\n");
 		return IVFRU_RET_FRU_NEW_FORMAT;
 	}
 
-	struct ivfru_common_header *ch = (struct ivfru_common_header *) location;
-	struct ivfru_board_info_area *bia = (struct ivfru_board_info_area *) (location + sizeof(*ch));
+	struct ivfru_common_header *ch = (struct ivfru_common_header *) mem;
+	struct ivfru_board_info_area *bia = (struct ivfru_board_info_area *) (mem + sizeof(*ch));
 
 	ch->board_info_area = 0x01;
 	fru_calculate_checksum((char *)ch, sizeof(*ch) - 1, &ch->checksum);
@@ -680,19 +864,34 @@ int ivfru_fix(void *location)
 	fru_calculate_checksum(biaaddr, bia_len - 1, biaaddr + bia_len - 1);
 
 	int length = bia_len + sizeof(*ch);
-	if(ivfru_plat_set_image_size(location, length) != IVFRU_RET_SUCCESS) {
+	if(ivfru_plat_set_image_size(length) != IVFRU_RET_SUCCESS) {
 		printf("Error: Failed to set image size.\n");
 		return IVFRU_RET_MEM_ERROR;
 	}
 
+	if(ivfru_plat_write_to_location(location) != IVFRU_RET_SUCCESS)
+		return IVFRU_RET_IO_ERROR;
+
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * ivfru_create - Creates an FRU image at the given location with the given
+ * information using default field lengths.
+ *
+ * Returns IVFRU_RET_SUCCESS on successful execution.
+ */
 int ivfru_create(void *location, const char *mfgdate, const char *product, const char *sn, const char *pn, const char *mfr)
 {
 	return ivfru_xcreate(location, mfgdate, product, 15, sn, 10, pn, 16, mfr, 10);
 }
 
+/*
+ * ivfru_xcreate - Creates an FRU image at the given location with the given
+ * information using the given field lengths.
+ *
+ * Returns IVFRU_RET_SUCCESS on successful execution.
+ */
 int ivfru_xcreate(void *location, const char *mfgdate, const char *product, int product_len, const char *sn, int sn_len, const char *pn, int pn_len, const char *mfr, int mfr_len)
 {
 	if (!mfgdate || !product || !sn || !pn) {
@@ -706,8 +905,9 @@ int ivfru_xcreate(void *location, const char *mfgdate, const char *product, int 
 		return IVFRU_RET_INVALID_ARGUMENT;
 	}
 
-	struct ivfru_common_header *ch = (struct ivfru_common_header *) location;
-	struct ivfru_board_info_area *bia = (struct ivfru_board_info_area *) (location + sizeof(*ch));
+	void *mem = NULL;
+	struct ivfru_common_header *ch = NULL;
+	struct ivfru_board_info_area *bia = NULL;
 
 	const char *mfr_default = "iVeia";
 	if(mfr == NULL) {
@@ -764,12 +964,19 @@ int ivfru_xcreate(void *location, const char *mfgdate, const char *product, int 
 	total_size = (((total_size + 7) / 8) * 8);
 	pad_len = total_size - pad_len;
 
-	if(ivfru_plat_reserve_memory(location, total_size) != IVFRU_RET_SUCCESS) {
+	if(ivfru_plat_reserve_memory(total_size) != IVFRU_RET_SUCCESS) {
 		printf("Error: Failed to reserve memory.\n");
 		return IVFRU_RET_MEM_ERROR;
 	}
+	mem = ivfru_plat_get_buffer();
+	if(mem == NULL) {
+		printf("Error: Failed to get memory.\n");
+		return IVFRU_RET_MEM_ERROR;
+	}
+	ch = (struct ivfru_common_header *) mem;
+	bia = (struct ivfru_board_info_area *) (mem + sizeof(*ch));
 
-	memcpy(location, &CH_DEFAULT, sizeof(CH_DEFAULT));
+	memcpy(mem, &CH_DEFAULT, sizeof(CH_DEFAULT));
 	int bia_len = total_size - sizeof(*ch);
 	bia->format_version = 0x01;
 	bia->length = bia_len / 8;
@@ -799,25 +1006,47 @@ int ivfru_xcreate(void *location, const char *mfgdate, const char *product, int 
 
 	fru_calculate_checksum((char *) bia, bia_len - 1, address);
 
-	if(ivfru_plat_set_image_size(location, total_size) != IVFRU_RET_SUCCESS) {
+	if(ivfru_plat_set_image_size(total_size) != IVFRU_RET_SUCCESS) {
 		printf("Error: Failed to set image size.\n");
 		return IVFRU_RET_MEM_ERROR;
 	}
 
+	if(ivfru_plat_write_to_location(location) != IVFRU_RET_SUCCESS)
+		return IVFRU_RET_IO_ERROR;
+
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * ivfru_add - Adds a custom field at the given index of the FRU image at the
+ * given location.
+ *
+ * Negative index implies the end of the list.
+ *
+ * Returns IVFRU_RET_SUCCESS on successful execution.
+ */
 int ivfru_add(void *location, int index, char *data, int len)
 {
-	struct ivfru_common_header *ch = (struct ivfru_common_header *) location;
-	struct ivfru_board_info_area *bia = (struct ivfru_board_info_area *) (location + sizeof(*ch));
+	struct ivfru_common_header *ch = NULL;
+	struct ivfru_board_info_area *bia = NULL;
 
-	if(fru_is_old_format(location)) {
+	if(ivfru_plat_read_from_location(location) != IVFRU_RET_SUCCESS)
+		return IVFRU_RET_IO_ERROR;
+
+	void *mem = ivfru_plat_get_buffer();
+	if(mem == NULL) {
+		printf("Error: Failed to get memory.\n");
+		return IVFRU_RET_MEM_ERROR;
+	}
+	ch = (struct ivfru_common_header *) mem;
+	bia = (struct ivfru_board_info_area *) (mem + sizeof(*ch));
+
+	if(fru_is_old_format(mem)) {
 		printf("Error: The FRU image is in the old format. Please use the fix subcommand to convert to the new format and try again.\n");
 		return IVFRU_RET_FRU_OLD_FORMAT;
 	}
 
-	if(ivfru_validate(location, NULL, 0) != IVFRU_RET_SUCCESS) {
+	if(ivfru_validate(mem, NULL, 0) != IVFRU_RET_SUCCESS) {
 		printf("Error: The FRU image is invalid. Please fix manually and try again.\n");
 		return IVFRU_RET_INVALID_FRU_DATA;
 	}
@@ -856,10 +1085,19 @@ int ivfru_add(void *location, int index, char *data, int len)
 	bia_len += 1; /* checksum */
 	int pad_len = bia_len;
 	bia_len = ((bia_len + 7) / 8) * 8;
-	if(ivfru_plat_reserve_memory(location, sizeof(*ch) + bia_len) != IVFRU_RET_SUCCESS) {
+
+	if(ivfru_plat_reserve_memory(sizeof(*ch) + bia_len) != IVFRU_RET_SUCCESS) {
 		printf("Error: Failed to reserve memory.\n");
 		return IVFRU_RET_MEM_ERROR;
 	}
+	mem = ivfru_plat_get_buffer();
+	if(mem == NULL) {
+		printf("Error: Failed to get memory.\n");
+		return IVFRU_RET_MEM_ERROR;
+	}
+	ch = (struct ivfru_common_header *) mem;
+	bia = (struct ivfru_board_info_area *) (mem + sizeof(*ch));
+
 	pad_len = bia_len - pad_len;
 
 	// Handle negative index.
@@ -884,25 +1122,46 @@ int ivfru_add(void *location, int index, char *data, int len)
 	fru_calculate_checksum((char *) bia, bia_len - 1, end);
 
 	int total_size = bia_len + sizeof(*ch);
-	if(ivfru_plat_set_image_size(location, total_size) != IVFRU_RET_SUCCESS) {
+	if(ivfru_plat_set_image_size(total_size) != IVFRU_RET_SUCCESS) {
 		printf("Error: Failed to set image size.\n");
 		return IVFRU_RET_MEM_ERROR;
 	}
 
+	if(ivfru_plat_write_to_location(location) != IVFRU_RET_SUCCESS)
+
+		return IVFRU_RET_IO_ERROR;
+
 	return IVFRU_RET_SUCCESS;
 }
 
+/*
+ * ivfru_rm - Removes the custom field at the given index of the FRU image at
+ * the given location.
+ *
+ * Returns IVFRU_RET_SUCCESS on successful execution.
+ */
 int ivfru_rm(void *location, int index)
 {
-	struct ivfru_common_header *ch = (struct ivfru_common_header *) location;
-	struct ivfru_board_info_area *bia = (struct ivfru_board_info_area *) (location + sizeof(*ch));
+	struct ivfru_common_header *ch = NULL;
+	struct ivfru_board_info_area *bia = NULL;
 
-	if(fru_is_old_format(location)) {
+	if(ivfru_plat_read_from_location(location) != IVFRU_RET_SUCCESS)
+		return IVFRU_RET_IO_ERROR;
+
+	void *mem = ivfru_plat_get_buffer();
+	if(mem == NULL) {
+		printf("Error: Failed to get memory.\n");
+		return IVFRU_RET_MEM_ERROR;
+	}
+	ch = (struct ivfru_common_header *) mem;
+	bia = (struct ivfru_board_info_area *) (mem + sizeof(*ch));
+
+	if(fru_is_old_format(mem)) {
 		printf("Error: The FRU image is in the old format. Please use the fix subcommand to convert to the new format and try again.\n");
 		return IVFRU_RET_FRU_OLD_FORMAT;
 	}
 
-	if(ivfru_validate(location, NULL, 0) != IVFRU_RET_SUCCESS) {
+	if(ivfru_validate(mem, NULL, 0) != IVFRU_RET_SUCCESS) {
 		printf("Error: The FRU image is invalid. Please fix manually and try again.\n");
 		return IVFRU_RET_INVALID_FRU_DATA;
 	}
@@ -953,10 +1212,13 @@ int ivfru_rm(void *location, int index)
 	fru_calculate_checksum((char *) bia, bia_len - 1, end);
 
 	int total_size = bia_len + sizeof(*ch);
-	if(ivfru_plat_set_image_size(location, total_size) != IVFRU_RET_SUCCESS) {
+	if(ivfru_plat_set_image_size(total_size) != IVFRU_RET_SUCCESS) {
 		printf("Error: Failed to set image size.\n");
 		return IVFRU_RET_MEM_ERROR;
 	}
+
+	if(ivfru_plat_write_to_location(location) != IVFRU_RET_SUCCESS)
+		return IVFRU_RET_IO_ERROR;
 
 	return IVFRU_RET_SUCCESS;
 }

@@ -23,6 +23,7 @@ IMAGE_REMOVE += "python3"
 IMAGE_INSTALL += "bdevmem"
 IMAGE_INSTALL += "busyloop"
 IMAGE_INSTALL += "kernel-module-iv-ocp"
+IMAGE_INSTALL += "ivfru"
 
 IMAGE_CLASSES_remove = "image-types-xilinx-qemu qemuboot-xilinx"
 
