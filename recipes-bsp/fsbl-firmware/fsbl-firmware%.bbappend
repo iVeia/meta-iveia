@@ -26,6 +26,7 @@ inherit post-configure-patches
 POST_CONFIGURE_PATCHES_zynqmp := "\
     ${THISDIR}/files/add-iveia-init-hook.patch \
     ${THISDIR}/files/add_sequence_boot.patch \
+    ${THISDIR}/files/ddr-dots.patch \
     "
 
 # GTR's are unused on helios-z8
