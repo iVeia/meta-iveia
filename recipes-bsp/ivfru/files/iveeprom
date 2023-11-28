@@ -1,0 +1,126 @@
+#! /bin/bash
+
+usage() {
+	echo "Usage: $0 OPERATION LOCATION FIELD [VALUE]"
+	echo "OPERATION: read, write"
+	echo "LOCATION: mb (main board), io (carrier)"
+	echo "FIELD (read-only): mfgdate, name, serial, partno"
+	echo "FIELD (read-write): application, site, category, classification, variant, range, capability, custom1, custom2"
+	echo "VALUE: <The string value to be written. Only accepted for the write operation.>"
+}
+
+get_field_id() {
+	field=$1
+	case "$field" in
+		"mfgdate") echo 0 ;;
+		"name") echo 1 ;;
+		"serial") echo 2 ;;
+		"partno") echo 3 ;;
+		"application") echo 4 ;;
+		"site") echo 5 ;;
+		"category") echo 6 ;;
+		"classification") echo 7 ;;
+		"variant") echo 8 ;;
+		"range") echo 9 ;;
+		"capability") echo 10 ;;
+		"custom1") echo 11 ;;
+		"custom2") echo 12 ;;
+		*) echo -1 ;;
+	esac
+}
+
+cleanup_exit() {
+	if [ -f $1 ]; then
+		rm $1
+	fi
+	exit $2
+}
+
+operation=$1
+location=$2
+field=$3
+fieldid=$(get_field_id $field)
+value=""
+
+if [ "$#" -gt 3 ]; then
+	value=$4
+fi
+
+if [ "$fieldid" -lt 4 -a "$operation" == "write" ]; then
+	exit 1
+fi
+
+if [ "$#" -lt 3 ] || \
+   [ "$operation" != "read" -a "$operation" != "write" ] || \
+   [ "$location" != "mb" -a "$location" != "io" ] || \
+   [ "$fieldid" == "-1" ]
+then
+	echo "Invalid usage."
+	usage
+	exit 1
+fi
+
+file=$(mktemp /tmp/ivfru.XXXXXX)
+if [ -z "$file" ]; then
+	echo "Failed to create a temporary file"
+	exit 1
+fi
+
+ivfru read $location $file
+if [ "$?" -ne 0 ]; then
+	echo "Failed to read FRU image from $location."
+	cleanup_exit $file 1
+fi
+
+if ! ivfru display $file | awk 'NR == 1' | grep -q '^BIA Length'; then
+	echo "Invalid FRU image read from $location."
+	cleanup_exit $file 1
+fi
+
+do_read() {
+	file=$1
+	fieldid=$2
+
+	line=$(( $fieldid + 1 ))
+	line_count=$(ivfru display $file | awk '/^Mfg Date:/,0' | head -n -1 | awk 'NR != 3 && NR != 6' | wc -l)
+	if [ "$line_count" -lt "$line" ]; then
+		cleanup_exit $file 1
+	fi
+	value=$(ivfru display $file | awk '/^Mfg Date:/,0' | head -n -1 | awk 'NR != 3 && NR != 6' | awk "NR == $line" | sed 's/^[^:]*:\s*//')
+	if [ "$value" == "" ]; then
+		cleanup_exit $file 1
+	fi
+	echo $value
+}
+
+if [ "$operation" == "read" ]; then
+	do_read $file $fieldid
+else
+	if [ "${#value}" -gt 63 ]; then
+		echo "ERROR: Given value is greater than 63 characters in length."
+		cleanup_exit $file 1
+	fi
+	# Add empty rows if field is not currently present
+	line=$(( $fieldid + 1 ))
+	line_count=$(ivfru display $file | awk '/^Mfg Date:/,0' | head -n -1 | awk 'NR != 3 && NR != 6' | wc -l)
+	while [ "$line_count" -lt "$line" ]; do
+		if ! ivfru add $file -1 ""; then
+			cleanup_exit $file 1
+		fi
+		line_count=$(ivfru display $file | awk '/^Mfg Date:/,0' | head -n -1 | awk 'NR != 3 && NR != 6' | wc -l)
+	done
+	index=$(( $line - 5))
+	if ! ivfru rm $file $index; then
+		cleanup_exit $file 1
+	fi
+	valhex=$(echo -n $value | hexdump -v -e '/1 "%02x"')
+	if ! ivfru add $file $index "$valhex"; then
+		cleanup_exit $file 1
+	fi
+	if ! ivfru write $location $file; then
+		cleanup_exit $file 1
+	fi
+	do_read $file $fieldid
+fi
+
+cleanup_exit $file 0
