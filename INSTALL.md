@@ -75,7 +75,7 @@ In the commands below, the **MACHINE** should reflect the target in use (see the
 
 Using the ivinstall script, you can run:
 ```
-./ivinstall-${MACHINE} -Q
+./ivinstall-full-${MACHINE} -Q
 ```
 The above requires the Xilinx utility **xsdb** is runnable from the user's PATH.
 

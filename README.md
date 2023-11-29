@@ -54,23 +54,26 @@ The source hierarchy will be moved into a directory named
 ```
 cd meta-iveia-project
 source setupsdk
-MACHINE=<CHOOSE FROM SUPPORTED MACHINES ABOVE> bitbake ivinstall
+MACHINE=<CHOOSE FROM SUPPORTED MACHINES ABOVE> bitbake ivinstall-full
 ```
+Alternatively, 'full' may be replaced by 'minimal'.  See [BUILD](BUILD.md) and
+[INSTALL](INSTALL.md).
+
 Note: the setupsdk script will end up changing the current working directory to
 **build**.
 
 Once completed, an image will be created in
-**tmp/deploy/images/${MACHINE}/ivinstall-${MACHINE}**.
+**tmp/deploy/images/${MACHINE}/ivinstall-full-${MACHINE}**.
 
 ## Installation
 
 To install the complete set of binaries (bootloaders, Linux OS, Rootfs, etc)
-use the installer image (ivinstall-${MACHINE}) created above.  For more
+use the installer image (ivinstall-full-${MACHINE}) created above.  For more
 information, see the [INSTALL](INSTALL.md) doc.
 
 To install to an SD card mounted on a Linux host machine, run:
 ```
-./ivinstall-${MACHINE} -fc /dev/sdX
+./ivinstall-full-${MACHINE} -fc /dev/sdX
 ```
 Note: the **MACHINE** should reflect the one used during the build process.
 Also, the device name **/dev/sdX** should correspond to the SD card on your
