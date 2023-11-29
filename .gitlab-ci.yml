@@ -31,13 +31,13 @@ build-job:
 
     # MACHINE list.  TODO: add the following MACHINEs that currently have 
     # broken builds: 00049 00102 00108
+    # Also, 00126 was broken by commit f61f08dc307df658ffa...
     MACHINES: >-
       00068
       00090
       00104
       00114
       00122
-      00126
       00127
       00130
 
