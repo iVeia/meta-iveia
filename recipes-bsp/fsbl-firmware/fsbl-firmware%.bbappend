@@ -29,15 +29,9 @@ POST_CONFIGURE_PATCHES_zynqmp := "\
     ${THISDIR}/files/ddr-dots.patch \
     "
 
-# GTR's are unused on helios-z8
-POST_CONFIGURE_PATCHES_remove_00126 := "\
-    ${THISDIR}/files/add-iveia-init-hook.patch \
-    "
-
 POST_CONFIGURE_PATCHES_append_00126 := "\
     ${THISDIR}/files/helios-z8-mods.patch \
     "
-
 
 FSBL_DIR := "${THISDIR}"
 
@@ -52,11 +46,12 @@ FSBL_SRCS_zynqmp := "\
 FSBL_SRCS_zynq := "\
     ${THISDIR}/files/zynq-hooks.c \
     "
-FSBL_SRCS_append_00114 := " ${THISDIR}/files/00114.c"
 FSBL_SRCS_append_00104 := " ${THISDIR}/files/00104.c"
-FSBL_SRCS_append_00146 := " ${THISDIR}/files/00146.c"
-FSBL_SRCS_append_00127 := " ${THISDIR}/files/00127.c"
 FSBL_SRCS_append_00108 := " ${THISDIR}/files/00108.c"
+FSBL_SRCS_append_00114 := " ${THISDIR}/files/00114.c"
+FSBL_SRCS_append_00126 := " ${THISDIR}/files/00126.c"
+FSBL_SRCS_append_00127 := " ${THISDIR}/files/00127.c"
+FSBL_SRCS_append_00146 := " ${THISDIR}/files/00146.c"
 
 inherit switch-uart
 XPARAMETERS_H = "${B}/fsbl-firmware/zynqmp_fsbl_bsp/psu_cortexa53_0/include/xparameters.h"
