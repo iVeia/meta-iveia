@@ -29,6 +29,10 @@ POST_CONFIGURE_PATCHES_zynqmp := "\
     ${THISDIR}/files/ddr-dots.patch \
     "
 
+# Remove patch ddr-dots which conflicts with helios-z8-mods
+POST_CONFIGURE_PATCHES_remove_00126 := "\
+    ${THISDIR}/files/ddr-dots.patch \
+    "
 POST_CONFIGURE_PATCHES_append_00126 := "\
     ${THISDIR}/files/helios-z8-mods.patch \
     "
