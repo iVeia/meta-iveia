@@ -20,6 +20,9 @@ enum ivfru_board {
 };
 
 enum ivfru_tlb_type {
+	IVFRU_TLB_TYPE_UNSPECIFIED,
+	IVFRU_TLB_TYPE_BCD_PLUS,
+	IVFRU_TLB_TYPE_6BIT_ASCII_PACKED,
 	IVFRU_TLB_TYPE_11,
 	MAX_TLB_TYPE,
 };
