@@ -129,8 +129,10 @@ static int do_ivfru_read(int argc, char *argv[])
 
 	enum ivfru_board board = ivfru_str2board(argv[1]);
 
-	if(board >= MAX_IVFRU_BOARD)
+	if(board >= MAX_IVFRU_BOARD) {
+		printf("Invalid board: %s\n", argv[1]);
 		return CMD_RET_USAGE;
+	}
 
 	location = argv[2];
 
@@ -150,8 +152,10 @@ static int do_ivfru_write(int argc, char *argv[])
 
 	enum ivfru_board board = ivfru_str2board(argv[1]);
 
-	if(board >= MAX_IVFRU_BOARD)
+	if(board >= MAX_IVFRU_BOARD) {
+		printf("Invalid board: %s\n", argv[1]);
 		return CMD_RET_USAGE;
+	}
 
 	location = argv[2];
 
@@ -225,6 +229,7 @@ static int do_ivfru_create(int argc, char *argv[])
 
 static int do_ivfru_xcreate(int argc, char *argv[])
 {
+	char *end;
 	char *location;
 	char *mfgdate;
 	char *product;
@@ -242,15 +247,31 @@ static int do_ivfru_xcreate(int argc, char *argv[])
 	location = argv[1];
 	mfgdate = argv[2];
 	product = argv[3];
-	product_len = strtol(argv[4], NULL, 10);
+	product_len = strtol(argv[4], &end, 10);
+	if(end != argv[4] + strlen(argv[4])) {
+		printf("Invalid productlen: %s\n", argv[4]);
+		return CMD_RET_USAGE;
+	}
 	sn = argv[5];
-	sn_len = strtol(argv[6], NULL, 10);
+	sn_len = strtol(argv[6], &end, 10);
+	if(end != argv[6] + strlen(argv[6])) {
+		printf("Invalid snlen: %s\n", argv[6]);
+		return CMD_RET_USAGE;
+	}
 	pn = argv[7];
-	pn_len = strtol(argv[8], NULL, 10);
+	pn_len = strtol(argv[8], &end, 10);
+	if(end != argv[8] + strlen(argv[8])) {
+		printf("Invalid pnlen: %s\n", argv[8]);
+		return CMD_RET_USAGE;
+	}
 
 	if(argc > 9) {
 		mfr = argv[9];
-		mfr_len = strtol(argv[10], NULL, 10);
+		mfr_len = strtol(argv[10], &end, 10);
+		if(end != argv[10] + strlen(argv[10])) {
+			printf("Invalid mfrlen: %s\n", argv[10]);
+			return CMD_RET_USAGE;
+		}
 	} else {
 		mfr = NULL;
 		mfr_len = 0;
@@ -269,6 +290,7 @@ static int do_ivfru_xcreate(int argc, char *argv[])
 
 static int do_ivfru_add(int argc, char *argv[])
 {
+	char *end;
 	char *location;
 	int index;
 	int len;
@@ -277,7 +299,11 @@ static int do_ivfru_add(int argc, char *argv[])
 		return CMD_RET_USAGE;
 
 	location = argv[1];
-	index = strtol(argv[2], NULL, 10);
+	index = strtol(argv[2], &end, 10);
+	if(end != argv[2] + strlen(argv[2])) {
+		printf("Invalid index: %s\n", argv[2]);
+		return CMD_RET_USAGE;
+	}
 	len = strlen(argv[3]) / 2;
 	char bytestr[3];
 	bytestr[2] = 0;
@@ -286,7 +312,11 @@ static int do_ivfru_add(int argc, char *argv[])
 	for(int i = 0; i < len; i++) {
 		bytestr[0] = argv[3][i * 2];
 		bytestr[1] = argv[3][i * 2 + 1];
-		data[i] = strtoul(bytestr, NULL, 16);
+		data[i] = strtoul(bytestr, &end, 16);
+		if(end != bytestr + 2) {
+			printf("Invalid hex string: %s\n", argv[3]);
+			return CMD_RET_USAGE;
+		}
 	}
 
 	int err = ivfru_add(location, index, data, len);
@@ -301,6 +331,7 @@ static int do_ivfru_add(int argc, char *argv[])
 
 static int do_ivfru_rm(int argc, char *argv[])
 {
+	char *end;
 	char *location;
 	int index;
 
@@ -308,7 +339,11 @@ static int do_ivfru_rm(int argc, char *argv[])
 		return CMD_RET_USAGE;
 
 	location = argv[1];
-	index = strtol(argv[2], NULL, 10);
+	index = strtol(argv[2], &end, 10);
+	if(end != argv[2] + strlen(argv[2])) {
+		printf("Invalid index: %s\n", argv[2]);
+		return CMD_RET_USAGE;
+	}
 
 	int err = ivfru_rm(location, index);
 
