@@ -90,7 +90,7 @@ static int fru_area_format_field(char *address, const char *data, int len, enum 
 }
 
 /*
- * fru_area_format_field - Extracts the data at the IPMI field at the given
+ * fru_area_get_field_at_address - Extracts the data at the IPMI field at the given
  * address into the given buffer.
  *
  * The next pointer will be set to the address after the currently formatted

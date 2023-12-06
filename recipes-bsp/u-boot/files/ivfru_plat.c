@@ -262,7 +262,7 @@ int ivfru_plat_read_from_board(enum ivfru_board board, void *mem, int offset, in
 }
 
 /*
- * ivfru_plat_read_from_board - Writes IPMI data to given board ID from memory
+ * ivfru_plat_write_to_board - Writes IPMI data to given board ID from memory
  *
  * Returns IVFRU_RET_SUCCESS iff the data was written successfully.
  */
