@@ -15,8 +15,6 @@ struct CommandArgs {
 	int (*do_function)(int, char**);
 	int min_args;
 	int max_args;
-	const char *usage;
-	const char *description;
 };
 
 static int do_ivfru_read(int argc, char *argv[]);
@@ -27,34 +25,68 @@ static int do_ivfru_create(int argc, char *argv[]);
 static int do_ivfru_xcreate(int argc, char *argv[]);
 static int do_ivfru_add(int argc, char *argv[]);
 static int do_ivfru_rm(int argc, char *argv[]);
-static void print_usage(int index);
+static void print_usage();
 
 static const struct CommandArgs command_args[] = {
-	{"read", do_ivfru_read, 3, 3, "read <board> <location>", "Read FRU image from the given board storage into <location>"},
-	{"write", do_ivfru_write, 3, 3, "write <board> <location>", "Write FRU image from <location> to the given board storage"},
-	{"display", do_ivfru_display, 2, 2, "display <location>", "Display a decoded version of the FRU image at <location>"},
-	{"fix", do_ivfru_fix, 2, 2, "fix <location>", "Fix invalid FRU offsets"},
-	{"create", do_ivfru_create, 6, 7, "create <location> <mfgdate> <product> <sn> <pn> [<mfr>]", "Create a new FRU with common header and board area."},
-	{"xcreate", do_ivfru_xcreate, 9, 11, "xcreate <location> <mfgdate> <product> <productlen> <sn> <snlen> <pn> <pnlen> [<mfr> <mfrlen>]", "Extended form of the create command that requires specifying the field length of each field string."},
-	{"add", do_ivfru_add, 4, 4, "add <location> <index> <hex_string>", "Add a custom mfg info field."},
-	{"rm", do_ivfru_rm, 3, 3, "rm <location> <index>", "Remove the custom mfg info field at given 0-based <index>."}
+	{"read", do_ivfru_read, 3, 3},
+	{"write", do_ivfru_write, 3, 3},
+	{"display", do_ivfru_display, 2, 2},
+	{"fix", do_ivfru_fix, 2, 2},
+	{"create", do_ivfru_create, 6, 7},
+	{"xcreate", do_ivfru_xcreate, 9, 11},
+	{"add", do_ivfru_add, 4, 4},
+	{"rm", do_ivfru_rm, 3, 3}
 };
 
-static void print_usage(int index) {
-	if (index >= 0 && index < sizeof(command_args) / sizeof(command_args[0])) {
-		printf("Usage:\n\tivfru %s\n\t\t%s\n", command_args[index].usage, command_args[index].description);
-	} else {
-		printf("Usage:\n\n");
-		for (int i = 0; i < sizeof(command_args) / sizeof(command_args[0]); ++i) {
-			printf("\tivfru %s\n\t\t%s\n\n", command_args[i].usage, command_args[i].description);
-		}
-	}
+
+static void print_usage() {
+	printf("ivfru <command> <options> - read/write IPMI FRU struct\n"
+	"\n"
+	"Usage:\n"
+	"ivfru read <board> <location>\n"
+	"  Read FRU image from the given board storage into <location>\n"
+	"ivfru write <board> <location>\n"
+	"  Write FRU image from <location> to the given board storage\n"
+	"ivfru display <location>\n"
+	"  Display a decoded version of the FRU image at <location>\n"
+	"ivfru fix <location>\n"
+	"  Fix invalid FRU offsets\n"
+	"ivfru create <location> <mfgdate> <product> <sn> <pn> [<mfr>]\n"
+	"  Create a new FRU with common header and board area.\n"
+	"  <mfgdate> - Manufacturing date in format DD-MM-YYYY.\n"
+	"  <product> - Product Name field string.  Default field length 15.\n"
+	"  <sn> - Serial Number field string.  Default field length 10.\n"
+	"  <pn> - Part Number field string.  Default field length 16.\n"
+	"  <mfr> - Mfr field string (\"iVeia\" if not given).  Default field length 10.\n"
+	"  If the field string is shorter than the field len, it is space padded at end.\n"
+	"  If the field string is longer than the field len, command exits with error.\n"
+	"ivfru xcreate <location> <mfgdate> <product> <productlen> <sn> <snlen>\n"
+	"      <pn> <pnlen> [<mfr> <mfrlen>]\n"
+	"  Extended form of the ivfru create command that requires specifying the field\n"
+	"  length of each field string.  Each additional argument of this command of the\n"
+	"  form <*len> indicates the integer length of the previous field string.  A\n"
+	"  negative length means \"no fixed size\" (the field length will be exactly the\n"
+	"  length of the given field string).\n"
+	"ivfru add <location> <index> <hex_string>\n"
+	"  Add a custom mfg info field.\n"
+	"  <index> - 0-based index of the field in the board area.  If less than 0 \n"
+	"    or greater than the highest indexed field, add field to end of list.\n"
+	"  <hex_string> - hex string of data in field, e.g. \"1A2B3C\"\n"
+	"ivfru rm <location> <index>\n"
+	"  Remove the custom mfg info field at given 0-based <index>.\n"
+	"\n"
+	"where common fields are:\n"
+	"  <board> is one of mb, io, or bp.\n"
+	"  <location> is a memory address (in U-Boot) or a file (in Linux)\n"
+	"\n"
+	"In U-Boot, all commands (when successful) set the filesize env variable with\n"
+	"the current size of the read/written/modified FRU image at <location>.\n");
 }
 
 int main(int argc, char *argv[]) {
 	if (argc < 2) {
 		printf("Insufficient arguments.\n");
-		print_usage(-1);
+		print_usage();
 		return CMD_RET_USAGE;
 	}
 
@@ -72,16 +104,19 @@ int main(int argc, char *argv[]) {
 
 			if (argc < command_args[index].min_args || argc > command_args[index].max_args) {
 				printf("Invalid number of arguments for %s command.\n", command);
-				print_usage(index);
+				print_usage();
 				return CMD_RET_USAGE;
 			}
 
-			return do_function(argc, argv);
+			int ret = do_function(argc, argv);
+			if(ret == CMD_RET_USAGE)
+				print_usage();
+			return ret;
 		}
 	}
 
 	printf("Invalid command.\n");
-	print_usage(-1);
+	print_usage();
 	return CMD_RET_USAGE;
 }
 
