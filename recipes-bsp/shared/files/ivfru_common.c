@@ -883,7 +883,7 @@ int ivfru_fix(void *location)
  */
 int ivfru_create(void *location, const char *mfgdate, const char *product, const char *sn, const char *pn, const char *mfr)
 {
-	return ivfru_xcreate(location, mfgdate, product, 15, sn, 10, pn, 16, mfr, 10);
+	return ivfru_xcreate(location, mfgdate, product, 16, sn, 10, pn, 15, mfr, 10);
 }
 
 /*
