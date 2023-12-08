@@ -170,6 +170,7 @@ static int do_ivfru_xcreate(struct cmd_tbl *cmdtp, int flag, int argc,
 		printf("Invalid location: %s\n", argv[1]);
 		return CMD_RET_USAGE;
 	}
+	ivfru_plat_set_buffer(location);
 	mfgdate = argv[2];
 	product = argv[3];
 	product_len = simple_strtol(argv[4], &end, 10);
@@ -229,6 +230,7 @@ static int do_ivfru_add(struct cmd_tbl *cmdtp, int flag, int argc,
 		printf("Invalid location: %s\n", argv[1]);
 		return CMD_RET_USAGE;
 	}
+	ivfru_plat_set_buffer(location);
 	index = simple_strtol(argv[2], &end, 10);
 	if(end != argv[2] + strlen(argv[2])) {
 		printf("Invalid index: %s\n", argv[2]);
@@ -274,6 +276,7 @@ static int do_ivfru_rm(struct cmd_tbl *cmdtp, int flag, int argc,
 		printf("Invalid location: %s\n", argv[1]);
 		return CMD_RET_USAGE;
 	}
+	ivfru_plat_set_buffer(location);
 	index = simple_strtol(argv[2], &end, 10);
 	if(end != argv[2] + strlen(argv[2])) {
 		printf("Invalid index: %s\n", argv[2]);
