@@ -119,7 +119,7 @@ static int fru_calculate_checksum(char *address, int size, char *checksum)
 {
 	int sum = 0;
 	while(size--) {
-		sum = (sum + *address) % 0xFF;
+		sum = (sum + *address) & 0xFF;
 		address++;
 	}
 
