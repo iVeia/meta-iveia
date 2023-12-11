@@ -6,6 +6,15 @@
 #include <dt-bindings/pinctrl/pinctrl-zynqmp.h>
 #include <dt-bindings/phy/phy.h>
 
+&iv_ipmi {
+    iv_ipmi_io: iv_io {
+        i2c = < 0 0x53 0 >;  // < bus_num addr offset >
+        wp {
+            i2c_gpio = < 0 0x22 8 1 >; // < bus_num addr gpio_num active_state >
+        };
+    };
+};
+
 &gem0 {
     status = "okay";
     index = <1>; /* Use eth1 */
