@@ -414,10 +414,12 @@ static int board_scan_ipmi( IV_BOARD_CLASS brd_class, void *fdt )
     int pn_len;
 
     enum ivfru_board board = boardclass2board(brd_class);
-    int ivfru_len;
-	ivfru_get_size_from_storage(board, &ivfru_len);
 
+    int ivfru_len;
+    ivfru_get_size_from_storage(board, &ivfru_len);
     char iv_ipmi[ivfru_len];
+    ivfru_plat_set_buffer(iv_ipmi);
+
     if(ivfru_read(board, &iv_ipmi, 1) != IVFRU_RET_SUCCESS)
         return -EIO;
 
