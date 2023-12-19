@@ -81,4 +81,44 @@ int ivfru_xcreate(void *location, const char *mfgdate, const char *product, int 
 int ivfru_add(void *location, int index, char *data, int len);
 int ivfru_rm(void *location, int index);
 
+#define IVFRU_HELP_TEXT \
+	"read <board> <location>\n" \
+	"    Read FRU image from the given board storage into <location>\n" \
+	"ivfru write <board> <location>\n" \
+	"    Write FRU image from <location> to the given board storage\n" \
+	"ivfru display <location>\n" \
+	"    Display a decoded version of the FRU image at <location>\n" \
+	"ivfru fix <location>\n" \
+	"    Fix invalid FRU offsets\n" \
+	"ivfru create <location> <mfgdate> <product> <sn> <pn> [<mfr>]\n" \
+	"    Create a new FRU with common header and board area.\n" \
+	"    <mfgdate> - Manufacturing date in format DD-MM-YYYY.\n" \
+	"    <product> - Product Name field string.  Default field length 15.\n" \
+	"    <sn> - Serial Number field string.  Default field length 10.\n" \
+	"    <pn> - Part Number field string.  Default field length 16.\n" \
+	"    <mfr> - Mfr field string (\"iVeia\" if not given).  Default field len 10.\n" \
+	"    If the field string is shorter than the field len, spaces padded at end.\n" \
+	"    If the field string is longer than the field len, command exits with error.\n" \
+	"ivfru xcreate <location> <mfgdate> <product> <productlen> <sn> <snlen>\n" \
+	"        <pn> <pnlen> [<mfr> <mfrlen>]\n" \
+	"    Extended form of the ivfru create command that requires specifying the\n" \
+	"    field length of each field string.  Each additional argument of this\n" \
+	"    command of the form <*len> indicates the integer length of the previous\n" \
+	"    field string.  A negative length means \"no fixed size\" (the field length\n" \
+	"    will be exactly the length of the given field string).\n" \
+	"ivfru add <location> <index> <hex_string>\n" \
+	"    Add a custom mfg info field.\n" \
+	"    <index> - 0-based index of the field in the board area.  If less than 0\n" \
+	"        or greater than the highest indexed field, add field to end of list.\n" \
+	"    <hex_string> - hex string of data in field, e.g. \"1A2B3C\"\n" \
+	"ivfru rm <location> <index>\n" \
+	"    Remove the custom mfg info field at given 0-based <index>.\n" \
+	"\n" \
+	"where common fields are:\n" \
+	"    <board> is one of mb, io, or bp.\n" \
+	"    <location> is a memory address (in U-Boot) or a file (in Linux)\n" \
+	"\n" \
+	"In U-Boot, all commands (when successful) set the filesize env variable with\n" \
+	"the current size of the read/written/modified FRU image at <location>."
+
 #endif // __IVFRU_COMMON_H__
