@@ -12,7 +12,6 @@ SRC_URI += "file://ivfru_common.c"
 SRC_URI += "file://ivfru_common.h"
 SRC_URI += "file://ivfru_plat.c"
 SRC_URI += "file://ivfru_plat.h"
-SRC_URI += "file://iveeprom"
 S = "${WORKDIR}"
 
 do_compile() {
@@ -22,5 +21,4 @@ do_compile() {
 do_install() {
     install -d ${D}${bindir}
     install -m0755 ${PN} ${D}${bindir}
-    install -Dm 0755 ${WORKDIR}/iveeprom ${D}/usr/bin/iveeprom
 }
