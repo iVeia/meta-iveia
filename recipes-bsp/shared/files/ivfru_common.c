@@ -739,6 +739,8 @@ int ivfru_write(enum ivfru_board board, void *location)
  */
 int ivfru_display(void *location)
 {
+    const int FIELD_NAME_DISPLAY_WIDTH = 20;
+
 	if(ivfru_plat_read_from_location(location) != IVFRU_RET_SUCCESS)
 		return IVFRU_RET_IO_ERROR;
 
@@ -759,18 +761,19 @@ int ivfru_display(void *location)
 	int length = bia->length;
 	if(!fru_is_old_format(mem))
 		length *= 8;
+    int bia_len_in_bytes = length;
 
 	if(ivfru_plat_set_image_size(length) != IVFRU_RET_SUCCESS) {
 		printf("Error: Failed to set image size.\n");
 	}
 
-	printf("BIA Length: 0x%02x\n", bia->length);
-	printf("BIA Version: 0x%02x\n", bia->format_version);
+	printf("%-*s0x%02x\n", FIELD_NAME_DISPLAY_WIDTH, "BIA Length (bytes):" , bia_len_in_bytes);
+	printf("%-*s0x%02x\n", FIELD_NAME_DISPLAY_WIDTH, "BIA Version:", bia->format_version);
 	if(length > 2)
-		printf("Lang code: 0x%02x\n", bia->language_code);
+        printf("%-*s0x%02x\n", FIELD_NAME_DISPLAY_WIDTH, "Lang code:", bia->language_code);
 	if(length > 3) {
 		ipmi_time_to_date(bia->mfg_date_time, &day, &month, &year);
-		printf("Mfg Date: %02d-%02d-%04d\n", day, month, year);
+        printf("%-*s0x%02x\n", FIELD_NAME_DISPLAY_WIDTH, "Mfg Date:", day, month, year);
 	}
 
 	length -= sizeof(*bia);
@@ -788,14 +791,14 @@ int ivfru_display(void *location)
 		length -= flen;
 		char data[flen];
 		fru_area_get_field_at_address(address, data, &address);
-		printf("%s:\t%s\n", fixed[i], data);
+        printf("%-*s%s\n", FIELD_NAME_DISPLAY_WIDTH, fixed[i], data);
 	}
 
 	if(length > 0)
 	{
 		int flen = fru_tl_get_length(address);
 		length -= 1 + flen;
-		printf("File ID Len:\t0x%02x\n", flen);
+        printf("%-*s0x%02x\n", FIELD_NAME_DISPLAY_WIDTH, "File ID Len:", flen);
 		fru_area_get_field_at_address(address, NULL, &address);
 	}
 
@@ -805,7 +808,9 @@ int ivfru_display(void *location)
 		length -= flen;
 		char data[flen];
 		fru_area_get_field_at_address(address, data, &address);
-		printf("Field %d:\t%s\n", i, data);
+		char field_name[100];
+		snprintf(field_name, sizeof(field_name) - 1, "Field %d:", i);
+        printf("%-*s%s\n", FIELD_NAME_DISPLAY_WIDTH, field_name, data);
 	}
 
 	if((valres & VAL_RES_BIA_MASK) == VAL_RES_SUCCESS)
