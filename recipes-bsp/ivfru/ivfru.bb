@@ -2,6 +2,7 @@ SUMMARY = "Utility for accessing and modifying IPMI FRU data"
 LICENSE = "CLOSED"
 
 RDEPENDS_${PN} += "bash"
+RDEPENDS_${PN} += "i2c-tools"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/../shared/files:"
 
