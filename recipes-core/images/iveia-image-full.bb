@@ -1,8 +1,5 @@
 require recipes-core/images/iveia-image-minimal.bb
 
-# cpio only needed for minimal images that can be used to boot via ramfs
-#IMAGE_FSTYPES_remove = "cpio cpio.gz.u-boot"
-
 # Use openssh, not dropbear
 IMAGE_FEATURES += "ssh-server-openssh"
 IMAGE_INSTALL += "packagegroup-core-ssh-openssh"
@@ -29,5 +26,5 @@ IMAGE_INSTALL += "net-tools"
 IMAGE_INSTALL += "tcpdump"
 IMAGE_INSTALL += "iptables"
 
-#IMAGE_INSTALL += "python3"
+IMAGE_INSTALL += "python3"
 

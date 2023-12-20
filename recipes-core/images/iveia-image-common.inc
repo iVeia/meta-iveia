@@ -1,3 +1,11 @@
+# Remove uneeded packages included by Xilinx.
+# Note: meson depends on python3, which is huge!
+IMAGE_INSTALL_remove += "bridge-utils"
+IMAGE_INSTALL_remove += "can-utils"
+IMAGE_INSTALL_remove += "htop"
+IMAGE_INSTALL_remove += "iperf3"
+IMAGE_INSTALL_remove += "meson"
+
 IMAGE_FSTYPES_remove = " \
     cpio.gz cpio.bz2 \
     ext3 ext3.bz2 \
@@ -15,9 +23,6 @@ IMAGE_INSTALL += "xilinx-bootbin"
 IMAGE_INSTALL += "ivstartup sdmount"
 
 IMAGE_INSTALL += "opkg"
-IMAGE_REMOVE += "rpm"
-
-IMAGE_REMOVE += "python3"
 
 # iVeia specific
 IMAGE_INSTALL += "bdevmem"
