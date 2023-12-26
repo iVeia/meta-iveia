@@ -151,7 +151,7 @@ static int ivfru_read_qspi(int bus, int cs, int offset, void *data, int size)
  *
  * Returns IVFRU_RET_SUCCESS iff the data was written successfully.
  */
-static int ivfru_write_qspi(int bus, int cs, int offset, void *data, int size)
+static int ivfru_write_qspi(int bus, int cs, int part_offset, int fru_offset, void *data, int size)
 {
 	char cmd[100];
 	int err;
@@ -161,7 +161,20 @@ static int ivfru_write_qspi(int bus, int cs, int offset, void *data, int size)
 	if(err != 0)
 		return IVFRU_RET_IO_ERROR;
 
-	sprintf(cmd, "sf update 0x%p 0x%x 0x%x", data, offset, size);
+	// We cannot directly write to the middle of an QSPI partition using
+	// sf. We first have to read the existing data in the partition
+	// upto the write offset and then append it with the actual data that is
+	// to be written.
+	char temp_buf[fru_offset + size];
+	if(fru_offset > 0) {
+		sprintf(cmd, "sf read 0x%p 0x%x 0x%x", temp_buf, part_offset, fru_offset);
+		err = run_command(cmd, 0);
+		if(err != 0)
+			return IVFRU_RET_IO_ERROR;
+	}
+	memcpy(temp_buf + fru_offset, data, size);
+
+	sprintf(cmd, "sf update 0x%p 0x%x 0x%x", temp_buf, part_offset, fru_offset + size);
 	err = run_command(cmd, 0);
 	if(err != 0)
 		return IVFRU_RET_IO_ERROR;
@@ -209,6 +222,7 @@ int ivfru_plat_read_from_board(enum ivfru_board board, void *mem, int offset, in
 	int addr = -1;
 	int cs  = -1;
 	int ipmi_offset = -1;
+	uint32_t qspi_offset = 0;
 	const fdt32_t *val;
 	char *ipmi_label = "";
 	const void *fdt = gd->fdt_blob;
@@ -244,11 +258,13 @@ int ivfru_plat_read_from_board(enum ivfru_board board, void *mem, int offset, in
 		if(ivfru_read_i2c(bus, addr, ipmi_offset + offset, (void *) mem, size) != IVFRU_RET_SUCCESS)
 			return IVFRU_RET_IO_ERROR;
 	} else if ( (ipmi_label = fdt_getprop(fdt, class_node, "qspi", NULL) )) {
+		if ( (val = fdt_getprop(fdt, class_node, "qspi_offset", NULL) ))
+			qspi_offset = fdt32_to_cpu(*(val + 0));
 		if(get_qspi_info_from_label(ipmi_label, &bus, &cs, &ipmi_offset) != IVFRU_RET_SUCCESS) {
 			printf("Error: Failed to get a match for the IPMI qspi partition label!\n");
 			return IVFRU_RET_INVALID_DEVICE_TREE;
 		}
-		if(ivfru_read_qspi(bus, cs, ipmi_offset + offset, (void *) mem, size) != IVFRU_RET_SUCCESS) {
+		if(ivfru_read_qspi(bus, cs, ipmi_offset + qspi_offset + offset, (void *) mem, size) != IVFRU_RET_SUCCESS) {
 			printf("Error: Failed to read from qspi storage!\n");
 			return IVFRU_RET_IO_ERROR;
 		}
@@ -274,6 +290,7 @@ int ivfru_plat_write_to_board(enum ivfru_board board, void *mem, int size)
 	int addr = -1;
 	int cs  = -1;
 	int ipmi_offset = -1;
+	uint32_t qspi_offset = 0;
 	char *ipmi_label = "";
 	const fdt32_t *val, *val2;
 	const void *fdt = gd->fdt_blob;
@@ -375,11 +392,13 @@ int ivfru_plat_write_to_board(enum ivfru_board board, void *mem, int size)
 			return IVFRU_RET_IO_ERROR;
 		}
 	} else if ( (ipmi_label = fdt_getprop(fdt, class_node, "qspi", NULL) )) {
+		if ( (val = fdt_getprop(fdt, class_node, "qspi_offset", NULL) ))
+			qspi_offset = fdt32_to_cpu(*(val + 0));
 		if(get_qspi_info_from_label(ipmi_label, &bus, &cs, &ipmi_offset) != IVFRU_RET_SUCCESS) {
 			printf("Error: Failed to get a match for the IPMI qspi partition label!\n");
 			return IVFRU_RET_INVALID_DEVICE_TREE;
 		}
-		if(ivfru_write_qspi(bus, cs, ipmi_offset, (void *) mem, size) != IVFRU_RET_SUCCESS) {
+		if(ivfru_write_qspi(bus, cs, ipmi_offset, qspi_offset, (void *) mem, size) != IVFRU_RET_SUCCESS) {
 			printf("Error: Failed to write to qspi storage!\n");
 			return IVFRU_RET_IO_ERROR;
 		}
