@@ -1,7 +1,8 @@
 Location of IPMI FRU Information is denoted by the following device-tree nodes
 
-Below iv_ipmi node should be specified at the root of the device-tree.  It is parsed in uboot
-to set /proc/device-tree/chosen nodes and ethernet mac addresses.
+Below iv_ipmi node should be specified at the root of the device-tree.  It is
+parsed in uboot to set /proc/device-tree/chosen nodes and ethernet mac
+addresses.
 
 
     iv_ipmi: iv_ipmi {
@@ -29,10 +30,16 @@ to set /proc/device-tree/chosen nodes and ethernet mac addresses.
         iv_bp: blackplane board 
 
             supported bus properties:
-                i2c = < bus_num addr offset >
-                qspi = < bus_num chip_sel offset >
+                Either (i2c takes precedence):
+                    i2c = < bus_num addr offset >
+                Or
+                    # "partition-name" must be defined within &qspi node.
+                    qspi = "partition-name"
+                    # <offset> denotes the offset within the chosen partition.
+                    qspi_offset = < offset >
 
-            wp (optional board subnode, used to convey write protect method for the board):
+            wp (optional board subnode, used to convey write protect method for
+                the board):
                 supported properties:
                     i2c_gpio = < bus_num addr gpio_num active_state >
                     gpio = < gpio_num active_state >

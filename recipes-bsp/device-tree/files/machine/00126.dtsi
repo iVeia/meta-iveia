@@ -17,15 +17,29 @@
     /delete-node/ iv_mb;
     /delete-node/ iv_io;
 
-	iv_mb {
-		qspi = < 0 0 0xff000 >;  // < bus_num chip_sel offset >
-	};
+    iv_ipmi_mb: iv_mb {
+        qspi = "ipmi-fru";
+        qspi_offset = <0xf000>;
+    };
 
-    iv_io {
-        qspi = < 0 0 0xfe000 >;  // < bus_num chip_sel offset >
+    iv_ipmi_io: iv_io {
+        qspi = "ipmi-fru";
+        qspi_offset = <0xe000>;
     };
 };
 
+&qspi {
+    flash@0 {
+        partition@0x00000000 {
+            label = "qspi-fsbl-uboot";
+            reg = <0x00000000 0xf0000>;
+        };
+        partition@0x000f0000 {
+            label = "ipmi-fru";
+            reg = <0x000f0000 0x10000>;
+        };
+    };
+};
 
 &dwc3_0 {
     /delete-property/ phys;
@@ -41,21 +55,21 @@
 };
 
 &spi0 {
-	// disabled here, to be enabled in upper layer if desired
-	status = "disabled";
-	tpm_tis@0 {
-		compatible = "tcg,tpm_tis-spi";
-		reg = <0>;
-		spi-max-frequency = <10000000>;
-		//TODO: 
-		//  - TPM_PIRQ: MIO_44
-		//  - TPM_SW_RST: MIO_45
-		// ? pinctrl-names, pintctrl-0
-	};
+    // disabled here, to be enabled in upper layer if desired
+    status = "disabled";
+    tpm_tis@0 {
+        compatible = "tcg,tpm_tis-spi";
+        reg = <0>;
+        spi-max-frequency = <10000000>;
+        //TODO: 
+        //  - TPM_PIRQ: MIO_44
+        //  - TPM_SW_RST: MIO_45
+        // ? pinctrl-names, pintctrl-0
+    };
 };
 
 &spi1 {
-	// bus not connected
-	status = "disabled";
+    // bus not connected
+    status = "disabled";
 };
 
