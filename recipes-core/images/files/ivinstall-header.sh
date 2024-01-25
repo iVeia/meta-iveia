@@ -373,13 +373,13 @@ run_jtag_tcl()
         # On the fly modification of TCL script to support XVC
         #
         # Patch script to convert `connect` to `connect -xvc-url <arg>`.
-        # This allows the command "./ivinstall -Q -V <IPADDR>:<PORT>"
+        # This allows the command "./ivinstall -Q -V <IPADDR>:<TCP_PORT>"
         # to program QSPI flash over XVC.
         #
         # In addition, XVC doesn't support `jtag frequency`, so remove it.
         #
         if [[ -n "$XILINX_VIRTUAL_CABLE" ]]; then
-            sed -i "s/^ *connect.*/connect -port ${XILINX_VIRTUAL_CABLE#*:} -xvc-url $XILINX_VIRTUAL_CABLE/" "$TMPDIR/$TCL"
+            sed -i "s/^ *connect.*/connect -xvc-url $XILINX_VIRTUAL_CABLE/" "$TMPDIR/$TCL"
             sed -i "s/^ *jtag .*frequency.*//" "$TMPDIR/$TCL"
         fi
 
