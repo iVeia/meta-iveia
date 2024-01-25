@@ -126,7 +126,7 @@ DEVICE="$1"
 shift
 
 # Environ
-PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin:"$PATH"
+PATH="${PATH}:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
 SSH_OPTS="-o ConnectTimeout=5"
 
 # Find tarball start line at end of script
