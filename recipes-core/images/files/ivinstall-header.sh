@@ -337,7 +337,7 @@ setup_jtag()
 		} else {
 			set jtag_cable_serial "*"
 		}
-		targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "APU"}
+		targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "*APU*"}
 		stop
 		EOF
     run_jtag_tcl halt.tcl ${HALT_TCL_ABSPATH}
