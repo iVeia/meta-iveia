@@ -21,6 +21,7 @@ iVeia Mainboard SoM part numbers (`MACHINE`) supported by this layer:
 
 iVeia IO boards (`IVIO`) supported by this layer:
 - io-captiva (PN 00074)
+- a3io-sierra (PN 00087)
 - a2io-blackwing (PN 00093)
 - a3io-aurora (PN 00100)
 
