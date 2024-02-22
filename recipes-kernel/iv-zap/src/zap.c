@@ -279,6 +279,8 @@ int zap_open(struct inode *inode, struct file *filp)
     dev_info(dev->dev, "%s() %s Device %d (%d)\n", __func__, is_tx ? "TX":"RX", iDevice,
 		    dev->fpga_params.num_interfaces);
 
+	dma_ll_update_fpga_parameters();
+
 	if (iDevice >= dev->fpga_params.num_interfaces) {
 		return -ENXIO;
 	}
@@ -1118,7 +1120,6 @@ static int zap_probe(struct platform_device *pdev)
 		printk(KERN_ERR "ZAP DMA init error %d\n", err);
 		goto fail;
 	}
-	dma_ll_update_fpga_parameters(); 
 
 	//ksym_arch_setup_dma_ops = (void *)kallsyms_lookup_name("arch_setup_dma_ops");
 	arch_setup_dma_ops(&zap_device, 0, 0, NULL,false);
