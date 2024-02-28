@@ -4,7 +4,4 @@ alias ll="/bin/ls --color=tty -laFh"
 alias ls="/bin/ls --color=tty"
 alias cls="clear"
 alias ..="cd .."
-alias df="df -h"
-alias du="du -h"
-alias free="free -h"
 
