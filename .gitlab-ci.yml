@@ -31,8 +31,8 @@ build-job:
 
     # MACHINE list.  TODO: add the following MACHINEs that currently have 
     # broken builds: 00049 00102 00108
+    # ZAP currently broken for z7, including 00068 (add back once fixed)
     MACHINES: >-
-      00068
       00090
       00104
       00114
