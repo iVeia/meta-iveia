@@ -41,8 +41,8 @@ build-job:
       00127
       00130
 
+    # ZAP currently broken for atlas-z7 (add back once fixed)
     SDKS: >-
-      atlas-z7
       atlas-z8
 
     # These targets need to be rebuilt (if cached) in order to build in the
