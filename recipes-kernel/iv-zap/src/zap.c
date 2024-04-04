@@ -104,18 +104,10 @@
 #include <linux/ioport.h>
 #include <linux/io.h>
 #include <linux/dma-map-ops.h>
-//#include <linux/kallsyms.h>
-
 
 #include "_zap.h"
 #include "pool.h"
 #include "dma.h"
-
-
-// arch_setup_dma_ops() may not be exported for arm64, so get via kallsyms_lookup_name()
-//static void *ksym_arch_setup_dma_ops;
-//typedef typeof(&arch_setup_dma_ops) arch_setup_dma_ops_fn;
-//#define arch_setup_dma_ops (* (arch_setup_dma_ops_fn)ksym_arch_setup_dma_ops)
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1120,10 +1112,6 @@ static int zap_probe(struct platform_device *pdev)
 		printk(KERN_ERR "ZAP DMA init error %d\n", err);
 		goto fail;
 	}
-
-	//ksym_arch_setup_dma_ops = (void *)kallsyms_lookup_name("arch_setup_dma_ops");
-	arch_setup_dma_ops(&zap_device, 0, 0, NULL,false);
-
 
 	return 0;
 
