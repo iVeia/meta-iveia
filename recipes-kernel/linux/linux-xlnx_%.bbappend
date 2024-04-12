@@ -8,7 +8,6 @@ SRC_URI += " \
     file://rtc.cfg \
     file://hwmon.cfg \
     file://usb-gadget.cfg \
-    file://usb-net.cfg \
     "
 
 
@@ -30,3 +29,7 @@ SRC_URI_append_00068 = " \
     file://pca953x.cfg \
     "
 
+SRC_URI_append_00049 = " \
+    file://pca953x.cfg \
+    file://usb-net.cfg \
+    "

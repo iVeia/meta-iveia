@@ -34,8 +34,9 @@
 };
 
 &iv_ipmi_mb {
+    i2c = <1 0x52 0>;               // < bus_num addr offset >
     wp {
-        i2c_gpio = <1 0x70 2 1>;
+        i2c_gpio = <1 0x70 2 1>;    // < bus_num addr gpio_num active_state >
     };
 };
 
