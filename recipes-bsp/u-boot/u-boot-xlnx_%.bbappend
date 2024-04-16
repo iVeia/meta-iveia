@@ -31,6 +31,9 @@ SRC_URI_append = "\
     "
 
 # MACHINE specific patches
+SRC_URI_append_00049 = "\
+    file://uboot-00049.cfg \
+    "
 SRC_URI_append_00130 = "\
     file://uboot-00130.cfg \
     "

@@ -32,4 +32,14 @@ SRC_URI_append_00068 = " \
 SRC_URI_append_00049 = " \
     file://pca953x.cfg \
     file://usb-net.cfg \
+    file://usbnet-rename-to-eth.patch \
     "
+
+# load cdc_mbim before ax88170_178a
+# https://github.com/FreddyXin/ax88179_178a/issues/6
+# https://unix.stackexchange.com/a/713046
+#
+KERNEL_MODULE_PROBECONF_append_00049 = "ax88179_178a"
+module_conf_ax88179_178a = "softdep ax88179_178a pre: cdc_mbim"
+
+
