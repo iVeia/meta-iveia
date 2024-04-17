@@ -57,6 +57,8 @@ FSBL_SRCS_append_00126 := " ${THISDIR}/files/00126.c"
 FSBL_SRCS_append_00127 := " ${THISDIR}/files/00127.c"
 FSBL_SRCS_append_00146 := " ${THISDIR}/files/00146.c"
 
+YAML_COMPILER_FLAGS_append_00049 = " -DNO_CLKGEN"
+
 inherit switch-uart
 XPARAMETERS_H = "${B}/fsbl-firmware/zynqmp_fsbl_bsp/psu_cortexa53_0/include/xparameters.h"
 SWITCH_UART_00126 := "0"

@@ -184,8 +184,10 @@ u32 FsblHookBeforeHandoff(void)
 	Status = i2c_init(&Iic, I2C_DEVICE_ID);
 	if (Status != XST_SUCCESS) return XST_FAILURE;
 
+#ifndef NO_CLKGEN
     Status = clkgen_init(&Iic);
 	if (Status != XST_SUCCESS) return XST_FAILURE;
+#endif
 
 	return XST_SUCCESS;
 }
