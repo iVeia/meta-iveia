@@ -7,8 +7,10 @@
 #include "xstatus.h"
 #include "fsbl_hooks.h"
 #include "xparameters.h"
-#include "xiicps.h"
 #include "xil_printf.h"
+
+#ifndef NO_I2C
+#include "xiicps.h"
 
 #define I2C_DEVICE_ID		XPAR_XIICPS_1_DEVICE_ID
 #define I2C_CLKGEN_ADDR		0x68
@@ -171,6 +173,7 @@ static int i2c_init(XIicPs * pIic, u16 DeviceId)
 
 	return XST_SUCCESS;
 }
+#endif
 
 
 /*
@@ -178,8 +181,10 @@ static int i2c_init(XIicPs * pIic, u16 DeviceId)
  */
 u32 FsblHookBeforeHandoff(void)
 {
+	u32 Status = XST_SUCCESS;
+
+#ifndef NO_I2C
     XIicPs Iic;
-	u32 Status;
 
 	Status = i2c_init(&Iic, I2C_DEVICE_ID);
 	if (Status != XST_SUCCESS) return XST_FAILURE;
@@ -188,8 +193,9 @@ u32 FsblHookBeforeHandoff(void)
     Status = clkgen_init(&Iic);
 	if (Status != XST_SUCCESS) return XST_FAILURE;
 #endif
+#endif
 
-	return XST_SUCCESS;
+	return Status;
 }
 
 
