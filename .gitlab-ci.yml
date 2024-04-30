@@ -29,11 +29,13 @@ build-job:
     DL_DIR: cache/downloads
     SSTATE_DIR: cache/sstate-cache
 
-    # MACHINE list.  TODO: add the following MACHINEs that currently have 
-    # broken builds: 00049 00102 00108
-    # ZAP currently broken for z7, including 00068 (add back once fixed)
+    # MACHINE list.
+    # TODO: add back in MACHINEs that currently have broken builds: 00108
     MACHINES: >-
+      00049
+      00068
       00090
+      00102
       00104
       00114
       00122
@@ -41,8 +43,8 @@ build-job:
       00127
       00130
 
-    # ZAP currently broken for atlas-z7 (add back once fixed)
     SDKS: >-
+      atlas-z7
       atlas-z8
 
     # These targets need to be rebuilt (if cached) in order to build in the
