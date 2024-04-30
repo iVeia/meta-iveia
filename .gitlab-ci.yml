@@ -47,7 +47,7 @@ build-job:
 
     # These targets need to be rebuilt (if cached) in order to build in the
     # latest version stamp
-    CLEAN_TGTS: fsbl u-boot-xlnx linux-xlnx xilinx-bootbin ${IVINSTALL_TGT}
+    CLEAN_TGTS: fsbl-firmware u-boot-xlnx linux-xlnx xilinx-bootbin ${IVINSTALL_TGT}
   timeout: 5h
   cache:
     paths:
