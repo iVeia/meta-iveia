@@ -27,14 +27,14 @@ con
 # a magic number in memory to force U-Boot to act as if it is booting in JTAG
 # mode.  (Even if this happened to match, it's doesn't affect boot unless the
 # uEnv.txt file/crc matches).
-mwr 0x500000 0x4a544147
+mwr 0x00500000 0x4a544147
 
 # Load Images - see ivinstall script for details on image locations
-dow -data uEnv.txt.bin 0x5ffff4
-dow -data system.dtb 0x700000
-dow -data uImage 0x800000
-dow -data initrd 0x8000000
-dow -data tarball.tgz.bin 0x0ffffff4
+dow -data uEnv.txt.bin 0x005ffff4
+dow -data system.dtb 0x00700000
+dow -data uImage 0x00800000
+dow -data initrd 0x04000000
+dow -data tarball.tgz.bin 0x17fffff4
 
 # Other SW...
 dow u-boot.elf

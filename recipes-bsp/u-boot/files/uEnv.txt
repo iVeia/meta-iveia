@@ -9,14 +9,14 @@ set_loaderdhcp=setenv loader tftpboot
 set_loadermmc0=setenv loader load mmc 0; setenv sdbootdev 0
 set_loadermmc1=setenv loader load mmc 1; setenv sdbootdev 1
 fpga_file=xilinx.bit
-fpga_addr=0x800000
+fpga_addr=0x00800000
 set_fdt_file=setenv fdt_file ${machine}.dtb
-fdt_addr=0x600000
+fdt_addr=0x00600000
 fdto_file=overlay.dtbo
-fdto_addr=0x700000
-kernel_addr=0x800000
+fdto_addr=0x00700000
+kernel_addr=0x00800000
 initrd_file=initrd
-initrd_addr=0x10000000
+initrd_addr=0x04000000
 load_fpga=\
     echo Loading FPGA from ${altpath}/${fpga_file} if exists...; \
     ${loader} ${fpga_addr} ${altpath}/${fpga_file} && fpga loadb 0 ${fpga_addr} ${filesize}; \

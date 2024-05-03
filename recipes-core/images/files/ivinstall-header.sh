@@ -505,23 +505,28 @@ fi
 #       - run startup.sh, which ivinstalls with user's args, plus -P
 #           (postpartition) and -t (extract to specific temp location)
 #
-# Rough mem layout for Zynq vs ZynqMP:
-#   Zynq                    ZynqMP
-#   MB      ADDR            MB      ADDR
-#   0       0x00000000      "       "           Mem bottom
-#   5       0x00500000      NA      NA          JTAG magic flag (zynq only)
-#   6       0x00600000      "       "           uEnv.txt (with pre-header)
-#   7       0x00700000      "       "           DTB
-#   8       0x00800000      "       "           Kernel
-#   64      0x04000000      128     0x08000000  U-Boot
-#   128     0x80000000      256     0x10000000  initrd
-#   256     0x10000000      512     0x20000000  tarball (with header)
+# Memory layout:
+#   MB      ADDR
+#   0       0x00000000      Mem bottom
+#   5       0x00500000      JTAG magic flag (zynq only)
+#   6       0x00600000      uEnv.txt (with pre-header)
+#   7       0x00700000      DTB
+#   8       0x00800000      Kernel
+#   64      0x04000000      initrd
+#   238     0x0EE00000      ZAP (size 128MB)
+#   384     0x18000000      ivinstall tarball (with pre-header)
 #   ...
-#   >=512   0x40000000      >=1024  0x80000000  Phys mem top (up to 4GB on some boards)
+#   >=512   0x20000000      Phys mem top (up to 4GB on some boards)
 #
-# Xilinx changed the default U-Boot location from 64M to 128MB when going from
-# Zynq to ZynqMP, and we use that default.  If not for that change, we'd be
-# able to use the same layout for both.
+# Note: U-Boot is initially loaded at 128MB on ZynqMP (64MB on Zynq).  However,
+# it gets relocated to just below the end of memory so we can safely clobber
+# the inital image.
+#
+# ZAP reserves 128MB in the DTB, and this memory is blocked from use because it
+# is defined in the DTB even though it is not used in U-Boot.  The ZAP location
+# could be changed if the corresponding FPGA code is changed as well.
+# Currently, there is plenty of space for kernel, initrd, ZAP and ivinstall
+# tarball all within 512MB, so ZAP can stay where it is.
 #
 # The items with the pre-header above are shifted down by the header amount.
 # See add_header().  Also, see the tcl scripts and uEnv.txt for the exact
