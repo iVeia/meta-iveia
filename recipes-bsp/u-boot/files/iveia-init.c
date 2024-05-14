@@ -43,12 +43,6 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define IVEIA_OUI           0x002168
 
-
-static bool mb_ipmi_complete = 0;
-static bool io_ipmi_complete = 0;
-static bool bp_ipmi_complete = 0;
-
-
 static char * class2string(IV_BOARD_CLASS class)
 {
     switch (class) {
@@ -185,27 +179,22 @@ static void strcpy_ipmi_field(char * dest, char * src, int len)
     }
 }
 
-static void print_board_info(IV_BOARD_CLASS class)
+static char * get_board_name_from_class(IV_BOARD_CLASS class)
 {
-    char *realname;
-    char buf[MAX_KERN_CMDLINE_FIELD_LEN];
-
     switch ( class ) {
-        case IV_BOARD_CLASS_MB:
-            realname = "Main Board";
-            break;
-        case IV_BOARD_CLASS_IO:
-            realname = "IO Board";
-            break;
-        case IV_BOARD_CLASS_BP:
-            realname = "BP Board";
-            break;
-        default:
-            return;
-            break;
+        case IV_BOARD_CLASS_MB: return "Main Board";
+        case IV_BOARD_CLASS_IO: return "IO Board";
+        case IV_BOARD_CLASS_BP: return "BP Board";
     }
 
-    printf("%s:\n", realname);
+    return "Unknown Board";
+}
+
+static void print_board_info(IV_BOARD_CLASS class)
+{
+    char buf[MAX_KERN_CMDLINE_FIELD_LEN];
+
+    printf("%s:\n", get_board_name_from_class(class));
     printf("\tPart Name:     %s\n",
         iv_board_get_field(buf, class, IV_BOARD_FIELD_NAME, IV_BOARD_SUBFIELD_NONE));
     printf("\tPart Number:   %s\n",
@@ -427,11 +416,15 @@ static int board_scan_ipmi( IV_BOARD_CLASS brd_class, void *fdt )
     char iv_ipmi[ivfru_len];
     ivfru_plat_set_buffer(iv_ipmi);
 
-    if(ivfru_read(board, &iv_ipmi, 1) != IVFRU_RET_SUCCESS)
+    if(ivfru_read(board, &iv_ipmi, 1) != IVFRU_RET_SUCCESS) {
+        printf("WARNING: Unable to read FRU for %s\n", get_board_name_from_class(brd_class));
         return -EIO;
+    }
 
-    if(ivfru_validate(&iv_ipmi, NULL, 0) != IVFRU_RET_SUCCESS)
+    if(ivfru_validate(&iv_ipmi, NULL, 0) != IVFRU_RET_SUCCESS) {
+        printf("WARNING: Unable to validate FRU for %s\n", get_board_name_from_class(brd_class));
         return -EBADMSG;
+    }
 
     ivfru_get_bia_predefined_fields(&iv_ipmi, &product_raw, &product_len, &sn_raw, &sn_len, &pn_raw, &pn_len);
     set_ipmi_env(brd_class, product_raw, product_len, sn_raw, sn_len, pn_raw, pn_len, fdt);
@@ -468,21 +461,11 @@ int iv_ipmi_chosen( void *fdt )
 
 int iv_ipmi_scan( void *fdt )
 {
-    if ( !mb_ipmi_complete ) {
-        if ( board_scan_ipmi( IV_BOARD_CLASS_MB, fdt ) == 0 ) {
-            mb_ipmi_complete = 1;
-        }
-    }
-    if ( !io_ipmi_complete ) {
-        if ( board_scan_ipmi( IV_BOARD_CLASS_IO, fdt ) == 0 ) {
-            io_ipmi_complete = 1;
-        }
-    }
-    if ( !bp_ipmi_complete ) {
-        if ( board_scan_ipmi( IV_BOARD_CLASS_BP, fdt ) == 0 ) {
-            bp_ipmi_complete = 1;
-        }
-    }
+    board_scan_ipmi( IV_BOARD_CLASS_MB, fdt );
+    board_scan_ipmi( IV_BOARD_CLASS_IO, fdt );
+
+    // No current boards have Backplanes.  Disable to avoid console warning.
+    // board_scan_ipmi( IV_BOARD_CLASS_BP, fdt );
 
     // SET ETH MAC ADDR's
     if (sn_to_mac_unittests()) {

@@ -11,6 +11,10 @@
 
 #define IPMI_NODE_STR "iv,ipmi"
 
+// FRU fields can't exceed a size stored in a byte (in multiples of 8), 
+// i.e. 8 * 256 = 2048
+#define MAX_FRU_FIELD_SIZE 2048
+
 DECLARE_GLOBAL_DATA_PTR;
 
 static void *image_buffer;
@@ -82,6 +86,9 @@ static int ivfru_read_i2c(int bus, int addr, int offset, void *data, int size)
 {
 	int err = IVFRU_RET_SUCCESS;
 	struct udevice *dev;
+
+    if (size < 0 || size > MAX_FRU_FIELD_SIZE)
+		return IVFRU_RET_INVALID_ARGUMENT;
 
 	err = i2c_get_chip_for_busnum(bus, addr, 2, &dev);
 	if (err != 0)
