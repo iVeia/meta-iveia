@@ -514,13 +514,16 @@ fi
 #   8       0x00800000      Kernel
 #   64      0x04000000      initrd
 #   238     0x0EE00000      ZAP (size 128MB)
+#   <383    0x17f00000      Relocated initrd by U-Boot using initrd_high (zynq only)
+#   <384    0x18000000      Relocated DTB by U-Boot using fdt_high (zynq only)
 #   384     0x18000000      ivinstall tarball (with pre-header)
 #   ...
 #   >=512   0x20000000      Phys mem top (up to 4GB on some boards)
 #
 # Note: U-Boot is initially loaded at 128MB on ZynqMP (64MB on Zynq).  However,
 # it gets relocated to just below the end of memory so we can safely clobber
-# the inital image.
+# the inital image.  On Zynq, fdt_high/initrd_high must be used to relocate
+# fdt/initrd.  This happens automatically on ZynqMP.
 #
 # ZAP reserves 128MB in the DTB, and this memory is blocked from use because it
 # is defined in the DTB even though it is not used in U-Boot.  The ZAP location

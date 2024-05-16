@@ -25,6 +25,8 @@ load_kernel=\
     echo Loading Linux from ${altpath}/${kernel_file}...; \
     if test ${board} = zynq; then \
         setenv kernel_file uImage; \
+        setenv initrd_high 0x17f00000; \
+        setenv fdt_high 0x18000000; \
         setenv kernel_bootcmd bootm; \
     else \
         setenv kernel_file Image; \

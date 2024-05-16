@@ -25,6 +25,8 @@ write_tarball=\
 board_config=\
     if test ${board} = zynq; then \
         echo Booting on Zynq; \
+        setenv initrd_high 0x17f00000; \
+        setenv fdt_high 0x18000000; \
         setenv kernel_bootcmd bootm; \
     else \
         echo Booting on ZynqMP; \
