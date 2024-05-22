@@ -29,6 +29,11 @@ POST_CONFIGURE_PATCHES_zynqmp := "\
     ${THISDIR}/files/ddr-dots.patch \
     "
 
+# Remove patch ddr-dots which fails on 00146
+POST_CONFIGURE_PATCHES_remove_00146 := "\
+    ${THISDIR}/files/ddr-dots.patch \
+    "
+
 # Remove patch ddr-dots which conflicts with helios-z8-mods
 POST_CONFIGURE_PATCHES_remove_00126 := "\
     ${THISDIR}/files/ddr-dots.patch \
@@ -55,7 +60,7 @@ FSBL_SRCS_append_00108 := " ${THISDIR}/files/00108.c"
 FSBL_SRCS_append_00114 := " ${THISDIR}/files/00114.c"
 FSBL_SRCS_append_00126 := " ${THISDIR}/files/00126.c"
 FSBL_SRCS_append_00127 := " ${THISDIR}/files/00127.c"
-FSBL_SRCS_append_00146 := " ${THISDIR}/files/00146.c"
+FSBL_SRCS_append_00146 := " ${THISDIR}/files/00104.c"
 
 YAML_COMPILER_FLAGS_append_00049 = " -DNO_CLKGEN"
 YAML_COMPILER_FLAGS_append_00102 = " -DNO_I2C"
