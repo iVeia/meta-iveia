@@ -22,7 +22,6 @@ load_fpga=\
     ${loader} ${fpga_addr} ${altpath}/${fpga_file} && fpga loadb 0 ${fpga_addr} ${filesize}; \
     true
 load_kernel=\
-    echo Loading Linux from ${altpath}/${kernel_file}...; \
     if test ${board} = zynq; then \
         setenv kernel_file uImage; \
         setenv initrd_high 0x17f00000; \
@@ -32,10 +31,11 @@ load_kernel=\
         setenv kernel_file Image; \
         setenv kernel_bootcmd booti; \
     fi; \
+    echo Loading Linux from ${altpath}/${kernel_file}...; \
     ${loader} ${kernel_addr} ${altpath}/${kernel_file}
 load_fdt=\
-    echo Loading FDT from ${altpath}/${fdt_file}...; \
     run set_fdt_file; \
+    echo Loading FDT from ${altpath}/${fdt_file}...; \
     ${loader} ${fdt_addr} ${altpath}/${fdt_file} \
     fdt addr ${fdt_addr};            
 load_fdto=\
