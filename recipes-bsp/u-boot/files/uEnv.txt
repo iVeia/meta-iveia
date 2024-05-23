@@ -36,12 +36,13 @@ load_kernel=\
 load_fdt=\
     run set_fdt_file; \
     echo Loading FDT from ${altpath}/${fdt_file}...; \
-    ${loader} ${fdt_addr} ${altpath}/${fdt_file} \
-    fdt addr ${fdt_addr};            
+    ${loader} ${fdt_addr} ${altpath}/${fdt_file}; \
+    fdt addr ${fdt_addr}
 load_fdto=\
     echo Loading FDT Overlay from ${altpath}/${fdto_file} if exists...; \
-    ${loader} ${fdto_addr} ${altpath}/${fdto_file} \
-        && fdt addr ${fdt_addr} && fdt resize 0x1000 && fdt apply ${fdto_addr}; \
+    if ${loader} ${fdto_addr} ${altpath}/${fdto_file}; then \
+        fdt addr ${fdt_addr} && fdt resize 0x1000 && fdt apply ${fdto_addr}; \
+    fi; \
     true
 load_initrd_else_sdrootfs=\
     echo Loading initrd from ${altpath}/${initrd_file} if exists...; \
