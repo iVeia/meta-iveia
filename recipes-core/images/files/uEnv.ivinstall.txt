@@ -8,7 +8,7 @@ fdt_addr=0x700000
 kernel_addr=0x800000
 bootenv_cmd=run board_config write_tarball defargs set_fdt_chosen boot_kernel
 defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon nozap
-initrd_addr=0x04000000
+initrd_addr=0x04400000
 tarball_addr=0x18000000
 
 # write_tarball - write the tarball loaded in RAM to SD/eMMC just after the
@@ -25,8 +25,6 @@ write_tarball=\
 board_config=\
     if test ${board} = zynq; then \
         echo Booting on Zynq; \
-        setenv initrd_high 0x17f00000; \
-        setenv fdt_high 0x18000000; \
         setenv kernel_bootcmd bootm; \
     else \
         echo Booting on ZynqMP; \

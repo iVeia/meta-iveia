@@ -16,7 +16,7 @@ fdto_file=overlay.dtbo
 fdto_addr=0x00700000
 kernel_addr=0x00800000
 initrd_file=initrd
-initrd_addr=0x04000000
+initrd_addr=0x04400000
 load_fpga=\
     echo Loading FPGA from ${altpath}/${fpga_file} if exists...; \
     ${loader} ${fpga_addr} ${altpath}/${fpga_file} && fpga loadb 0 ${fpga_addr} ${filesize}; \
@@ -24,8 +24,6 @@ load_fpga=\
 load_kernel=\
     if test ${board} = zynq; then \
         setenv kernel_file uImage; \
-        setenv initrd_high 0x17f00000; \
-        setenv fdt_high 0x18000000; \
         setenv kernel_bootcmd bootm; \
     else \
         setenv kernel_file Image; \

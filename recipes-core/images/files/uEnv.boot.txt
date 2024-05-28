@@ -8,13 +8,11 @@ fdt_addr=0x700000
 kernel_addr=0x800000
 bootenv_cmd=run board_config defargs boot_kernel
 defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon
-initrd_addr=0x04000000
+initrd_addr=0x04400000
 
 board_config=\
     if test ${board} = zynq; then \
         echo Booting on Zynq; \
-        setenv initrd_high 0x17f00000; \
-        setenv fdt_high 0x18000000; \
         setenv kernel_bootcmd bootm; \
     else \
         echo Booting on ZynqMP; \

@@ -33,7 +33,7 @@ mwr 0x00500000 0x4a544147
 dow -data uEnv.txt.bin 0x005ffff4
 dow -data system.dtb 0x00700000
 dow -data uImage 0x00800000
-dow -data initrd 0x04000000
+dow -data initrd 0x04400000
 dow -data tarball.tgz.bin 0x17fffff4
 
 # Other SW...
