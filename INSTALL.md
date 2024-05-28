@@ -52,7 +52,7 @@ that they are loaded:
   directory (see Build targets and products section above).
 - ROOTFS (REQUIRED): either of the following images found in the Yocto build
   directory (see Build targets and products section above):
-    - **`initrd`**: Linux inital RAM disk, renamed from
+    - **`initrd`**: Linux initial RAM disk, renamed from
       **`iveia-image-minimal-${MACHINE}.cpio.gz.u-boot`**.
     - Partition 3 of the SD card with the
       **`iveia-image-minimal-${MACHINE}.ext4`** image directly copied to it
