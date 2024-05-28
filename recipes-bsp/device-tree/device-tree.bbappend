@@ -9,15 +9,17 @@
 #       additionally with the user specified IVIO DTS tacked on to the end.
 #       Currently required as the method to get the IVIO DTS info into U-Boot.
 #   *_overlay.dtbo
-#       DT overlays for each ioboard from DTS source (files/ivio/*_overlay.dts)
+#       DT overlays for each ioboard from DTS source (files/ivio/{zynqmp,zynq}/*_overlay.dts)
 #
 IV_MB_DTSI = "machine/${MACHINE}.dtsi"
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+IVIO_DIR_zynqmp = "ivio/zynqmp"
+IVIO_DIR_zynq = "ivio/zynq"
 SRC_URI += " \
     file://atlas-z7-inc.dtsi \
     file://atlas-z8-inc.dtsi \
     file://machine/ \
-    file://ivio/ \
+    file://${IVIO_DIR}/ \
     "
 
 DTC_BFLAGS = "-p ${DT_PADDING_SIZE} -@ -H epapr"
@@ -39,7 +41,7 @@ do_configure_append() {
     if [ -n "${IVIO}" ]; then
         COMBO_DTS=${DT_FILES_PATH}/${MACHINE}_${IVIO}_combo.dts
         cp ${DT_FILES_PATH}/${MACHINE}.dts ${COMBO_DTS}
-        IVIO_DTS=${WORKDIR}/ivio/${IVIO}_overlay.dts
+        IVIO_DTS=${WORKDIR}/${IVIO_DIR}/${IVIO}_overlay.dts
         if [ ! -f "${IVIO_DTS}" ]; then
             bbfatal "Invalid IVIO board (${IVIO})."
         fi
@@ -47,9 +49,9 @@ do_configure_append() {
         echo "#include <${IVIO}.dtsi>" >> ${COMBO_DTS}
     fi
 
-    if [ -d ${WORKDIR}/ivio ]; then
+    if [ -d ${WORKDIR}/${IVIO_DIR} ]; then
         # DTS overlays for each ioboard
-        cp ${WORKDIR}/ivio/*_overlay.dts ${DT_FILES_PATH}
+        cp ${WORKDIR}/${IVIO_DIR}/*_overlay.dts ${DT_FILES_PATH}
     fi
 }
 
