@@ -14,7 +14,16 @@
 };
 
 &gem0 {
-    status = "disabled";
+    status = "okay";
+    phy-handle = <&phy0>;
+    phy-mode = "rgmii-id";
+};
+
+&mdio0 {
+    phy0: ethernet-phy@0 {
+        reg = <0>;
+        device_type = "ethernet-phy";
+    };
 };
 
 &gem1 {
