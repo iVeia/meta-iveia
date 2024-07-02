@@ -354,25 +354,40 @@ static void set_mac_addrs(void)
     mb_mac = mb_sn ? sn_to_mac(mb_sn) : 0;
     io_sn = iv_board_get_field(buf, IV_BOARD_CLASS_IO, IV_BOARD_FIELD_SN, IV_BOARD_SUBFIELD_NONE);
     io_mac = io_sn ? sn_to_mac(io_sn) : 0;
-    memset(macs, 0, sizeof(macs));
 
     //
     // If two SNs were found then we have four available MACs (two per SN).
-    // However, if only the IO or MB have an SN, there are only two MACs.
-    // Assign these MACs to the LAST two ETH ports, because the default for
-    // iVeia Atlas SoMs is to use the eth3 (GEM3).
     //
-    if (mb_mac && io_mac) {
-        macs[0] = mb_mac;
-        macs[1] = mb_mac + 1;
-        macs[2] = io_mac;
-        macs[3] = io_mac + 1;
-    } else if (mb_mac) {
-        macs[2] = mb_mac;
-        macs[3] = mb_mac + 1;
-    } else if (io_mac) {
-        macs[2] = io_mac;
-        macs[3] = io_mac + 1;
+    // On Zynq platforms, there are only two GEMs - so use whatever MACs are
+    // available from either the MB or IO board.
+    //
+    // On ZynqMP platforms, there are four GEMs.  However, if only one of the
+    // IO or MB have an SN, there are only two MACs available.  Assign these
+    // MACs to the LAST two ETH ports, because the default for iVeia Atlas
+    // ZynqMP SoMs is to use the eth3 (GEM3).
+    //
+    memset(macs, 0, sizeof(macs));
+    if (strcmp("zynq", CONFIG_SYS_BOARD) == 0) {
+        if (mb_mac) {
+            macs[0] = mb_mac;
+            macs[1] = mb_mac + 1;
+        } else if (io_mac) {
+            macs[0] = io_mac;
+            macs[1] = io_mac + 1;
+        }
+    } else {
+        if (mb_mac && io_mac) {
+            macs[0] = mb_mac;
+            macs[1] = mb_mac + 1;
+            macs[2] = io_mac;
+            macs[3] = io_mac + 1;
+        } else if (mb_mac) {
+            macs[2] = mb_mac;
+            macs[3] = mb_mac + 1;
+        } else if (io_mac) {
+            macs[2] = io_mac;
+            macs[3] = io_mac + 1;
+        }
     }
 
     unsigned long long mac;
