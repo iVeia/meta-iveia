@@ -34,6 +34,9 @@ SRC_URI_append = "\
 SRC_URI_append_00049 = "\
     file://uboot-00049.cfg \
     "
+SRC_URI_append_00068 = "\
+    file://uboot-00068.cfg \
+    "
 SRC_URI_append_00130 = "\
     file://uboot-00130.cfg \
     "
