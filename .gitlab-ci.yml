@@ -26,8 +26,9 @@ build-job:
 
     # Yocto caching: gitlab need to know these to cache between pipeline runs.
     # The vars are passed to make, so make can pass them to the Yocto build.
+    # ONLY downloads are cached - caching the sstate-cache can cause build
+    # issues.
     DL_DIR: cache/downloads
-    SSTATE_DIR: cache/sstate-cache
 
     # MACHINE list.
     # TODO: add back in MACHINEs that currently have broken builds: 00108
@@ -50,11 +51,10 @@ build-job:
     # These targets need to be rebuilt (if cached) in order to build in the
     # latest version stamp
     CLEAN_TGTS: fsbl-firmware u-boot-xlnx linux-xlnx xilinx-bootbin ${IVINSTALL_TGT}
-  timeout: 5h
+  timeout: 10h
   cache:
     paths:
       - $DL_DIR
-      - $SSTATE_DIR
   tags:
     - docker
   script:
@@ -91,7 +91,6 @@ build-job:
 
     - cd meta-iveia-project
     - echo "DL_DIR = \"${CI_PROJECT_DIR}/${DL_DIR}\"" >> build/conf/local.conf
-    - echo "SSTATE_DIR = \"${CI_PROJECT_DIR}/${SSTATE_DIR}\"" >> build/conf/local.conf
     - mkdir -p ${IVINSTALL_ABS_PATH}
     - |
       set -v # Required to force display multiline command
