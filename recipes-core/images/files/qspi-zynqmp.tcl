@@ -3,19 +3,73 @@
 #
 # Some parts from Xilinx's AR# 68657
 #
-connect
 
-# If given, first arg is the jtag_cable_serial wildcard string.  Use to select
-# the specific JTAG adapter.
-if {$argc > 0} {
-    set jtag_cable_serial [lindex $argv 0]
-} else {
-    set jtag_cable_serial "*"
+set usage {
+  usage: qspi-zynqmp.tcl [-hws <url>] [-xvc <url>] [-cable <serial>] [-index <n>]
+
+  options:
+    -hws <url>        Connect to hw_server, url is 'tcp:<host>:<port>'
+                      (default: use or start default hw_server).
+    -xvc <url>        Connect to xvcserver, url is 'tcp:<host>:<port>'.
+    -adapt <pattern>  Match JTAG adapter with 'pattern' (default: *).
+    -index <n>        Select the nth matching target (default: 0).
 }
 
-# Set jtag freq to a super high number (it will be adjusted to max)
-jtag targets 1
-jtag frequency 10000000000
+set arg_hws     ""
+set arg_xvc     ""
+set arg_adapt   "*"
+set arg_index   0
+set arg_extra   {}
+
+for { set index 0 } { $index < [ llength $argv ] } { incr index } {
+    switch -exact -- [ lindex $argv $index ] {
+        {-hws}       { set arg_hws        [ lindex $argv [ incr index ] ] }
+        {-xvc}       { set arg_xvc        [ lindex $argv [ incr index ] ] }
+        {-adapt}     { set arg_adapt      [ lindex $argv [ incr index ] ] }
+        {-index}     { set arg_index      [ lindex $argv [ incr index ] ] }
+        {-help}      { puts $usage; return 0 }
+        default      { lappend arg_extra  [ lindex $argv $index ] }
+    }
+}
+
+if { [llength $arg_extra] > 0 } {
+    puts "*** unrecognized arguments: $arg_extra"
+    puts $usage
+    exit 1
+}
+
+if { $arg_index != 0 } {
+    puts "*** -index not supported"
+    # TODO add support for -index on ZynqMP
+    exit 1
+}
+
+set conn_args {}
+if { $arg_hws != "" } {
+    puts "using hw_server: $arg_hws"
+    lappend conn_args "-url" $arg_hws
+}
+
+if { $arg_xvc != ""  } {
+    puts "using xvcserver: $arg_xvc"
+    lappend conn_args "-xvc-url" $arg_xvc
+}
+
+puts "connect: $conn_args"
+connect {*}$conn_args
+
+if { $arg_xvc != "" } {
+    # allow extra time for XVC to enumerate targets
+    # ('targets -timeout <sec>' did not seem to work...)
+    after 3000
+}
+
+if { $arg_xvc == "" } {
+    # Set jtag freq to a super high number (it will be adjusted to max)
+    # (jtag frequency not supported on xvcserver)
+    jtag targets 1
+    jtag frequency 10000000000
+}
 
 # Restart in JTAG mode, required as iVeia devices are fixed to QSPI bootstrap
 # See also: ZynqMP BOOT_MODE_USER (CRL_APB) Register

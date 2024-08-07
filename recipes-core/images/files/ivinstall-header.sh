@@ -78,11 +78,12 @@ unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_QSPI_DIRECT DO_VERSION ENDMSG FORC
 unset JTAG_REMOTE MODE SKIP_ROOTFS SSH_TARGET USE_INITRD USER_FAT_SIZE USER_LABEL USER_ROOTFS_SIZE
 unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE USER_TMPDIR
 unset PREPARTITION_ONLY POSTPARTITION_ONLY
+unset HW_SERVER JTAG_INDEX XILINX_VIRTUAL_CABLE
 SD_MODE=0
 SSH_MODE=1
 JTAG_MODE=2
 MODE=$SD_MODE
-while getopts "a:A:B:b:cCde:fhi:jJ:kn:opPqQs:t:vV:xX:zZ" opt; do
+while getopts "a:A:B:b:cCde:fH:hI:i:jJ:kn:opPqQs:t:vV:xX:zZ" opt; do
     case "${opt}" in
         a) JTAG_ADAPTER="$OPTARG" ;;
         A) DO_ASSEMBLE=1; EXTRACT_DIR="$OPTARG"; ONLY_OPTION="$opt"; break ;;
@@ -93,7 +94,9 @@ while getopts "a:A:B:b:cCde:fhi:jJ:kn:opPqQs:t:vV:xX:zZ" opt; do
         d) DO_COPY=1; USE_INITRD=1 ;;
         e) ENDMSG="$OPTARG"; ;;
         f) DO_FORMAT=1; ;;
-        h) help; ONLY_OPTION="$opt" ;;
+        H) HW_SERVER="$OPTARG" ;;
+        h) help; ONLY_OPTION="$opt"; break ;;
+        I) JTAG_INDEX="$OPTARG" ;;
         i) DO_COPY=1; IOBOARD="$OPTARG"; ;;
         j) MODE=$JTAG_MODE ;;
         J) JTAG_REMOTE="$OPTARG" ;;
@@ -107,7 +110,7 @@ while getopts "a:A:B:b:cCde:fhi:jJ:kn:opPqQs:t:vV:xX:zZ" opt; do
         s) MODE=$SSH_MODE; SSH_TARGET="$OPTARG" ;;
         t) USER_TMPDIR="$OPTARG"; ;;
         v) DO_VERSION=1; ONLY_OPTION="$opt"; break ;;
-        V) XILINX_VIRTUAL_CABLE="$OPTARG"; break ;;
+        V) XILINX_VIRTUAL_CABLE="$OPTARG" ;;
         x) DO_EXTRACT=1; ONLY_OPTION="$opt"; break ;;
         X) DO_EXTRACT=1; EXTRACT_DIR="$OPTARG"; ONLY_OPTION="$opt"; break ;;
         z) MODE=$SD_MODE ;;
@@ -141,7 +144,7 @@ IS_TARGET=$((IS_ZYNQMP_TARGET || IS_ZYNQ_TARGET))
 #
 # Validate arguments
 #
-[[ -z "$@" ]] || error "Extra invalid options were supplied"
+[[ -z "$@" ]] || error "Extra invalid options were supplied: $@"
 (($OPTIND <= 1)) && help
 [[ -n "$MACHINE" ]] || error "INTERNAL ERROR: mainboard not available"
 if [[ -n "$IOBOARD" ]]; then
@@ -331,14 +334,7 @@ setup_jtag()
     info "Attempting to halt target..."
     HALT_TCL_ABSPATH=$(mktemp -d)/halt.tcl
     cat <<-'EOF' > ${HALT_TCL_ABSPATH}
-		connect
-		if {$argc > 0} {
-			set jtag_cable_serial [lindex $argv 0]
-		} else {
-			set jtag_cable_serial "*"
-		}
-		targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "*APU*"}
-		stop
+		# __INSERT_YOCTO_HALT_HERE_DO_NOT_REMOVE_THIS_LINE__
 		EOF
     run_jtag_tcl halt.tcl ${HALT_TCL_ABSPATH}
 }
@@ -369,30 +365,35 @@ run_jtag_tcl()
         TMPDIR=$(mktemp -d)
         cp $JTAG_FILES $TMPDIR/
 
-        #
-        # On the fly modification of TCL script to support XVC
-        #
-        # Patch script to convert `connect` to `connect -xvc-url <arg>`.
-        # This allows the command "./ivinstall -Q -V <IPADDR>:<TCP_PORT>"
-        # to program QSPI flash over XVC.
-        #
-        # In addition, XVC doesn't support `jtag frequency`, so remove it.
-        #
+        # list of options for xsdb TCL script
+        XSDB_ARGS=""
+
+        if [[ -n "$JTAG_ADAPTER" ]]; then
+            # quote JTAG_ADAPTER to avoid shell expansion of wildcards
+            XSDB_ARGS="$XSDB_ARGS -adapt \"$JTAG_ADAPTER\""
+        fi
+
+        if [[ -n "$HW_SERVER" ]]; then
+            XSDB_ARGS="$XSDB_ARGS -hws $HW_SERVER"
+        fi
+
         if [[ -n "$XILINX_VIRTUAL_CABLE" ]]; then
-            sed -i "s/^ *connect.*/connect -xvc-url $XILINX_VIRTUAL_CABLE/" "$TMPDIR/$TCL"
-            sed -i "s/^ *jtag .*frequency.*//" "$TMPDIR/$TCL"
+            XSDB_ARGS="$XSDB_ARGS -xvc $XILINX_VIRTUAL_CABLE"
+        fi
+
+        if [[ -n "$JTAG_INDEX" ]]; then
+            XSDB_ARGS="$XSDB_ARGS -index $JTAG_INDEX"
         fi
 
         #
         # Must run from $TMPDIR dir, but must leave this function in
         # original dir - so run in subshell
         #
-        # DO NOT USE double-quote for $JTAG_ADAPTER!  If it is blank, then xsdb
-        # will still see it as a parameter, and the number of args will fail
-        # (this mean JTAG_ADAPTER can't have spaces)
+        # DO NOT USE double-quote for $XSDB_ARGS!  It is meant to be
+        # interpreted by xsdb as (maybe empty) list of command-line args.
         (
             cd $TMPDIR
-            xsdb "$TCL" $JTAG_ADAPTER
+            xsdb "$TCL" $XSDB_ARGS
         ) || error "Failed running TCL script to program QSPI flash"
 
         rm -rf $TMPDIR

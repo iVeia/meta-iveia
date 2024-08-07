@@ -17,6 +17,7 @@ HEADER = "ivinstall-header-final.sh"
 SRC_URI = "\
     file://${HEADER_ORIG} \
     file://${HEADER_DOC} \
+    file://halt.tcl \
     "
 
 S = "${WORKDIR}"
@@ -24,6 +25,7 @@ B = "${S}"
 
 VARS_INSERT_STR = "__INSERT_YOCTO_VARS_HERE_DO_NOT_REMOVE_THIS_LINE__"
 DOC_INSERT_STR = "__INSERT_YOCTO_DOC_HERE_DO_NOT_REMOVE_THIS_LINE__"
+HALT_INSERT_STR = "__INSERT_YOCTO_HALT_HERE_DO_NOT_REMOVE_THIS_LINE__"
 
 #
 # Create IV_TAR_FILE_MAP.  Format:
@@ -99,9 +101,12 @@ do_compile() {
     done
     INSERT_VARS="${INSERT_VARS}IVEIA_BUILD_DATE='${IVEIA_BUILD_DATE}'\n"
 
-    # Insert variables defs, and then the header doc into the named lines of
-    # the ivinstall-header
+    # Insert variables defs, halt script, and then the header doc into the
+    # named lines of the ivinstall-header
     sed "s/.*${VARS_INSERT_STR}.*/${INSERT_VARS}/" ${B}/${HEADER_ORIG} > ${B}/header.tmp
+    sed "s/^/\t\t/" ${B}/halt.tcl > ${B}/halt.tmp
+    sed -i "/.*${HALT_INSERT_STR}/r ${B}/halt.tmp" ${B}/header.tmp
+    sed -i "s/.*${HALT_INSERT_STR}//" ${B}/header.tmp
     sed "/${DOC_INSERT_STR}/r ${HEADER_DOC}" ${B}/header.tmp | grep -v "${DOC_INSERT_STR}" \
         > ${B}/${HEADER}
 }

@@ -162,7 +162,7 @@ FORMAT OPTIONS
         run on host via SSH or JTAG modes.  Can be used in conjunction with
         format/copy options.
 
-OTHER OPTIONS
+JTAG OPTIONS
 
     -a JTAG_ADAPTER
         Specify the JTAG_ADAPTER to use on a system with multiple adapters
@@ -182,6 +182,31 @@ OTHER OPTIONS
         Works with local or remote (-J) adapters.  Only valid in JTAG MODE (-j)
         or with QSPI reflash (-Q) option.
 
+    -H HW_SERVER
+        For JTAG operations, connect xsdb to hw_server at HW_SERVER.  By
+        default, xsdb will start or connect to a local hw_server at the default
+        port (3121).  Only valid in JTAG MODE (-j) or with -Q option.
+        HW_SERVER format is 'tcp:<host>:<port>', ex. 'tcp:127.0.0.1:3121'.
+
+    -I JTAG_INDEX
+        Select the n-th JTAG target (0-based) when performing JTAG operations.
+        This is required when working with a JTAG chain of two or more FPGAs.
+        Only valid in JTAG MODE (-j) or with -Q option.
+
+    -J JTAG_REMOTE
+        Run JTAG commands from a remote host that is connected via JTAG to a
+        target.  JTAG_REMOTE is of the same form used by ssh, i.e.
+        [user@]ip_address.  JTAG_REMOTE machine can be Linux or Windows.
+        Only valid in JTAG MODE (-j) or with -Q option.
+
+    -V XVC_SERVER
+        For JTAG operations, connect xsdb to a Xilinx Virtual Cable server
+        instead of a local JTAG adapter.  Only valid in JTAG MODE (-j) or with
+        -Q option.
+        XVC_SERVER format is 'tcp:<host>:<port>', ex. 'tcp:127.0.0.1:2541'.
+
+OTHER OPTIONS
+
     -A EXTRACT_DIR
         Assemble a new script, given a previously extracted directory of files.
         The commands:
@@ -194,12 +219,6 @@ OTHER OPTIONS
 
     -h
         Show this help message and exit.
-
-    -J JTAG_REMOTE
-        Run JTAG commands from a remote host that is connected via JTAG to a
-        target.  JTAG_REMOTE is of the same form used by ssh, i.e.
-        [user@]ip_address.  JTAG_REMOTE machine can be Linux or Windows.  Only
-        valid in JTAG MODE or with -Q option.
 
     -o
         Only boot, do not install.  Only valid in JTAG mode.  With this option,
