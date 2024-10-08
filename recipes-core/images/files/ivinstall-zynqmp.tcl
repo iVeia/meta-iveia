@@ -73,7 +73,7 @@ if { $arg_xvc == "" } {
 
 # Restart in JTAG mode, required as iVeia devices are fixed to QSPI bootstrap
 # See also: ZynqMP BOOT_MODE_USER (CRL_APB) Register
-targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "PSU"}
+targets -set -filter {jtag_cable_serial =~ "$arg_adapt" && name =~ "PSU"}
 mwr  0xff5e0200 0x0100
 rst -system
 
@@ -85,13 +85,13 @@ mwr 0xffca0038 0x1ff
 after 500
 
 # Load and run PMU FW
-targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "MicroBlaze PMU"}
+targets -set -filter {jtag_cable_serial =~ "$arg_adapt" && name =~ "MicroBlaze PMU"}
 dow pmu.elf
 con
 after 500
 
 # Reset A53, load and run FSBL
-targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "Cortex-A53 #0"}
+targets -set -filter {jtag_cable_serial =~ "$arg_adapt" && name =~ "Cortex-A53 #0"}
 rst -processor
 dow fsbl.elf
 con

@@ -66,11 +66,15 @@ set target_index [dict get $target_item jtag_device_index]
 
 targets -set -filter $target_filter -index $target_index
 
-# reset and stop the system
-# ...as a backup, add a HW breakpoint at start-of-world
-set reset_bp [bpadd -type hw -addr 0x0]
-rst -system -stop
-after 500
-bpremove $reset_bp
+if { $arg_xvc != "" } {
+    # reset and stop the system
+    # ...as a backup, add a HW breakpoint at start-of-world
+    set reset_bp [bpadd -type hw -addr 0x0]
+    rst -system -stop
+    after 500
+    bpremove $reset_bp
+} else {
+    stop
+}
 
 exit 0
