@@ -104,6 +104,21 @@ stop
 dow -data uEnv.qspi.txt.bin 0x5ffff4
 dow -data boot.bin.bin 0x6ffff4
 
+# In a normal QSPI boot, BootROM loads a device-tree from QSPI flash (BOOT.BIN)
+# to CONFIG_XILINX_OF_BOARD_DTB_ADDR=0x100000.  U-Boot is configured to use
+# this device-tree when available; otherwise, it defaults to the u-boot.dtb
+# embedded in the u-boot.elf binary.
+#
+# If FSBL is already present in QSPI flash, there may be a device-tree loaded
+# in memory.  Depending on how far the system booted before 'ivinstall' took
+# control, the in-memory device-tree may be partially corrupted by other
+# programs (...leading to a potential U-Boot init failure).
+#
+# The intention is to use the embedded device-tree.  Zero out the first
+# byte of the in-memory device-tree (part of FDT_MAGIC), forcing U-Boot
+# to use the embedded tree.
+mwr 0x100000 0x0
+
 # Other SW...
 dow u-boot.elf
 dow atf.elf

@@ -3,6 +3,8 @@ LICENSE = "CLOSED"
 
 inherit deploy
 
+PACKAGE_ARCH = "${MACHINE_ARCH}"
+
 # ivinstall depends on the final iveia image - but it can't use DEPENDS, as it
 # depends on do_populate_sysroot, which ${IVIMG} doesn't have.
 IVIMG := "iveia-image-${IMAGE_TYPE}"
