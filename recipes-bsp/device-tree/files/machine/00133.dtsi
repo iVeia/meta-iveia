@@ -1,0 +1,16 @@
+#include <atlas-z8-inc.dtsi>
+
+/ {
+    model = "00133";
+    compatible = "iveia,00133", "iveia,atlas-z8", "xlnx,zynqmp";
+};
+
+&spi1 {
+    tpm_tis@0 {
+        compatible = "tcg,tpm_tis-spi";
+        status = "okay";
+        reg = <0>;
+        spi-max-frequency = <500000>;
+    };
+};
+
