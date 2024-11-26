@@ -369,8 +369,7 @@ run_jtag_tcl()
         XSDB_ARGS=""
 
         if [[ -n "$JTAG_ADAPTER" ]]; then
-            # quote JTAG_ADAPTER to avoid shell expansion of wildcards
-            XSDB_ARGS="$XSDB_ARGS -adapt \"$JTAG_ADAPTER\""
+            XSDB_ARGS="$XSDB_ARGS -adapt $JTAG_ADAPTER"
         fi
 
         if [[ -n "$HW_SERVER" ]]; then
