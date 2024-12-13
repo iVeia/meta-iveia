@@ -41,5 +41,6 @@ and will include the applicable variants.  If a `MACHINE` has no feature sets, t
 | MACHINE     | Features                  | Variants (VV) |
 |:------------|:--------------------------|:--------------|
 | 00104       | NA                        | Any
-| 00104-fs001 | Speed -2                  | 12
+| 00104-fs001 | Speed -2, PS 4GB          | 12
+| 00104-fs002 | Speed -1, PS 8GB          | 13
 
