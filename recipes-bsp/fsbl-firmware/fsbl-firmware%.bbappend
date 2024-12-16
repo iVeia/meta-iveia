@@ -56,6 +56,8 @@ FSBL_SRCS_zynq := "\
     ${THISDIR}/files/zynq-hooks.c \
     "
 FSBL_SRCS_append_00104 := " ${THISDIR}/files/00104.c"
+FSBL_SRCS_append_00104-fs001 := " ${THISDIR}/files/00104.c"
+FSBL_SRCS_append_00104-fs002 := " ${THISDIR}/files/00104.c"
 FSBL_SRCS_append_00108 := " ${THISDIR}/files/00108.c"
 FSBL_SRCS_append_00114 := " ${THISDIR}/files/00114.c"
 FSBL_SRCS_append_00126 := " ${THISDIR}/files/00126.c"
