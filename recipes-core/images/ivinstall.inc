@@ -77,7 +77,7 @@ do_compile() {
 
     # Extract IOBOARD names from devicetree/ *_overlay.dtbo files.
     IOBOARDS=""
-    for i in $(find ${DEPLOY_DIR_IMAGE}/devicetree/ -name "*_overlay.dtbo"); do
+    for i in $(find ${DEPLOY_DIR_IMAGE}/devicetree/ -name "*_overlay.dtbo" | sort); do
         IOBOARD=$(basename "$i")
         IOBOARD="${IOBOARD%_overlay.dtbo}"
         IOBOARDS="${IOBOARDS}${IOBOARD} "
