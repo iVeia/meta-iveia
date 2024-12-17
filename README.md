@@ -23,6 +23,7 @@ iVeia IO boards (`IVIO`) supported by this layer:
 - io-captiva (PN 00074)
 - a3io-sierra (PN 00087)
 - a2io-blackwing (PN 00093)
+- a3io-rogue (PN 00096)
 - a3io-aurora (PN 00100)
 
 # Quick start
