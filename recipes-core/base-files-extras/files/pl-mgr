@@ -1,0 +1,24 @@
+#!/bin/bash
+
+#dmesg -c > /dev/null
+
+fw_dir=/lib/firmware/fpga
+sysfs_path=/sys/class/fpga_manager/fpga0
+
+case $1 in 
+
+list)
+    cd $fw_dir
+    ls *.bin
+    ;;
+load)
+    echo fpga/$2 > $sysfs_path/firmware
+    ;;
+state)
+    cat $sysfs_path/state
+    ;;
+*)
+    ;;
+esac
+
+

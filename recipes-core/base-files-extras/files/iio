@@ -1,0 +1,43 @@
+#!/bin/sh
+
+if [ $1 == "dbg" ]; then
+	dbg=1
+	shift
+elif [ $1 == "list" ]; then
+	iio_info 2>/dev/null | grep -E 'iio:device|wfrm' | sort -nk1.12
+	exit
+fi
+
+
+phy=$1
+attr=$2
+value=$3
+
+bc="/bin/bc"
+
+for i in $(find -L /sys/bus/iio/devices -maxdepth 2 -name name)
+do
+  dev_name=$(cat $i)
+  #echo $dev_name
+  if [ "$dev_name" = "${phy}" ] ; then
+    phy_path=$(echo $i | sed 's:/name$::')
+	if [ -n "$dbg" ]; then 
+		phy_path=/sys/kernel/debug/iio/$(basename $phy_path)
+	fi
+
+  	if [ "$attr" = "search" ] ; then
+		ls $phy_path | grep $value
+		exit
+	fi
+
+	if [ -n "$value" ]; then
+		echo $value > $phy_path/$attr
+	fi
+	break;
+  fi
+done
+
+value=`cat $phy_path/$attr`
+printf "IIO $phy: $attr: %s\n" "$value"
+
+exit 0

@@ -1,0 +1,37 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/pinctrl-zynqmp.h>
+#include <dt-bindings/phy/phy.h>
+
+&gem0 {
+    status = "disabled";
+};
+
+&gem1 {
+    status = "disabled";
+};
+
+&gem2 {
+    status = "disabled";
+};
+
+&gem3 {
+    status = "okay";
+    phy-handle =  <&phy0>;
+};
+
+&i2c0 {
+    mdio@41 {
+        compatible = "mdio-i2c-gen";
+        reg = <0x41>;
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        phy0: phy@1 {
+            reg = <1>;
+        };
+    };
+};

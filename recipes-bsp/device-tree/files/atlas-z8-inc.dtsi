@@ -9,10 +9,66 @@
         serial0 = &uart1;
         serial1 = &uart0;
     };
+
+    iv_ipmi: iv_ipmi {
+        compatible = "iv,ipmi";
+        #address-cells = <0x01>;
+        #size-cells = <0x01>;
+
+		// see Readme.ipmi
+
+        iv_ipmi_mb: iv_mb {
+            i2c = < 1 0x52 0 >;  // < bus_num addr offset >
+        };
+
+        iv_ipmi_io: iv_io {
+            i2c = < 0 0x53 0 >;  // < bus_num addr offset >
+        };
+	};
+
+	refclk0: silabs_clkgen_0 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <100000000>;
+	};
+
+	refclk1: silabs_clkgen_1 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <125000000>;
+	};
+
+	refclk2: silabs_clkgen_2 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <26000000>;
+	};
+
+	refclk3: silabs_clkgen_3 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <125000000>;
+	};
+
+    reserved-memory {
+        #address-cells = <0x02>;
+        #size-cells = <0x02>;
+        ranges;
+
+        iv_zap_pool: iv_zap_pool@0xee00000 {
+            reg = <0x00 0xee00000 0x00 0x8000000>;
+        };
+    };
 };
 
 &pss_ref_clk {
     clock-frequency = <50000000>;
+};
+
+&psgtr {
+	status = "okay";
+	clocks = <&refclk0>, <&refclk1>, <&refclk2>, <&refclk3>;
+	clock-names = "ref0", "ref1", "ref2", "ref3";
 };
 
 /*
@@ -101,14 +157,15 @@
     status = "okay";
     pinctrl-names = "default";
     pinctrl-0 = <&pinctrl_usb0_default>;
+    phy-names = "usb3-phy";
+    // PSGTR Lane 0, USB0, PSGTR refclk2 (26MHz)
+    phys = <&psgtr 0 PHY_TYPE_USB3 0 2>;
 };
 
 &dwc3_0 {
     status = "okay";
     dr_mode = "host";
     snps,usb3_lpm_capable;
-    phy-names = "usb3-phy";
-    phys = <&lane0 PHY_TYPE_USB3 0 2 26000000>;
     maximum-speed = "super-speed";
 };
 
@@ -155,9 +212,18 @@
     };
 
     iveia_ocp {
-        compatible = "iveia,ocp";
+        compatible = "iv,ocp";
         reg = <0x0 0x80000000 0x0 0x20000000 0x0 0x90000000 0x0 0x01000000 0x0 0x94000000 0x0 0x01000000>;
         reg-names = "full", "events", "io-board";
+    };
+
+    iv_zap {
+        compatible = "iveia,zap";
+        memory-region = <&iv_zap_pool>;
+        num-devices = <0x10>;
+        reg = <0x00 0x98000000 0x00 0x1000>;
+        irq = <0x69>;
+        pool-sizes = <0x00 0x4000000 0x00 0x4000000>;
     };
 };
 

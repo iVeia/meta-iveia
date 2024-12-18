@@ -1,0 +1,46 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/pinctrl-zynqmp.h>
+#include <dt-bindings/phy/phy.h>
+
+&iv_ipmi_io {
+    i2c = < 0 0x53 0 >;  // < bus_num addr offset >
+    wp {
+        i2c_gpio = < 0 0x22 8 1 >; // < bus_num addr gpio_num active_state >
+    };
+};
+
+&gem0 {
+    status = "okay";
+    phy-handle = <&phy0>;
+    phy-mode = "rgmii-id";
+};
+
+&mdio0 {
+    phy0: ethernet-phy@0 {
+        reg = <0>;
+        device_type = "ethernet-phy";
+    };
+};
+
+&gem1 {
+    status = "disabled";
+};
+
+&i2c0 {
+    tca6424@22 {
+        compatible = "ti,tca6424";
+        reg = <0x22>;
+        gpio-controller;
+        #gpio-cells = <0x02>;
+    };
+
+    tmp112@48 {
+        compatible = "ti,tmp112";
+        reg = <0x48>;
+    };
+};
+

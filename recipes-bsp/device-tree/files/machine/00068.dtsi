@@ -1,0 +1,51 @@
+#include <atlas-z7-inc.dtsi>
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+    model = "Atlas-II Z7x";
+    compatible = "iveia,00068", "iveia,atlas-z7", "xlnx,zynq-7000";
+
+    aliases {
+        mdio-gpio0 = &mdio0;
+    };
+
+    mdio0: ethernet-phy {
+        compatible = "virtual,mdio-gpio";
+        gpios = <&mb_gpio_expander 1 GPIO_ACTIVE_HIGH>, /* MDC */
+            <&mb_gpio_expander 0 GPIO_ACTIVE_HIGH>; /* MDIO */
+        #address-cells = <1>;
+        #size-cells = <0>;
+    };
+};
+
+&gem0 {
+    status = "disabled";
+};
+
+&gem1 {
+    status = "disabled";
+};
+
+&i2c1 {
+    status = "okay";
+
+	temp_sensor: temp_sensor@48 {
+		compatible = "ti,tmp112";
+        reg = <0x48>;
+        // temp_alert routed through pl, thus not enabled here                  
+    };
+
+    mb_gpio_expander: gpio_expander@70 {
+        compatible = "nxp,pca9538";
+        reg = <0x70>;
+        gpio-controller;
+        #gpio-cells = <2>;
+    };
+};
+
+&iv_ipmi_mb {
+    wp {
+        i2c_gpio = <1 0x70 6 1>;
+    };
+};
+

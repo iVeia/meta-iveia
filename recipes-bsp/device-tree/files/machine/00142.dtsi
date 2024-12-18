@@ -1,0 +1,59 @@
+#include <atlas-z7-inc.dtsi>
+
+/ {
+    model = "Helios Z7 PCIe";
+    compatible = "iveia,00142", "iveia,atlas-z7", "xlnx,zynq-7000";
+
+    aliases {
+        serial0 = &uart0;
+        serial1 = &uart1;
+    };
+};
+
+&iv_ipmi {
+    /delete-node/ iv_mb;
+    /delete-node/ iv_io;
+
+	iv_mb {
+		qspi = < 0 0 0xff000 >;  // < bus_num chip_sel offset >
+	};
+
+    iv_io {
+        qspi = < 0 0 0xfe000 >;  // < bus_num chip_sel offset >
+    };
+};
+
+&sdhci0 {
+    status = "disabled";
+};
+
+&sdhci1 {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&pinctrl_sdhci1_default>;
+};
+
+&pinctrl0 {
+    pinctrl_sdhci1_default: sdhci1-default {
+        mux {
+            groups = "sdio1_3_grp";
+            function = "sdio1";
+        };
+
+        conf {
+            groups = "sdio1_3_grp";
+            slew-rate = <0>;
+            io-standard = <1>;
+            bias-disable;
+        };
+    };
+};
+
+&usb0 {
+    status = "okay";
+    dr_mode = "peripheral";
+};
+
+&usb1 {
+    status = "disabled";
+};

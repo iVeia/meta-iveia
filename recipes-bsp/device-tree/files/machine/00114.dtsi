@@ -1,0 +1,12 @@
+#include <atlas-z8-inc.dtsi>
+
+/ {
+    model = "Atlas-III Z8e";
+    compatible = "iveia,00114", "iveia,atlas-z8", "xlnx,zynqmp";
+};
+
+&usb0 {
+    // PSGTR Lane 0, USB0, PSGTR refclk0 (100MHz)
+	phys = <&psgtr 0 PHY_TYPE_USB3 0 0>;
+};
+

@@ -1,0 +1,44 @@
+#!/bin/bash
+
+if [ -z $1 ]; then
+	echo "$0 ERR: input file not supplied"
+	exit -1
+fi	
+
+function fini {
+	if [ -n "$tmp_preproc" ]; then
+		rm -rf $tmp_preproc
+	fi
+}
+trap fini EXIT
+
+DTC=dtc
+
+infile=$1
+extension="${infile##*.}"
+filename="${infile%.*}"
+
+printf "file = $filename; ext = $extension\n"
+
+
+if [ "$extension" == "dtb" ]; then
+	printf "DTB->DTS: $filename\n"
+	$DTC -I dtb -O dts -o $filename.dts $filename.dtb
+elif [ "$extension" == "dts" ]; then
+	printf "DTS->DTB: $filename\n"
+	tmp_preproc=`mktemp`
+	cpp -nostdinc -I . -undef -x assembler-with-cpp  $infile $tmp_preproc
+	$DTC -I dts -O dtb -o $filename.dtb -@ $tmp_preproc
+elif [ "$extension" == "dtbo" ]; then
+	printf "DTBO->DTSO: $filename\n"
+	$DTC -I dtb -O dts -o $filename.dtso $filename.dtbo
+elif [ "$extension" == "dtso" ]; then
+	printf "DTSO->DTBO: $filename\n"
+	tmp_preproc=`mktemp`
+	cpp -nostdinc -I . -undef -x assembler-with-cpp  $infile $tmp_preproc
+	$DTC -@ -I dts -O dtb -o $filename.dtbo $tmp_preproc
+else
+	printf "undefined file type: $filename\n"
+	exit -1
+fi
+

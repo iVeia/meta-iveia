@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/iveia/zap.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: iVeia ZAP device
+
+maintainers:
+  - Brian Silverman <bsilverman@iveia.com>
+
+description: |
+  iVeia ZAP
+
+properties:
+  compatible:
+    const: iveia,zap
+
+  reg:
+    description: ZAP physical 64-bit address and 64-bit size
+
+  memory-region:
+    description: phandle to reserved-memory node for ZAP buffer pool
+
+  num-devices:
+    description: Number of ZAP channels
+
+  irq:
+    description: ZAP interrupt
+
+  pool-sizes:
+    description: 64-bit TX and RX pool sizes.  Total size must be less than
+    reserved memory size.
+
+required:
+  - compatible
+  - reg
+  - memory-region
+  - irq
+  - pool-sizes
+
+additionalProperties: false
+
+examples:
+  - |
+    / {
+        reserved-memory {
+            #address-cells = <0x02>;
+            #size-cells = <0x02>;
+            ranges;
+
+            iv_zap_pool: iv_zap_pool@0xee00000 {
+                reg = <0x00 0xee00000 0x00 0x8000000>;
+            };
+        };
+    };
+    iv_zap {
+        compatible = "iveia,zap";
+        memory-region = <&iv_zap_pool>;
+        num-devices = <0x10>;
+        reg = <0x00 0x98000000 0x00 0x1000>;
+        irq = <0x69>;
+        pool-sizes = <0x00 0x4000000 0x00 0x4000000>;
+    };
+
+...

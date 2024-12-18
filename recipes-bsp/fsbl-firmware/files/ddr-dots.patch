@@ -1,0 +1,17 @@
+diff -urN a/fsbl-firmware/psu_init.c b/fsbl-firmware/psu_init.c
+--- a/fsbl-firmware/psu_init.c	2023-11-17 20:08:05.859443569 +0000
++++ b/fsbl-firmware/psu_init.c	2023-11-17 20:08:47.699974952 +0000
+@@ -22832,9 +22832,12 @@
+ 	status &=  psu_peripherals_pre_init_data();
+ 	status &=   psu_pll_init_data();
+ 	status &=   psu_clock_init_data();
++	status &=  psu_peripherals_init_data();
++    outbyte('+'); usleep(1000);
+ 	status &=  psu_ddr_init_data();
++    outbyte('.'); usleep(1000);
+ 	status &=  psu_ddr_phybringup_data();
+-	status &=  psu_peripherals_init_data();
++    outbyte('-'); usleep(1000);
+ 	status &=  init_serdes();
+ 	init_peripheral();
+ 

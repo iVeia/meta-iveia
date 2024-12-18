@@ -1,0 +1,124 @@
+#!/bin/bash
+
+exp_port_pin() {
+    echo $(( $1 * 8 + $2 ))
+}
+
+declare -A in
+declare -A out
+
+# 24-bit GPIO Expander - i2c-0 @ 0x22 (GPIO Base = 302)
+GPIO_EXP_22_BASE=310
+in+=(
+[slot-id-0]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 0 0) ))
+[slot-id-1]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 0 1) ))
+[temp-int-n]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 0 4) ))
+[ms-18]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 2 4) ))
+)
+out+=(
+[usb-0-ld-en]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 0 2) ))
+[usb-1-ld-en]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 0 3) ))
+[ee-we-n]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 1 0) ))
+[master-exp]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 1 1) ))
+[ready-exp]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 1 2) ))
+[enable-exp]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 1 3) ))
+[pcie-persist-n-exp]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 2 2) ))
+[pcie-wake-n-exp]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 2 3) ))
+[usb-1-id-lo]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 2 5) ))
+[usb-0-id-lo]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 2 6) ))
+[tp]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 2 7) ))
+)
+
+# SoC GPIO
+GPIO_SOC_BASE=334
+in+=(
+[usb-1-fault-n]=$(( $GPIO_SOC_BASE + 10 ))
+[usb-0-fault-n]=$(( $GPIO_SOC_BASE + 11 ))
+[pcie-persist-n-mio]=$(( $GPIO_SOC_BASE + 18 ))
+[pcie-wake-n-mio]=$(( $GPIO_SOC_BASE + 19 ))
+[ready-mio]=$(( $GPIO_SOC_BASE + 26 ))
+[master-mio]=$(( $GPIO_SOC_BASE + 27 ))
+[enable-mio]=$(( $GPIO_SOC_BASE + 31 ))
+)
+out+=(
+)
+
+usage="\
+$(basename $0) usage:
+    help - print usage
+    list - print list of gpio
+    status - print detailed list of all IO and current state
+    <io name> [0|1|in]
+        0|1: The io pin will be set to this logic level in OUTPUT mode. (Should be used only for output type pins)
+        in: The input level of the io pin will be read in INPUT mode.
+        (argument not specified): The input level of the io pin will be read in the existing (input/output) mode.
+"
+
+case $1 in
+    help)
+        printf "$usage\n"
+        exit 0
+        ;;
+    list)
+        for i in "${!in[@]}"; do printf "$i "; done
+        for o in "${!out[@]}"; do printf "$o "; done
+        printf "\n"
+        exit
+        ;;
+    status|"")
+        printf "Inputs:\n"
+        for i in "${!in[@]}";
+        do
+            status=`$0 $i`
+            printf "  $status\n"
+        done
+        printf "Outputs:\n"
+        for o in "${!out[@]}";
+        do
+            status=`$0 $o`
+            printf "  $status\n"
+        done
+        exit
+        ;;
+esac
+
+signal=$1
+
+if [[ "${!in[@]}" =~ "$signal" ]]; then
+    pin=${in[$signal]}
+    dir="in"
+elif [[ "${!out[@]}" =~ "$signal" ]]; then
+    dir="out"
+    pin=${out[$signal]}
+fi
+
+if [ -z "$pin" ]; then
+    printf $usage
+    exit -1
+fi
+
+if [ ! -d /sys/class/gpio/gpio$pin ]; then
+    echo $pin > /sys/class/gpio/export
+fi
+
+if [ "$2" == "in" ]; then
+    dir="in"
+fi
+
+if [ -n "$2" ]; then
+    echo $dir > /sys/class/gpio/gpio$pin/direction
+
+    # $2 = 0|1
+    if [ "$2" != "in" ]; then
+        if [ "$dir" = "out" ]; then
+            echo $2 > /sys/class/gpio/gpio$pin/value
+        else
+            echo "WARNING: Ignoring the [value = $2] argument because the specified signal pin ($signal) is an INPUT pin."
+        fi
+    fi
+fi
+
+value=`cat /sys/class/gpio/gpio$pin/value`
+
+printf "$signal: $value\n"
+exit $value

@@ -1,0 +1,29 @@
+#include <machine/00104.dtsi>
+
+/ {
+    model = "Atlas-III Z8 Speed -2";
+    compatible = "iveia,00104-fs001", "iveia,00104", "iveia,atlas-z8", "xlnx,zynqmp";
+};
+
+/*
+ * Based off of 00104.dtsi but for speed -2 device, with APLL set to 1325MHz
+ */
+&cpu_opp_table {
+    opp00 {
+        opp-hz = /bits/ 64 <1325000000>;
+    };
+
+    opp01 {
+        opp-hz = /bits/ 64 <662500000>;
+    };
+
+    opp02 {
+        opp-hz = /bits/ 64 <441666666>;
+    };
+
+    opp03 {
+        opp-hz = /bits/ 64 <331250000>;
+    };
+};
+
+

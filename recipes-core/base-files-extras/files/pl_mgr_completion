@@ -1,0 +1,22 @@
+_pl_mgr_complete()
+{
+    local cur prev opts
+ 
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+ 
+    case "${prev}" in
+    pl-mgr)
+	opts="list state load"
+        ;;
+    load)
+	opts=`pl-mgr list`
+        ;;
+    *)
+       ;;
+    esac
+ 
+    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+}
+complete -F _pl_mgr_complete pl-mgr

@@ -1,0 +1,40 @@
+#!/bin/bash
+
+SIZE_MB=1024
+TMPDIR="/media/data/"
+
+TMPFILE=`mktemp -p $TMPDIR -t sd_rw.XXXXXX` || {
+        echo "Failed to create temporary file in $PATH. Please make sure the path exists and try again."
+        exit -1
+}
+echo "Writing $SIZE_MB MiB of data from /dev/zero to SD card (Temp file: $TMPFILE)"
+start=`date +%s`
+dd if=/dev/zero of=$TMPFILE bs=1M count=$SIZE_MB > /dev/null 2>&1
+sync
+end=`date +%s`
+duration=$(echo "$end - $start" | bc -l)
+if [ "$duration" != "0" ]; then
+        speed_MBps=$(echo "scale=3; $SIZE_MB / $duration" | bc -l)
+else
+        speed_MBps=0
+fi
+echo "Write Speed (MB/s): $speed_MBps"
+echo "Write Duration (s): $duration"
+
+echo 3 > /proc/sys/vm/drop_caches
+echo "Reading back the data from the SD card"
+start=`date +%s`
+dd if=$TMPFILE of=/dev/null bs=1M count=$SIZE_MB > /dev/null 2>&1
+end=`date +%s`
+duration=$(echo "$end - $start" | bc -l)
+if [ "$duration" != "0" ]; then
+        speed_MBps=$(echo "scale=3; $SIZE_MB / $duration" | bc -l)
+else
+        speed_MBps=0
+fi
+echo "Read Speed (MB/s): $speed_MBps"
+echo "Read Duration (s): $duration"
+
+echo
+echo "Removing temporary file $TMPFILE."
+rm $TMPFILE

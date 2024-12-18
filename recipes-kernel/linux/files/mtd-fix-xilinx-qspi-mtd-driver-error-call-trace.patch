@@ -44,7 +44,7 @@ read, and write) the flash.  However, it appears to be the result of incorrect
 of_node_get/put() usage, which could potentially cause a fault.
 
 The issue appears to be that the function spi_nor_scan() in
-drivers/mtd/spi-nor/spi-nor.c improperly uses of_get_next_parent() 3 times.
+drivers/mtd/spi-nor/core.c improperly uses of_get_next_parent() 3 times.
 Specifically, as noted in the of_get_next_parent() header comments:
 
 /**
@@ -90,40 +90,40 @@ Finally, here's my device tree snippet:
     };
 };
 ---
- drivers/mtd/spi-nor/spi-nor.c | 6 +++---
+ drivers/mtd/spi-nor/core.c | 6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c
-index a352c90..71a4a0c 100644
---- a/drivers/mtd/spi-nor/spi-nor.c
-+++ b/drivers/mtd/spi-nor/spi-nor.c
-@@ -3503,7 +3503,7 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
- 	mtd->_erase = spi_nor_erase;
- 	mtd->_read = spi_nor_read;
- #ifdef CONFIG_OF
--	np_spi = of_get_next_parent(np);
-+	np_spi = of_get_parent(np);
- 	if ((of_property_match_string(np_spi, "compatible",
- 		    "xlnx,zynq-qspi-1.0") >= 0) ||
- 			(of_property_match_string(np_spi, "compatible",
-@@ -3658,7 +3658,7 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
- 		nor->addr_width = info->addr_width;
- 	} else if (mtd->size > 0x1000000) {
+
+diff --git a/drivers/mtd/spi-nor/core.c b/drivers/mtd/spi-nor/core.c
+index 8443910ba11c..bb8456cc9f09 100644
+--- a/drivers/mtd/spi-nor/core.c
++++ b/drivers/mtd/spi-nor/core.c
+@@ -3644,7 +3644,7 @@ static int spi_nor_set_addr_width(struct spi_nor *nor)
+ 
+ 	if (nor->addr_width == 3 && nor->mtd.size > 0x1000000) {
  #ifdef CONFIG_OF
 -		np_spi = of_get_next_parent(np);
 +		np_spi = of_get_parent(np);
  		if (of_property_match_string(np_spi, "compatible",
  					     "xlnx,zynq-qspi-1.0") >= 0) {
  			int status;
-@@ -3681,7 +3681,7 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
- 			    info->flags & SPI_NOR_4B_OPCODES)
- 				spi_nor_set_4byte_opcodes(nor, info);
- 			else {
+@@ -3667,7 +3667,7 @@ static int spi_nor_set_addr_width(struct spi_nor *nor)
+ 			    nor->info->flags & SPI_NOR_4B_OPCODES) {
+ 				spi_nor_set_4byte_opcodes(nor);
+ 			} else {
 -				np_spi = of_get_next_parent(np);
 +				np_spi = of_get_parent(np);
  				if (of_property_match_string(np_spi,
- 						"compatible",
- 						"xlnx,xps-spi-2.00.a") >= 0) {
--- 
+ 							     "compatible",
+ 							     "xlnx,xps-spi-2.00.a") >= 0) {
+@@ -3831,7 +3831,7 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
+ 	mtd->_read = spi_nor_read;
+ 	nor->page_size = nor->params->page_size;
+ #ifdef CONFIG_OF
+-	np_spi = of_get_next_parent(np);
++	np_spi = of_get_parent(np);
+ 	if (((of_property_match_string(np_spi, "compatible",
+ 				       "xlnx,zynq-qspi-1.0") >= 0) ||
+ 		(of_property_match_string(np_spi, "compatible",
+--
 2.7.4
-

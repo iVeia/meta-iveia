@@ -2,8 +2,9 @@
 
 ## Install
 
-ivinstall is a bitbake build target that creates a single installable image
-that includes all of the necessary images for the target.
+`ivinstall-minimal` and `ivinstall-full` are bitbake build targets that creates
+a single installable image that includes all of the necessary images for the
+target.
 
 The installer can install binaries to an SD card, over the network, or over
 JTAG.  In addition, it can install to the eMMC on the SoM (if available), and
@@ -51,7 +52,7 @@ that they are loaded:
   directory (see Build targets and products section above).
 - ROOTFS (REQUIRED): either of the following images found in the Yocto build
   directory (see Build targets and products section above):
-    - **`initrd`**: Linux inital RAM disk, renamed from
+    - **`initrd`**: Linux initial RAM disk, renamed from
       **`iveia-image-minimal-${MACHINE}.cpio.gz.u-boot`**.
     - Partition 3 of the SD card with the
       **`iveia-image-minimal-${MACHINE}.ext4`** image directly copied to it
@@ -74,7 +75,7 @@ In the commands below, the **MACHINE** should reflect the target in use (see the
 
 Using the ivinstall script, you can run:
 ```
-./ivinstall-${MACHINE} -Q
+./ivinstall-full-${MACHINE} -Q
 ```
 The above requires the Xilinx utility **xsdb** is runnable from the user's PATH.
 

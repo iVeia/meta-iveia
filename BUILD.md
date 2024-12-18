@@ -12,24 +12,22 @@ the full suite of software requires:
 
 See [Xilinx's instructions](https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18841862/Install+and+Build+with+Xilinx+Yocto) for more information about the meta-xilinx layer and build process.
 
-iVeia provides the primary target `iveia-image-*`, described in the next
-section.  In addition is provides an `ivinstall` target that creates a single
-installable image.
-
-Tagged iVeia versions are based off of a specific Xilinx version included in
-the tag followed by an iVeia version number, e.g. `2019.2-1.0`.
+The primary targets are `ivinstall-minimal` and `ivinstall-full`, which both
+create a single installable image that includes all of the binaries described
+in the next section.  See [INSTALL](INSTALL.md) for more information.
 
 The first time download and build steps are as shown below.  For convenience, a
-download script is avaiable to simplify the process - see
-[README](README.md).
+download script is avaiable to simplify the process.  The Xilinx version
+(YYYY.M) in the first step MUST be replaced by the compatible Xilinx version
+specified in the [README](README.md).
+
 ```
-IVEIA_TAG=<CHOOSE THE LATEST TAGGED VERSION, I.E. 2019.2-M.N>
-repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-v2019.2          # Xilinx step
-repo sync                                                                        # Xilinx step
-git clone -b $IVEIA_TAG git://github.com/iVeia/meta-iveia.git sources/meta-iveia # clone meta-iveia
-source setupsdk                                                                  # Xilinx step
-bitbake-layers add-layer ../sources/meta-iveia                                   # add meta-iveia
-MACHINE=<CHOOSE FROM SUPPORTED MACHINES ABOVE> bitbake ivinstalll                # build iveia target
+repo init -u git://github.com/Xilinx/yocto-manifests.git -b rel-vYYYY.M     # Xilinx step
+repo sync                                                                   # Xilinx step
+git clone git://github.com/iVeia/meta-iveia.git sources/meta-iveia          # clone meta-iveia
+source setupsdk                                                             # Xilinx step
+bitbake-layers add-layer ../sources/meta-iveia                              # add meta-iveia
+MACHINE=<CHOOSE FROM SUPPORTED MACHINES> bitbake ivinstall-full             # build iveia target
 ```
 
 After the first run, all future runs require `source setupsdk` to setup
@@ -66,8 +64,7 @@ final build products are:
   boot process.
 
 The `MACHINE` used above maps directly to an iVeia SoM. For example, the
-Atlas-II-Z8 HP (board 00122), with the canonical name "atlas-ii-z8-hp", is also
-used as the `MACHINE`.
+Atlas-II-Z8 HP (board 00122), uses the name `MACHINE=00122`.
 
 The `IVIO` variable is optional, and can be specified as a command line
 environment variable or a configuration setting.  It defines an iVeia IO board

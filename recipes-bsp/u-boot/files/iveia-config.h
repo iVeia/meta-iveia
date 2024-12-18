@@ -2,9 +2,9 @@
     "bootenv_addr=0x600000\0" \
     "bootenv_file=uEnv.txt\0" \
     "boot_targets=mmc0 mmc1 dhcp\0" \
-    "loadenv_mmc0=load mmc 0 ${bootenv_addr} ${bootenv_file}\0" \
-    "loadenv_mmc1=load mmc 1 ${bootenv_addr} ${bootenv_file}\0" \
-    "loadenv_dhcp=dhcp ${bootenv_addr} ${bootenv_file}\0" \
+    "loadenv_mmc0=load mmc 0 ${bootenv_addr} ${altpath}/${bootenv_file}\0" \
+    "loadenv_mmc1=load mmc 1 ${bootenv_addr} ${altpath}/${bootenv_file}\0" \
+    "loadenv_dhcp=dhcp ${bootenv_addr} ${altpath}/${bootenv_file}\0" \
     "jtag_boot_magic=4a544147\0" \
     "loadenv_jtag=\n" \
     "    setexpr scratch_addr  ${bootenv_addr} - 0x10; \n" \
@@ -39,14 +39,14 @@
     "        setenv boot_targets jtag ${boot_targets}; \n" \
     "    fi;\0" \
     "pauseboot=setenv pauseboot_on 1; boot\0" \
-    "bootseq=\n" \
+    "iv-bootseq=\n" \
     "    run zynq_test_forced_jtag; \n" \
     "    setexpr first_target sub ' .*' '' \"${boot_targets} \"; \n" \
     "    setexpr other_targets gsub \" ${first_target} \" ' ' \" ${boot_targets} \"; \n" \
     "    setenv break; \n" \
     "    for tgt in ${first_target} ${other_targets}; do \n" \
-    "        if test -z \"${break}\"; then " \
-    "            echo Attempting load of ${bootenv_file} from ${tgt}...; \n" \
+    "        if test -z \"${break}\"; then \n" \
+    "            echo Attempting load of ${altpath}/${bootenv_file} from ${tgt}...; \n" \
     "            run loadtgt; \n" \
     "            if test -n \"${bootenv_cmd}\"; then \n" \
     "                run bootenv_cmd; \n" \

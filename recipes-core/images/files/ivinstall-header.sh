@@ -30,8 +30,8 @@ error()
 {
     sync
     endmsg
-    echo "ERROR: $1"
-    echo "Run ""'""$CMD -h""'"" for usage"
+    echo "ERROR: $1" 1>&2
+    echo "Run ""'""$CMD -h""'"" for usage" 1>&2
     exit 1
 }
 
@@ -73,51 +73,63 @@ getfilesize()
 # However, long opts not supported, SAD!
 #
 SAVEARGS="$*"
-unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_QSPI_ONLY DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD
+unset ONLY_OPTION
+unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_QSPI_DIRECT DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD
 unset JTAG_REMOTE MODE SKIP_ROOTFS SSH_TARGET USE_INITRD USER_FAT_SIZE USER_LABEL USER_ROOTFS_SIZE
-unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE REPLACE REPLACE_STARTUP_SCRIPT REPLACE_EXTRA_IMAGE
+unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE USER_TMPDIR
+unset PREPARTITION_ONLY POSTPARTITION_ONLY
+unset HW_SERVER JTAG_INDEX XILINX_VIRTUAL_CABLE
 SD_MODE=0
 SSH_MODE=1
 JTAG_MODE=2
 MODE=$SD_MODE
-while getopts "a:A:B:b:cde:fhi:jJ:kn:oqQr:R:s:vxX:zZ" opt; do
+while getopts "a:A:B:b:cCde:fH:hI:i:jJ:kn:opPqQs:t:vV:xX:zZ" opt; do
     case "${opt}" in
         a) JTAG_ADAPTER="$OPTARG" ;;
-        A) DO_ASSEMBLE=1; EXTRACT_DIR="$OPTARG"; ;;
+        A) DO_ASSEMBLE=1; EXTRACT_DIR="$OPTARG"; ONLY_OPTION="$opt"; break ;;
         b) USER_FAT_SIZE="$OPTARG"; ;;
         B) USER_ROOTFS_SIZE="$OPTARG"; ;;
         c) DO_COPY=1; ;;
+        C) DO_COPY=1; DO_COPY_SELF=1; ;;
         d) DO_COPY=1; USE_INITRD=1 ;;
         e) ENDMSG="$OPTARG"; ;;
         f) DO_FORMAT=1; ;;
-        h) help ;;
+        H) HW_SERVER="$OPTARG" ;;
+        h) help; ONLY_OPTION="$opt"; break ;;
+        I) JTAG_INDEX="$OPTARG" ;;
         i) DO_COPY=1; IOBOARD="$OPTARG"; ;;
         j) MODE=$JTAG_MODE ;;
         J) JTAG_REMOTE="$OPTARG" ;;
         k) DO_COPY=1; SKIP_ROOTFS=1 ;;
         n) DO_FORMAT=1; USER_LABEL="$OPTARG"; ;;
         o) ONLY_BOOT=1 ;;
+        p) PREPARTITION_ONLY=1; DO_FORMAT=1 ;;
+        P) POSTPARTITION_ONLY=1; DO_FORMAT=1 ;;
         q) DO_QSPI=1 ;;
-        Q) DO_QSPI_ONLY=1 ;;
-        r) REPLACE=1; REPLACE_STARTUP_SCRIPT="$OPTARG"; ;;
-        R) REPLACE=1; REPLACE_EXTRA_IMAGE="$OPTARG"; ;;
+        Q) DO_QSPI_DIRECT=1 ;;
         s) MODE=$SSH_MODE; SSH_TARGET="$OPTARG" ;;
-        v) DO_VERSION=1 ;;
-        x) DO_EXTRACT=1 ;;
-        X) DO_EXTRACT=1; EXTRACT_DIR="$OPTARG"; ;;
+        t) USER_TMPDIR="$OPTARG"; ;;
+        v) DO_VERSION=1; ONLY_OPTION="$opt"; break ;;
+        V) XILINX_VIRTUAL_CABLE="$OPTARG" ;;
+        x) DO_EXTRACT=1; ONLY_OPTION="$opt"; break ;;
+        X) DO_EXTRACT=1; EXTRACT_DIR="$OPTARG"; ONLY_OPTION="$opt"; break ;;
         z) MODE=$SD_MODE ;;
         Z) FORCE_SD_MODE=1 ;;   # Undocumented option
-        \?) error "Invalid option: -$OPTARG" 1>&2; ;;
-        :) error "Invalid option: -$OPTARG requires an argument" 1>&2; ;;
+        \?) error "Invalid option: -$OPTARG" ;;
+        :) error "Invalid option: -$OPTARG requires an argument" ;;
     esac
 done
-shift $((OPTIND -1))
+ARGS_PROCESSED=$((OPTIND -1))
+if [[ -n "$ONLY_OPTION" ]] && (($# > ARGS_PROCESSED)); then
+    error "Option \"-$ONLY_OPTION\" must be used without other options"
+fi
+shift $ARGS_PROCESSED
 
 DEVICE="$1"
 shift
 
 # Environ
-PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin:"$PATH"
+PATH="${PATH}:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
 SSH_OPTS="-o ConnectTimeout=5"
 
 # Find tarball start line at end of script
@@ -132,12 +144,38 @@ IS_TARGET=$((IS_ZYNQMP_TARGET || IS_ZYNQ_TARGET))
 #
 # Validate arguments
 #
-[[ -z "$@" ]] || error "Extra invalid options were supplied"
+[[ -z "$@" ]] || error "Extra invalid options were supplied: $@"
 (($OPTIND <= 1)) && help
 [[ -n "$MACHINE" ]] || error "INTERNAL ERROR: mainboard not available"
 if [[ -n "$IOBOARD" ]]; then
     grep -q "\<$IOBOARD\>" <<<"$IOBOARDS" || error 'invalid ioboard "'$IOBOARD'"'
 fi
+if ((USER_FAT_SIZE)); then
+    FAT_SIZE=$USER_FAT_SIZE
+else
+    FAT_SIZE=$((4*1024))
+fi
+if ((USER_ROOTFS_SIZE)); then
+    ROOTFS_SIZE=$USER_ROOTFS_SIZE
+else
+    ROOTFS_SIZE=1024
+fi
+if [[ -n "$USER_LABEL" ]]; then
+    LABEL="$USER_LABEL-"
+else
+    LABEL="IVEIA-"
+fi
+
+#
+# Define partition layout.  P[1-4]_START/END are in num sectors.
+# FAT/PART2/ROOTFS sizes are in MB.
+#
+SECTORS_PER_MB=2048
+PART2_SIZE=1
+P1_START=$((1 * SECTORS_PER_MB));   P1_END=$((P1_START - 1 + FAT_SIZE * SECTORS_PER_MB))
+P2_START=$((P1_END + 1));           P2_END=$((P2_START - 1 + PART2_SIZE * SECTORS_PER_MB))
+P3_START=$((P2_END + 1));           P3_END=$((P3_START - 1 + ROOTFS_SIZE * SECTORS_PER_MB))
+P4_START=$((P3_END + 1))
 
 #
 # FORCE_SD_MODE can be easily prepended to the arg list to use SD mode,
@@ -149,7 +187,12 @@ fi
 
 extract_archive_to_TMPDIR()
 {
-    TMPDIR=$(mktemp -d)
+    if [ -n "$1" ]; then
+        TMPDIR="$1"
+        mkdir -p "$TMPDIR" || error "Could not create TMPDIR"
+    else
+        TMPDIR=$(mktemp -d)
+    fi
     on_exit() { rm -rf $TMPDIR; }
     trap on_exit EXIT
     tail -n+$ARCHIVE_START "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
@@ -159,28 +202,19 @@ extract_archive_to_TMPDIR()
 # If requested, display version and md5sums
 #
 if ((DO_VERSION)); then
-    [[ -n "$IVEIA_META_BUILD_HASH" || -n "$IVEIA_BUILD_DATE" ]] || \
-        error "INTERNAL ERROR: version not available"
-    echo "Meta commit: ${IVEIA_META_BUILD_HASH}"
+    if [[ -n "$IVEIA_NUM_LAYERS" ]]; then
+        for ((i = 1; i <= $IVEIA_NUM_LAYERS; i++)); do
+            INDIRECT_LAYER=IVEIA_META_${i}_LAYER
+            INDIRECT_BUILD_HASH=IVEIA_META_${i}_BUILD_HASH
+            echo "Layer (${!INDIRECT_LAYER}) commit: ${!INDIRECT_BUILD_HASH}"
+        done
+    else
+        echo "Versions unknown"
+    fi
+    [[ -z "$IVEIA_BUILD_DATE" ]] && IVEIA_BUILD_DATE="unknown"
     echo "Build date: ${IVEIA_BUILD_DATE}"
     echo
 
-    echo "Archive MD5SUMs:"
-    extract_archive_to_TMPDIR
-    (
-        cd $TMPDIR
-        if [[ $(uname) == Darwin ]]; then
-            verify md5 xargs
-            find . -depth +1 -type f | xargs -n1 md5 | \
-                awk -F"[() =]*" '{print $3 " " $2}' | sort -k 2 > md5sums
-        else
-            verify md5sum xargs
-            find . -type f | xargs -n1 md5sum | sort -k 2 > md5sums
-        fi
-        while read ARCH_MD5 ARCH_FILE; do
-            echo "   ${ARCH_MD5} ${ARCH_FILE}"
-        done < md5sums
-    )
     exit 0
 fi
 
@@ -193,7 +227,7 @@ if ((DO_EXTRACT)); then
         TMPDIR=$(mktemp -d)
     fi
     tail -n+$ARCHIVE_START "$CMD" | tar -xz -C "$TMPDIR" || error "Untar failed"
-    head -n+$((ARCHIVE_START-1)) "$CMD" > "$TMPDIR"/.header || error "Header extract failed"
+    head -$((ARCHIVE_START-1)) "$CMD" > "$TMPDIR"/.header || error "Header extract failed"
 
     echo "Contents extracted to:"
     echo "    $TMPDIR"
@@ -201,12 +235,12 @@ if ((DO_EXTRACT)); then
 fi
 
 if ((DO_ASSEMBLE)); then
-    # stdout intended to be redirected to a file, so all messages
+    # stdout intended to be redirected to a file, so info messages
     # must go to stderr
     info "Reassemlble Image Archive from \"$EXTRACT_DIR\"..." 1>&2
-    cd "$EXTRACT_DIR"
-    cat .header || error "header not found" 1>&2
-    tar cvzf - * || error "tar failed" 1>&2
+    cd "$EXTRACT_DIR" 2>/dev/null || error "archive directory not found"
+    cat .header || error "header not found"
+    tar cvzf - * || error "tar failed"
     exit 0
 fi
 
@@ -300,14 +334,7 @@ setup_jtag()
     info "Attempting to halt target..."
     HALT_TCL_ABSPATH=$(mktemp -d)/halt.tcl
     cat <<-'EOF' > ${HALT_TCL_ABSPATH}
-		connect
-		if {$argc > 0} {
-			set jtag_cable_serial [lindex $argv 0]
-		} else {
-			set jtag_cable_serial "*"
-		}
-		targets -set -filter {jtag_cable_serial =~ "$jtag_cable_serial" && name =~ "PSU"}
-		stop
+		# __INSERT_YOCTO_HALT_HERE_DO_NOT_REMOVE_THIS_LINE__
 		EOF
     run_jtag_tcl halt.tcl ${HALT_TCL_ABSPATH}
 }
@@ -335,19 +362,55 @@ run_jtag_tcl()
         fi
     else
         verify xsdb
-        rm -rf iv_staging
-        mkdir iv_staging
-        cp $JTAG_FILES iv_staging/
-        cd iv_staging
+        TMPDIR=$(mktemp -d)
+        cp $JTAG_FILES $TMPDIR/
+
+        # list of options for xsdb TCL script
+        XSDB_ARGS=""
+
+        if [[ -n "$JTAG_ADAPTER" ]]; then
+            XSDB_ARGS="$XSDB_ARGS -adapt $JTAG_ADAPTER"
+        fi
+
+        if [[ -n "$HW_SERVER" ]]; then
+            XSDB_ARGS="$XSDB_ARGS -hws $HW_SERVER"
+        fi
+
+        if [[ -n "$XILINX_VIRTUAL_CABLE" ]]; then
+            XSDB_ARGS="$XSDB_ARGS -xvc $XILINX_VIRTUAL_CABLE"
+        fi
+
+        if [[ -n "$JTAG_INDEX" ]]; then
+            XSDB_ARGS="$XSDB_ARGS -index $JTAG_INDEX"
+        fi
 
         #
-        # xsdb does not show download progress unless in interactive mode.  So,
-        # we use interactive mode, which would normally leave us at an
-        # interactive prompt, but we force "exit" with a bash here-string.
+        # Must run from $TMPDIR dir, but must leave this function in
+        # original dir - so run in subshell
         #
-        xsdb -interactive "$TCL" "$JTAG_ADAPTER" <<<exit \
-            || error "Failed running TCL script to program QSPI flash"
+        # DO NOT USE double-quote for $XSDB_ARGS!  It is meant to be
+        # interpreted by xsdb as (maybe empty) list of command-line args.
+        (
+            cd $TMPDIR
+            xsdb "$TCL" $XSDB_ARGS
+        ) || error "Failed running TCL script to program QSPI flash"
+
+        rm -rf $TMPDIR
     fi
+}
+
+
+unmount_all()
+{
+    # DEVICE partitions may have been mounted multiple times.  Assume not
+    # more than 5.  Assume each device has max 9 partitions.
+    for i in {1..5}; do
+        # sda style device partitions are of the form sda1
+        umount "$DEVICE"[1-9] 2>/dev/null
+        # mmcblk0 style device partitions are of the form mmcblk0p1
+        umount "$DEVICE"p[1-9] 2>/dev/null
+        sleep 1
+    done
 }
 
 
@@ -362,7 +425,7 @@ run_jtag_tcl()
 # booted into Linux.  iVeia boards all (mostly) boot from QSPI mode, so the TCL
 # script resets the processor into JTAG mode.
 #
-if ((DO_QSPI_ONLY)); then
+if ((DO_QSPI_DIRECT)); then
     setup_jtag
 
     info "Extracting archive..."
@@ -386,114 +449,129 @@ fi
 # From here on out, we're copying/formatting, and the device is required
 # (unless -q alone)
 #
-# Another exception: if ONLY_BOOT or REPLACE, then we don't care about other
-# options (except that it is JTAG mode)
+# Another exception: if ONLY_BOOT, then we don't care about other options
+# (except that it is JTAG mode)
 #
 if ((DO_FORMAT || DO_COPY)); then
     [[ -n "$DEVICE" ]] || error "DEVICE was not specified"
 fi
-if ((ONLY_BOOT || REPLACE)); then
-    ((MODE==JTAG_MODE)) || error "The -o, -r and -R options can only be used in JTAG mode (-j)"
+if ((ONLY_BOOT)); then
+    ((MODE==JTAG_MODE)) || error "The -o option can only be used in JTAG mode (-j)"
 else
     ((DO_FORMAT || DO_COPY || DO_QSPI)) || error "Either -f, -c, or -q required (or a combination)"
 fi
 if ((MODE==SD_MODE)); then
     ((DO_QSPI && !IS_TARGET)) && error "QSPI mode can only run on target"
 fi
+if ((MODE==JTAG_MODE && !DO_FORMAT)); then
+    ((ONLY_BOOT)) || error "JTAG mode requires -f"
+fi
 
 #
-# JTAG is used to fully load Linux and the run the ivinstall script.
+# JTAG is used to fully load Linux and then run the ivinstall script.
 #
 # The concept is to load all images to RAM via JTAG, and then boot.  Images are
 # then found during boot at the specific locations where they were stored.
 # Some images need to encode their length, and so have a header added (via
 # add_header()) that includes the image len and CRC.
 #
+# The ivinstall image itself is to large to store and extract in memory.
+# Instead, it is stored on the SD/eMMC that is specified as the target DEVICE.
+# This means that the target DEVICE will get overwritten, so this process only
+# works if the DEVICE is being formatted (-f).
+#
 # The process in brief:
 #   - Using xsdb (via ivinstall.tcl) load and run images to RAM:
-#       - A startup.sh script that runs ivinstall with user's arguments ($*)
-#       - ivinstall script (with a header added) in memory above Linux (via mem=xxx)
+#       - A tarball of:
+#           - A startup.sh script that runs ivinstall with user's arguments
+#           - The full ivinstall script
+#           - The ivinstall script modified to run via -p (prepartition) option
+#               and with images removed
 #       - A special uEnv.txt (with a header added) (named uEnv.ivinstall.txt)
 #       - Linux images (Image, DTB, initrd)
 #       - bootloader elf files (fsbl, ..., u-boot)
 #   - xsdb will get boot running up to U-Boot, which then:
 #       - runs the default boot command
 #       - runs loadenv_jtag, which finds/validates special uEnv.txt in RAM via JTAG
-#       - runs uEnv.txt's bootenv_cmd
-#       - insert a special startup script into device-tree/chosen
-#       - boot Linux from images already loaded in RAM via JTAG
+#       - runs uEnv.txt's bootenv_cmd, which:
+#           - writes the tarball from RAM to SD/eMMC
+#           - inserts a special startup script into device-tree/chosen
+#           - boots Linux from images already loaded in RAM via JTAG
 #   - Linux boots, and then:
 #       - runs ivstartup init.d script which finds chosen/startup
-#       - chosen/startup loads/validates startup
-#       - chosen/startup loads/validates ivinstall
-#       - run startup, which ivinstalls with user's args
+#       - chosen/startup:
+#           - partially partitions/formats the SD/eMMC, avoiding the tarball
+#           - extracts tarball from SD/eMMC into the first partition
+#       - run startup.sh, which ivinstalls with user's args, plus -P
+#           (postpartition) and -t (extract to specific temp location)
 #
-# Rough mem layout for Zynq vs ZynqMP:
-#   Zynq                    ZynqMP
-#   MB      ADDR            MB      ADDR
-#   0       0x00000000      "       "           Mem bottom
-#   5       0x00500000      "       "           JTAG magic flag (zynq only)
-#   6       0x00600000      "       "           uEnv.txt (with pre-header)
-#   7       0x00700000      "       "           DTB
-#   8       0x00800000      "       "           Kernel
-#   64      0x04000000      128     0x08000000  U-Boot
-#   128     0x80000000      256     0x10000000  initrd
-#   <383    0x17f00000      NA      NA          Relocated initrd by U-Boot using fdt_high
-#   <384    0x18000000      NA      NA          Relocated DTB by U-Boot using initrd_high
-#   384     0x18000000      512     0x20000000  Top of mem allocated to Linux (via mem=xxx)
-#   384     0x18000000      512     0x20000000  startup.sh (with header)
-#   385     0x18100000      513     0x20100000  extra_image (with header)
+# Memory layout:
+#   MB      ADDR
+#   0       0x00000000      Mem bottom
+#   5       0x00500000      JTAG magic flag (zynq only)
+#   6       0x00600000      uEnv.txt (with pre-header)
+#   7       0x00700000      DTB
+#   8       0x00800000      Kernel
+#   64      0x04000000      U-Boot before relocation (zynq only)
+#   68      0x04400000      initrd (offset to avoid U-Boot on zynq)
+#   238     0x0EE00000      ZAP (size 128MB)
+#   384     0x18000000      ivinstall tarball (with pre-header)
 #   ...
-#   >=512   0x40000000      >=1024  0x80000000  Phys mem top (up to 4GB on some boards)
+#   >=512   0x20000000      Phys mem top (up to 4GB on some boards)
 #
-# On Zynq, our minimum memory is 512M, so layout is tighter and required
-# relocation fdt/initrd.  This decreases the max initrd size available.
+# Note: U-Boot is initially loaded at 128MB on ZynqMP (64MB on Zynq).  However,
+# it gets relocated to just below the end of memory so we can safely clobber
+# the initial image.  However, during JTAG load, the initrd is loaded over JTAG
+# BEFORE u-boot is loaded/relocated.  Therefore on Zynq, we need to make sure
+# the U-Boot initial load address does not conflict with initrd.
 #
-# Xilinx changed the default U-Boot location from 64M to 128MB when going from
-# Zynq to ZynqMP, and we use that default.  If not for that change, we'd be
-# able to use the same layout for both.
+# ZAP reserves 128MB in the DTB, and this memory is blocked from use because it
+# is defined in the DTB even though it is not used in U-Boot.  The ZAP location
+# could be changed if the corresponding FPGA code is changed as well.
+# Currently, there is plenty of space for kernel, initrd, ZAP and ivinstall
+# tarball all within 512MB, so ZAP can stay where it is.
 #
 # The items with the pre-header above are shifted down by the header amount.
 # See add_header().  Also, see the tcl scripts and uEnv.txt for the exact
 # values used.
 #
-# The extra_image can be an ivinstall image, a tarball or anything.  It is
-# extracted from above Linux mem to /tmp/extra_image
-#
 if ((MODE==JTAG_MODE)); then
     setup_jtag
 
     info "Extracting Image Archive for JTAG mode..."
-    extract_archive_to_TMPDIR
+    if [[ -n "$USER_TMPDIR" ]]; then
+        extract_archive_to_TMPDIR "$USER_TMPDIR"
+    else
+        extract_archive_to_TMPDIR
+    fi
     cp "$CMD" $TMPDIR || error "Cannot copy ivinstall image to TMPDIR"
-    if [[ -n "$REPLACE_STARTUP_SCRIPT" ]]; then
-        cp "$REPLACE_STARTUP_SCRIPT" $TMPDIR/startup.sh \
-            || error "Cannot copy STARTUP_SCRIPT \"$REPLACE_STARTUP_SCRIPT\" to TMPDIR"
-    fi
-    if [[ -n "$REPLACE_EXTRA_IMAGE" ]]; then
-        cp "$REPLACE_EXTRA_IMAGE" $TMPDIR/extra_image \
-            || error "Cannot copy EXTRA_IMAGE \"$REPLACE_EXTRA_IMAGE\" to TMPDIR"
-    fi
     cd $TMPDIR
     if ((ONLY_BOOT)); then
-        echo > startup.sh
-        echo > extra_image
+        # Use empty tarball.tgz.bin - we don't use it when only booting
+        echo > tarball.tgz.bin
+        add_header jtag/uEnv.boot.txt uEnv.txt.bin
     else
-        if [[ -z "$REPLACE_STARTUP_SCRIPT" ]]; then
-            echo "bash /tmp/extra_image -Z $SAVEARGS" > startup.sh
-        fi
-        if [[ -z "$REPLACE_EXTRA_IMAGE" ]]; then
-            mv $(basename "$CMD") extra_image
-        fi
-    fi
-    add_header startup.sh startup.sh.bin
-    add_header extra_image extra_image.bin
-    add_header jtag/uEnv.ivinstall.txt uEnv.ivinstall.txt.bin
-    cp devicetree/$MACHINE.dtb system.dtb
+        echo "bash ./ivinstall -Z -t ivtmp -P $SAVEARGS" > startup.sh
+        mv $(basename "$CMD") ivinstall
+        echo "set -- -p $DEVICE" > ivinstall.preformat
+        head -$((ARCHIVE_START-1)) ivinstall >> ivinstall.preformat \
+            || error "Preformat extract failed"
+        tar czf tarball.tgz startup.sh ivinstall.preformat ivinstall
+        echo tarball_devnum=${DEVICE:0-1} >> jtag/uEnv.ivinstall.txt
+        echo tarball_sect_offset=$(printf "0x%x" ${P2_START}) >> jtag/uEnv.ivinstall.txt
 
-    JTAG_FILES="startup.sh.bin uEnv.ivinstall.txt.bin extra_image.bin jtag/ivinstall.tcl"
+        add_header tarball.tgz tarball.tgz.bin
+        add_header jtag/uEnv.ivinstall.txt uEnv.txt.bin
+    fi
+    cp devicetree/$MACHINE.dtb system.dtb
+    JTAG_FILES+=" tarball.tgz.bin uEnv.txt.bin jtag/ivinstall.tcl"
     JTAG_FILES+=" elf/* boot/*Image rootfs/initrd system.dtb"
     run_jtag_tcl ivinstall.tcl $JTAG_FILES
+
+    echo
+    info "JTAG load complete, device will now boot to Linux and run ivinstall."
+    info "Watch the serial console to confirm command completion."
+    echo
 
 elif ((MODE==SSH_MODE)); then
     verify ssh scp
@@ -522,51 +600,39 @@ elif ((MODE==SD_MODE)); then
         fi
     fi
 
-    if ((DO_FORMAT)); then
+    #
+    # Formatting is split into two parts:
+    #   1) create all partition and only format first partition (FAT)
+    #   2) format the rest of the partitions
+    # This is used for JTAG programming, and is an undocumented CLI option.  By
+    # default, when formatting both parts are done.
+    #
+    if ((DO_FORMAT && !POSTPARTITION_ONLY)); then
         verify mount umount parted mkfs.vfat mkfs.ext4 blockdev
 
         BLOCKDEV_BYTES=$(blockdev --getsize64 "$DEVICE")
         BLOCKDEV_MB=$((BLOCKDEV_BYTES/1024/1024))
-        if ((USER_FAT_SIZE)); then
-            FAT_SIZE=$USER_FAT_SIZE
-        elif ((BLOCKDEV_MB > 12000)); then
-            FAT_SIZE=$((4*1024))
-        else
-            FAT_SIZE=512
-        fi
-        if ((USER_ROOTFS_SIZE)); then
-            ROOTFS_SIZE=$USER_ROOTFS_SIZE
-        else
-            ROOTFS_SIZE=1024
-        fi
-        if [[ -n "$USER_LABEL" ]]; then
-            LABEL="$USER_LABEL-"
-        else
-            LABEL="IVEIA-"
-        fi
+        ((BLOCKDEV_MB > FAT_SIZE + ROOTFS_SIZE + 100)) \
+            || error "DEVICE size must be greater than FAT + ROOTFS sizes"
 
         #
         # Create partitions
         #
         info "Creating partitions"
-        P1_END=$FAT_SIZE
-        P2_END=$((P1_END + 1))
-        P3_END=$((P2_END + ROOTFS_SIZE))
-        umount "$DEVICE"[1-9] 2>/dev/null
-        umount "$DEVICE"p[1-9] 2>/dev/null
+        unmount_all
         if command -v wipefs &> /dev/null; then
             wipefs -a "$DEVICE" >/dev/null || error "wipefs failed.  Is device in use?"
         else
             # Use poor man's wipefs
-            dd if=/dev/zero of="$DEVICE" bs=1M count=16 status=none || \
+            dd if=/dev/zero of="$DEVICE" bs=1M count=16 2>/dev/null || \
                 error "Unable to wipe disk.  Is device in use?"
         fi
         parted -s "$DEVICE" mklabel msdos || error "mklabel failed"
-        MKPART="parted -s -a optimal "$DEVICE" mkpart primary"
-        ${MKPART} fat32 0%              $((P1_END + 1)) || error "failed to create partition 1"
-        ${MKPART} fat32 $((P1_END + 1)) $((P2_END + 1)) || error "failed to create partition 2"
-        ${MKPART} ext2  $((P2_END + 1)) $((P3_END + 1)) || error "failed to create partition 3"
-        ${MKPART} ext2  $((P3_END + 1)) 100%            || error "failed to create partition 4"
+        MKPART="parted -s "$DEVICE" mkpart primary"
+        ${MKPART} fat32 $((P1_START))s $((P1_END))s || error "failed to create partition 1"
+        ${MKPART} fat32 $((P2_START))s $((P2_END))s || error "failed to create partition 2"
+        ${MKPART} ext2  $((P3_START))s $((P3_END))s || error "failed to create partition 3"
+        ${MKPART} ext2  $((P4_START))s 100%         || error "failed to create partition 4"
         parted -s "$DEVICE" set 1 boot on || error "could not make partition 1 bootable"
     fi
 
@@ -593,8 +659,8 @@ elif ((MODE==SD_MODE)); then
                 ((j == SECS)) && error "all partitions were not created/exist on device"
                 sleep 1
             done
-            PARTS=($(lsblk -nrx NAME "$DEVICE" | awk '{print $1}'))
-            ((${#PARTS[*]} == 5)) || error "INTERNAL ERROR: failed to create all partitions"
+            PARTS=($(lsblk -nr "$DEVICE" | awk '{print $1}' | sort))
+            ((${#PARTS[*]} == 5)) || error "all partitions do not exist"
         fi
     fi
 
@@ -607,17 +673,26 @@ elif ((MODE==SD_MODE)); then
         # exist.  This issue has been reported online for years, but does not seem
         # to have a fix except for a sleep.
         #
+        # In addition, parted has a known issue that it may remount a
+        # filesystem after creating the partition if the old filesystem data is
+        # still there.  Only fix is to wipe the full block device (way slow) or
+        # unmount again - so we unmount again.
+        #
         sleep 1 # Ensure parted done
-        # Create array of partition names (including primary device first)
-        info "Formatting partition 1 as FAT32"
-        ((!MISSING_DEV)) || error "Some block devs did not complete partition"
-        mkfs.vfat -F 32 -n "${LABEL}BOOT" /dev/${PARTS[1]} || error "failed to format partition 1"
-        info "Formatting partition 2 as raw"
-        dd status=none if=/dev/zero of=/dev/${PARTS[2]} 2>/dev/null
-        info "Formatting partition 3 as ext4"
-        mkfs.ext4 -q -F -L "${LABEL}ROOTFS" /dev/${PARTS[3]}   || error "failed to format partition 3"
-        info "Formatting partition 4 as ext4"
-        mkfs.ext4 -q -F -L "${LABEL}DATA" /dev/${PARTS[4]} || error "failed to format partition 4"
+        unmount_all
+        if ((!POSTPARTITION_ONLY)); then
+            info "Formatting partition 1 as FAT32"
+            mkfs.vfat -F 32 -n "${LABEL}BOOT" /dev/${PARTS[1]} || error "failed to format part 1"
+        fi
+
+        if ((!PREPARTITION_ONLY)); then
+            info "Formatting partition 2 as raw"
+            dd status=none if=/dev/zero of=/dev/${PARTS[2]} 2>/dev/null
+            info "Formatting partition 3 as ext4"
+            mkfs.ext4 -q -F -L "${LABEL}ROOTFS" /dev/${PARTS[3]} || error "failed to format part 3"
+            info "Formatting partition 4 as ext4"
+            mkfs.ext4 -q -F -L "${LABEL}DATA" /dev/${PARTS[4]} || error "failed to format part 4"
+        fi
     fi
 
     if ((DO_COPY || DO_QSPI)); then
@@ -664,11 +739,23 @@ elif ((MODE==SD_MODE)); then
             cp -v $TMPDIR/rootfs/initrd "$MNT" || error "copy initrd failed"
         elif ((!SKIP_ROOTFS)); then
             verify e2label findmnt
+            if [ -n "$DO_COPY_SELF" ]; then
+                info "Copying ivinstall script to ext4 rootfs"
+                ext4_sz=$(stat --printf="%s" $TMPDIR/rootfs/rootfs.ext4)
+                ivinstall_sz=$(stat --printf="%s" $0)
+                resize2fs $TMPDIR/rootfs/rootfs.ext4 $((($ext4_sz + $ivinstall_sz)/1024))K
+                mkdir $TMPDIR/rootfs/mnt
+                mount -o loop $TMPDIR/rootfs/rootfs.ext4 $TMPDIR/rootfs/mnt
+                mkdir -p $TMPDIR/rootfs/mnt/home/root
+                cp $0 $TMPDIR/rootfs/mnt/home/root
+                sync
+                umount $TMPDIR/rootfs/mnt
+            fi
             info "Copying ext4 rootfs to DEVICE ($DEVICE) partition 3"
             ((${#PARTS[*]} > 3)) || error "partition 3 of $DEVICE does not exist"
             umount /dev/${PARTS[3]} 2>/dev/null
             findmnt /dev/${PARTS[3]} && error "partition 3 already mounted, cannot install rootfs"
-            dd if=$TMPDIR/rootfs/rootfs.ext4 of=/dev/${PARTS[3]} bs=1M status=none || \
+            dd if=$TMPDIR/rootfs/rootfs.ext4 of=/dev/${PARTS[3]} bs=1M 2>/dev/null || \
                 error "dd ext4 rootfs failed"
             e2label /dev/${PARTS[3]} ${LABEL}ROOTFS || \
                 (warn "ROOTFS label failed, disk label not set."; \
@@ -686,8 +773,15 @@ elif ((MODE==SD_MODE)); then
     # Sync just in case user does unsafe eject
     sync
 
-    endmsg
-    info "Done"
+    #
+    # Don not display Done message when PREPARTITION_ONLY (-p) as that option
+    # is intended to be used in in conjunction with POSTPARTITION_ONLY (-P).
+    # POSTPARTITION_ONLY displays the Done message.
+    #
+    if ((!PREPARTITION_ONLY)); then
+        endmsg
+        info "Done"
+    fi
 fi
 
 exit 0

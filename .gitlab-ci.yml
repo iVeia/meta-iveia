@@ -1,15 +1,20 @@
 stages:
   - build
   - test
+  - release
+  - deploy
 
 workflow:
   rules:
-    # Don't run pipeline on push, user must initiate it
+    # Don't run pipeline on push, user must initiate it, unless tagged release
     - if: $CI_PIPELINE_SOURCE != "push"
+    - if: $CI_COMMIT_TAG    
 
 variables:
-  IVINSTALL_REL: out/ivinstall
-  IVINSTALL: ${CI_PROJECT_DIR}/${IVINSTALL_REL}
+  IVTEST_REL_PATH: out/ivtest
+  IVINSTALL_REL_PATH: out/ivinstall
+  IVINSTALL_ABS_PATH: ${CI_PROJECT_DIR}/${IVINSTALL_REL_PATH}
+  IVINSTALL_TGT: ivinstall-full
 
 build-job:
   stage: build
@@ -21,32 +26,45 @@ build-job:
 
     # Yocto caching: gitlab need to know these to cache between pipeline runs.
     # The vars are passed to make, so make can pass them to the Yocto build.
+    # ONLY downloads are cached - caching the sstate-cache can cause build
+    # issues.
     DL_DIR: cache/downloads
-    SSTATE_DIR: cache/sstate-cache
 
+    # MACHINE list.
+    # TODO: add back in MACHINEs that currently have broken builds: 00108
     MACHINES: >-
-      atlas-ii-z8ev atlas-ii-z8-hp
+      00049
+      00068
+      00090
+      00102
+      00104
+      00114
+      00122
+      00126
+      00127
+      00130
+
     SDKS: >-
       atlas-z7
       atlas-z8
-    SDK_IMGS: >-
-      petalinux-glibc-x86_64-iveia-image-minimal-cortexa9t2hf-neon-toolchain-2019.2.sh
-      petalinux-glibc-x86_64-iveia-image-minimal-aarch64-toolchain-2019.2.sh
 
     # These targets need to be rebuilt (if cached) in order to build in the
     # latest version stamp
-    CLEAN_TGTS: fsbl u-boot-xlnx linux-xlnx xilinx-bootbin ivinstall
-  timeout: 3h
+    CLEAN_TGTS: fsbl-firmware u-boot-xlnx linux-xlnx xilinx-bootbin ${IVINSTALL_TGT}
+  timeout: 10h
   cache:
     paths:
       - $DL_DIR
-      - $SSTATE_DIR
   tags:
     - docker
   script:
+    # Save CI_JOB_URL
+    - echo BUILD_JOB_URL=$CI_JOB_URL > vars.env
+    
     - apt update
-    - apt install -y git python python3 curl gcc g++ gawk gnupg locales
-    - apt install -y make chrpath cpio wget diffstat texinfo parted
+    - apt install -y python python3 python3-distutils
+    - apt install -y git curl gcc g++ gawk gnupg locales
+    - apt install -y make chrpath cpio wget diffstat texinfo parted xxd
     - locale-gen "en_US.UTF-8"
     - export LANG=en_US.UTF-8
 
@@ -73,27 +91,30 @@ build-job:
 
     - cd meta-iveia-project
     - echo "DL_DIR = \"${CI_PROJECT_DIR}/${DL_DIR}\"" >> build/conf/local.conf
-    - echo "SSTATE_DIR = \"${CI_PROJECT_DIR}/${SSTATE_DIR}\"" >> build/conf/local.conf
-    - mkdir -p ${IVINSTALL}
+    - mkdir -p ${IVINSTALL_ABS_PATH}
     - |
       set -v # Required to force display multiline command
       SS="source setupsdk"
       for m in $MACHINES; do
         su builder -c "$SS && MACHINE=$m bitbake -c cleansstate ${CLEAN_TGTS}" || exit 1
-        su builder -c "$SS && MACHINE=$m bitbake ivinstall" || exit 1
-        cp -v build/tmp/deploy/images/$m/ivinstall-$m ${IVINSTALL} || exit 1
+        su builder -c "$SS && MACHINE=$m bitbake ${IVINSTALL_TGT}" || exit 1
+        cp -v build/tmp/deploy/images/$m/${IVINSTALL_TGT}-$m ${IVINSTALL_ABS_PATH} || exit 1
       done
+    - |
+      set -v # Required to force display multiline command
+      SS="source setupsdk"
       for s in $SDKS; do
         su builder -c "$SS && MACHINE=$s bitbake iveia-image-minimal -c populate_sdk" || exit 1
+        IMG_PREFIX=build/tmp/deploy/sdk/petalinux-glibc-x86_64-iveia-image-minimal
+        cp -v ${IMG_PREFIX}-*-${s}-toolchain-*.sh ${IVINSTALL_ABS_PATH} || exit 1
       done
-      for s in $SDK_IMGS; do
-        cp -v build/tmp/deploy/sdk/$s ${IVINSTALL} || exit 1
-      done
-    - ls -la ${IVINSTALL}
+    - ls -la ${IVINSTALL_ABS_PATH}
 
   artifacts:
     paths:
-      - ${IVINSTALL_REL}
+      - ${IVINSTALL_REL_PATH}
+    reports:
+      dotenv: vars.env
 
 test-job:
   stage: test
@@ -102,12 +123,17 @@ test-job:
   variables:
     TESTPLAN: iveia/nightly
   script:
+    # Save CI_JOB_URL
+    - echo TEST_JOB_URL=$CI_JOB_URL > vars.env
+    
+    # Get latest from origin/master, regardless of what we have locally
     - cd ~/ivtest
-    - git pull
+    - git fetch
+    - git reset --hard origin/master
 
     # link meta-iveia ivinstaller artifacts into ivtest dir
     - rm -rf ivinstall
-    - ln -sf ${IVINSTALL} ivinstall
+    - ln -sf ${IVINSTALL_ABS_PATH} ivinstall
     - ls -la ivinstall/
 
     # Install on all targets, then test all targets, and power everything off
@@ -117,7 +143,7 @@ test-job:
     - grep ^INFO ivlog/latest/logfile
 
     # Artifacts
-    - cp -r ivlog/latest/ ${CI_PROJECT_DIR}/out/ivtest
+    - cp -r ivlog/latest/ ${CI_PROJECT_DIR}/${IVTEST_REL_PATH}
 
     # Verify zero test failures
     - cat ivlog/latest/fails
@@ -126,4 +152,44 @@ test-job:
   artifacts:
     when: always
     paths:
-      - out/ivtest
+      - ${IVTEST_REL_PATH}
+    reports:
+      dotenv: vars.env
+
+release-job:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  tags:
+    - docker
+  rules:
+    - if: $CI_COMMIT_TAG    
+  script:
+    - echo 'Running release-job'
+  release:
+    tag_name: $CI_COMMIT_TAG
+    description: ${IVTEST_REL_PATH}/shortsummary.md
+    assets:
+       links:
+         - name: 'Test Results'
+           url: "${TEST_JOB_URL}/artifacts/browse/${IVTEST_REL_PATH}"
+         - name: 'Build Artifacts'
+           url: "${BUILD_JOB_URL}/artifacts/browse/${IVINSTALL_REL_PATH}"
+
+deploy-job:
+  stage: deploy
+  tags:
+    - nas
+  rules:
+    - if: $CI_COMMIT_TAG    
+  script:
+    # Verify NAS mountpoint
+    - NAS="$HOME/nas"
+    - mountpoint "$NAS"
+    - QA_DIR="$HOME/nas/SoftwareQA/ivinstall/$CI_COMMIT_TAG"
+    # Create deploy dir and deploy artifacts
+    - mkdir -p "$QA_DIR"
+    - BROWSE_URL="$CI_PROJECT_URL/-/releases/$CI_COMMIT_TAG"
+    - echo "<meta http-equiv='Refresh' content='0; url=$BROWSE_URL' />" > "$QA_DIR/${CI_COMMIT_TAG}.html"
+    - cp -r out/* "$QA_DIR"
+
+

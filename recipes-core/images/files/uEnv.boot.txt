@@ -1,0 +1,23 @@
+#
+# U-Boot environment for boot to Linux over JTAG
+#
+# Memory layout is critical, and must match addresses from the ivinstall
+# script.
+#
+fdt_addr=0x700000
+kernel_addr=0x800000
+bootenv_cmd=run board_config defargs boot_kernel
+defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon
+initrd_addr=0x04400000
+
+board_config=\
+    if test ${board} = zynq; then \
+        echo Booting on Zynq; \
+        setenv kernel_bootcmd bootm; \
+    else \
+        echo Booting on ZynqMP; \
+        setenv kernel_bootcmd booti; \
+    fi
+boot_kernel=\
+    echo Booting kernel...; \
+    ${kernel_bootcmd} ${kernel_addr} ${initrd_addr} ${fdt_addr}

@@ -1,0 +1,55 @@
+From 1ab1c7a41b54d9b94b173aa46fed131a7f201997 Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Mon, 6 Mar 2023 19:39:48 -0500
+Subject: [PATCH] iveia version banner
+
+---
+ lib/sw_apps/zynqmp_fsbl/src/xfsbl_main.c | 25 ++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/lib/sw_apps/zynqmp_fsbl/src/xfsbl_main.c b/lib/sw_apps/zynqmp_fsbl/src/xfsbl_main.c
+index d38f799e91..f0398de286 100644
+--- a/lib/sw_apps/zynqmp_fsbl/src/xfsbl_main.c
++++ b/lib/sw_apps/zynqmp_fsbl/src/xfsbl_main.c
+@@ -34,6 +34,7 @@
+ #include "xfsbl_hw.h"
+ #include "xfsbl_main.h"
+ #include "bspconfig.h"
++#include "iveia_version.h"
+ 
+ /************************** Constant Definitions *****************************/
+ 
+@@ -351,6 +352,30 @@ void XFsbl_PrintFsblBanner(void )
+ 	XFsbl_Printf(DEBUG_GENERAL, "MultiBootOffset: 0x%0x\r\n",
+ 		XFsbl_In32(CSU_CSU_MULTI_BOOT));
+ 
++	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Machine:     iVeia %s\r\n", IVEIA_MACHINE);
++	XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Src commit:  %s\r\n", IVEIA_SRC_BUILD_HASH);
++	#ifdef IVEIA_META_1_LAYER
++		XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Layer (%s) commit: %s\r\n",
++		   IVEIA_META_1_LAYER, IVEIA_META_1_BUILD_HASH);
++	#else
++		XFsbl_Printf(DEBUG_PRINT_ALWAYS, "Layer commit: unknown\r\n");
++	#endif
++	#ifdef IVEIA_META_2_LAYER
++		XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Layer (%s) commit: %s\r\n",
++		   IVEIA_META_2_LAYER, IVEIA_META_2_BUILD_HASH);
++	#endif
++	#ifdef IVEIA_META_3_LAYER
++		XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Layer (%s) commit: %s\r\n",
++		   IVEIA_META_3_LAYER, IVEIA_META_3_BUILD_HASH);
++	#endif
++	#ifdef IVEIA_META_4_LAYER
++		XFsbl_Printf(DEBUG_PRINT_ALWAYS,"Layer (%s) commit: %s\r\n",
++		   IVEIA_META_4_LAYER, IVEIA_META_4_BUILD_HASH);
++	#endif
++	#if IVEIA_NUM_LAYERS > 4
++		#error More than four meta-iveia* layers not supported
++	#endif
++
+ 	if(FsblInstance.ResetReason == XFSBL_PS_ONLY_RESET) {
+ 		XFsbl_Printf(DEBUG_GENERAL,"Reset Mode	:	PS Only Reset\r\n");
+ 	} else if (XFSBL_MASTER_ONLY_RESET == FsblInstance.ResetReason) {
+-- 
+2.25.1
+

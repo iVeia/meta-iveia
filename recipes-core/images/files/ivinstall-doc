@@ -3,7 +3,6 @@ USAGE:
     ivinstall -s SSH_TARGET [FORMAT OPTIONS] DEVICE
     ivinstall -j [-J JTAG_REMOTE] [-a JTAG_ADAPTER] [FORMAT OPTIONS] DEVICE
     ivinstall -jo [-J JTAG_REMOTE] [-a JTAG_ADAPTER]
-    ivinstall -j [-J JTAG_REMOTE] [-a JTAG_ADAPTER] [ -r STARTUP_SCRIPT ] [ -R EXTRA_IMAGE ]
     ivinstall -Q [-J JTAG_REMOTE] [-a JTAG_ADAPTER]
     ivinstall -v
     ivinstall -x
@@ -101,15 +100,15 @@ MODE OPTIONS
         requires no user intervention, and can completely reformat a target
         even if it is bricked or the network is not available.
 
-        Works by loading all images needed for Linux boot into RAM via JTAG,
-        and then booting.  In addition, a shell sourceable STARTUP_SCRIPT and
-        EXTRA_IMAGE are loaded into high RAM, and extracted once Linux boots.
-        After booting, the STARTUP_SCRIPT is sourced by the shell.  By default,
-        the EXTRA_IMAGE is the ivinstall script itself (this program), and the
-        STARTUP_SCRIPT launches the ivinstall script with user provided
-        arguments.  However, the STARTUP_SCRIPT and EXTRA_IMAGE can either be
-        ignored (with the -o option) or replaced (with the -r and/or -R
-        options).
+        Works by loading the ivinstall image (this program) and all images
+        needed for Linux boot into RAM via JTAG.  Because the ivinstall image
+        can be large (>100MB), RAM size is not always sufficient to both hold
+        the ivinstall image and it's extracted files.  Therefore, this mode
+        uses the DEVICE as a temporary hoding space for the ivinstall image.
+        As such, it overwrites existing data on the DEVICE, and so can only be
+        used with the -f (format) option when copying files to the DEVICE.
+        Other options that do not write to the DEVICE (like -o and -Q) do not
+        require using -f.
 
         Can only be run on a host.  The DEVICE refers to the device name on the
         target (see DESCRIPTION).
@@ -122,8 +121,7 @@ FORMAT OPTIONS
     an option that implies -c).
 
     -b SIZE
-        Size in MB of FAT boot partition, default 4GB (or 512MB for SD cards
-        less than 16GB).
+        Size in MB of FAT boot partition, default 4GB.
 
     -B SIZE
         Size in MB of rootfs partition, default 1024MB.
@@ -131,6 +129,13 @@ FORMAT OPTIONS
     -c
         Copy the necessary boot files to the SD card.  Copies rootfs as ext4 to
         partition 3.
+
+    -C
+        Copy this install script to /home/root of install device. This is
+        useful when creating an sd card that will be used to update emmc on a
+        device.  Copy this install script to /home/root of install device as
+        ivinstall-${MACHINE}.  This is useful when creating an sd card that
+        will be used to update emmc on a device.  Implies -c (copy).
 
     -d
         Copies the initrd instead of ext4 rootfs.  Implies -c (copy).
@@ -157,7 +162,7 @@ FORMAT OPTIONS
         run on host via SSH or JTAG modes.  Can be used in conjunction with
         format/copy options.
 
-OTHER OPTIONS
+JTAG OPTIONS
 
     -a JTAG_ADAPTER
         Specify the JTAG_ADAPTER to use on a system with multiple adapters
@@ -177,6 +182,31 @@ OTHER OPTIONS
         Works with local or remote (-J) adapters.  Only valid in JTAG MODE (-j)
         or with QSPI reflash (-Q) option.
 
+    -H HW_SERVER
+        For JTAG operations, connect xsdb to hw_server at HW_SERVER.  By
+        default, xsdb will start or connect to a local hw_server at the default
+        port (3121).  Only valid in JTAG MODE (-j) or with -Q option.
+        HW_SERVER format is 'tcp:<host>:<port>', ex. 'tcp:127.0.0.1:3121'.
+
+    -I JTAG_INDEX
+        Select the n-th JTAG target (0-based) when performing JTAG operations.
+        This is required when working with a JTAG chain of two or more FPGAs.
+        Only valid in JTAG MODE (-j) or with -Q option.
+
+    -J JTAG_REMOTE
+        Run JTAG commands from a remote host that is connected via JTAG to a
+        target.  JTAG_REMOTE is of the same form used by ssh, i.e.
+        [user@]ip_address.  JTAG_REMOTE machine can be Linux or Windows.
+        Only valid in JTAG MODE (-j) or with -Q option.
+
+    -V XVC_SERVER
+        For JTAG operations, connect xsdb to a Xilinx Virtual Cable server
+        instead of a local JTAG adapter.  Only valid in JTAG MODE (-j) or with
+        -Q option.
+        XVC_SERVER format is 'tcp:<host>:<port>', ex. 'tcp:127.0.0.1:2541'.
+
+OTHER OPTIONS
+
     -A EXTRACT_DIR
         Assemble a new script, given a previously extracted directory of files.
         The commands:
@@ -189,12 +219,6 @@ OTHER OPTIONS
 
     -h
         Show this help message and exit.
-
-    -J JTAG_REMOTE
-        Run JTAG commands from a remote host that is connected via JTAG to a
-        target.  JTAG_REMOTE is of the same form used by ssh, i.e.
-        [user@]ip_address.  JTAG_REMOTE machine can be Linux or Windows.  Only
-        valid in JTAG MODE or with -Q option.
 
     -o
         Only boot, do not install.  Only valid in JTAG mode.  With this option,
@@ -209,17 +233,8 @@ OTHER OPTIONS
         Can be used with JTAG_REMOTE option, to run from a remote host computer
         that has a directly connected JTAG target.
 
-    -r
-        Replace the startup script with the given file STARTUP_SCRIPT.  Only
-        valid in JTAG mode.  See the -j option.
-
-    -R
-        Replace the extra image with the given file EXTRA_IMAGE.  Only valid in
-        JTAG mode.  See the -j option.
-
     -v
-        Report version from which images were built and md5sums of all images
-        in the archive and then exit.
+        Report version from which images were built and then exit.
 
     -x
         Extract only.  Extract contents of this installer to temp directory

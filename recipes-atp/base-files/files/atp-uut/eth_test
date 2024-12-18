@@ -1,0 +1,23 @@
+IFACE=eth0
+DURATION=30
+
+IP=`ip -f inet addr show $IFACE | sed -En -e 's/.*inet ([0-9.]+).*/\1/p'`
+echo "This test requires iperf version 2 to be installed on the remote host."
+echo "Please verify that the correct version is installed by running the command: iperf -v"
+echo
+echo "To perform the test, run the following command on the remote host as required:"
+echo
+echo "  iperf -c $IP -t $DURATION -f M -r"
+echo
+
+echo "          -c $IP => connect to the iperf server running on the ATPC controller"
+echo "          -t $DURATION => Run a 30 second test."
+echo "          -f M => Print the bandwidth values in MB/s."
+echo "          -r => Perform test for both directions individually."
+
+echo
+echo "Press Ctrl-C to quit this server."
+echo
+
+iperf -s -f M
+

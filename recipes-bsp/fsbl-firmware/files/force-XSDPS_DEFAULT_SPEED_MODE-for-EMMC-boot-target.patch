@@ -1,0 +1,24 @@
+From 6434a7e97d535424760522369e9a27b0f9d81d84 Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Wed, 14 Dec 2022 10:35:31 -0500
+Subject: [PATCH] force XSDPS_DEFAULT_SPEED_MODE for EMMC boot target
+
+---
+ XilinxProcessorIPLib/drivers/sdps/src/xsdps_card.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/XilinxProcessorIPLib/drivers/sdps/src/xsdps_card.c b/XilinxProcessorIPLib/drivers/sdps/src/xsdps_card.c
+index 154f808035..fe43c08bf5 100644
+--- a/XilinxProcessorIPLib/drivers/sdps/src/xsdps_card.c
++++ b/XilinxProcessorIPLib/drivers/sdps/src/xsdps_card.c
+@@ -1350,6 +1350,7 @@ void XSdPs_IdentifyEmmcMode(XSdPs *InstancePtr, const u8 *ExtCsd)
+ 			InstancePtr->Mode = XSDPS_DEFAULT_SPEED_MODE;
+ 		}
+ 	}
++	InstancePtr->Mode = XSDPS_DEFAULT_SPEED_MODE;
+ }
+ 
+ /*****************************************************************************/
+-- 
+2.25.1
+

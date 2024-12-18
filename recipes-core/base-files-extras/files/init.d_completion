@@ -1,0 +1,30 @@
+#
+#  Completion for foo:
+#
+#  foo file [filename]
+#  foo hostname [hostname]
+#
+_init.d_complete() 
+{
+    local cur prev opts
+
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+	if [[ ${prev} =~ .*init\.d.* ]]; then
+    	opts=`grep -oE '^[a-zA-Z0-9_-]+)([^=]|$)' ${prev} | sed 's/)//'`
+	fi
+
+	#case "${prev}" in
+    #init.d)
+    #	opts=`grep -oE '^[a-zA-Z0-9_-]+)([^=]|$)' ${prev} | sed 's/)//'`
+    #    ;;
+    #*)
+ 	#	;;
+    #esac
+
+    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+}
+complete -F _init.d_complete init.d
+

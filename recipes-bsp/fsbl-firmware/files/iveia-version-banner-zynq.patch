@@ -1,0 +1,56 @@
+From 22f848bfd5686a8589a1b98b8aeab93cd8c4c0ca Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Tue, 7 Mar 2023 10:14:56 -0500
+Subject: [PATCH] iveia version banner for zynq
+
+---
+ lib/sw_apps/zynq_fsbl/src/main.c | 24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
+
+diff --git a/lib/sw_apps/zynq_fsbl/src/main.c b/lib/sw_apps/zynq_fsbl/src/main.c
+index 62a5b4dd64..88b6e34321 100644
+--- a/lib/sw_apps/zynq_fsbl/src/main.c
++++ b/lib/sw_apps/zynq_fsbl/src/main.c
+@@ -113,6 +113,7 @@
+ #include "xstatus.h"
+ #include "fsbl_hooks.h"
+ #include "xtime_l.h"
++#include "iveia_version.h"
+ 
+ #ifdef XPAR_XWDTPS_0_BASEADDR
+ #include "xwdtps.h"
+@@ -266,10 +267,29 @@ int main(void)
+ 	/*
+ 	 * Print the FSBL Banner
+ 	 */
+-	fsbl_printf(DEBUG_GENERAL,"\n\rXilinx First Stage Boot Loader \n\r");
+-	fsbl_printf(DEBUG_GENERAL,"Release %d.%d	%s-%s\r\n",
++	xil_printf("\n\rXilinx First Stage Boot Loader \n\r");
++	xil_printf("Release %d.%d	%s-%s\r\n",
+ 			SDK_RELEASE_YEAR, SDK_RELEASE_QUARTER,
+ 			__DATE__,__TIME__);
++	xil_printf("Machine:     iVeia %s\r\n", IVEIA_MACHINE);
++	xil_printf("Src commit:  %s\r\n", IVEIA_SRC_BUILD_HASH);
++	#ifdef IVEIA_META_1_LAYER
++		xil_printf("Layer (%s) commit: %s\r\n", IVEIA_META_1_LAYER, IVEIA_META_1_BUILD_HASH);
++	#else
++		xil_printf("Layer commit: unknown\r\n");
++	#endif
++	#ifdef IVEIA_META_2_LAYER
++		xil_printf("Layer (%s) commit: %s\r\n", IVEIA_META_2_LAYER, IVEIA_META_2_BUILD_HASH);
++	#endif
++	#ifdef IVEIA_META_3_LAYER
++		xil_printf("Layer (%s) commit: %s\r\n", IVEIA_META_3_LAYER, IVEIA_META_3_BUILD_HASH);
++	#endif
++	#ifdef IVEIA_META_4_LAYER
++		xil_printf("Layer (%s) commit: %s\r\n", IVEIA_META_4_LAYER, IVEIA_META_4_BUILD_HASH);
++	#endif
++	#if IVEIA_NUM_LAYERS > 4
++		#error More than four meta-iveia* layers not supported
++	#endif
+ 
+ #ifdef XPAR_PS7_DDR_0_S_AXI_BASEADDR
+ 
+-- 
+2.25.1
+

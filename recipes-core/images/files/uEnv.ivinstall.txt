@@ -1,52 +1,63 @@
 #
 # U-Boot environment for ivinstall JTAG boot
 #
-# Memory layout is critical, amd must match addresses from the ivinstall
+# Memory layout is critical, and must match addresses from the ivinstall
 # script.
-#
-# FOR ZYNQ ONLY: The ivinstall image is stored above the memory used by Linux
-# (via mem=xxx).  But unfortunately on arm, U-Boot by default assumes that it
-# can relocate the initrd/fdt to high memory.  This conflicts with Linux, which
-# expects the initrd/fdt addresses to be within it's addressable memory.
-# Therefore, the initrd_high/fdt_high parameters are used to relocate those
-# images to an allowable area.  This must be within the Linux memory set with
-# kernel_mem_mb.
-#
-# set_fdt_chosen configures a script that is run at boot to pull the ivinstall
-# image out of memory and run it.  It uses a function to extract() the images
-# from a RAM that includes a 3 word header.  See ivinstall script for more
-# info.
 #
 fdt_addr=0x700000
 kernel_addr=0x800000
-bootenv_cmd=run board_config defargs set_fdt_chosen boot_kernel
-defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon mem=${kernel_mem_mb}M nozap
+bootenv_cmd=run board_config write_tarball defargs set_fdt_chosen boot_kernel
+defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon nozap
+initrd_addr=0x04400000
+tarball_addr=0x18000000
+
+# write_tarball - write the tarball loaded in RAM to SD/eMMC just after the
+# partition 1 end
+write_tarball=\
+    mmc dev ${tarball_devnum}; \
+    mmc erase 0 2; \
+    setexpr filesize_addr ${tarball_addr} - 0x08; \
+    setexpr.l filebytes *${filesize_addr}; \
+    setexpr.l filesectors ${filebytes} / 0x200; \
+    setexpr.l filesectors ${filesectors} + 1; \
+    mmc write ${tarball_addr} ${tarball_sect_offset} ${filesectors}
+
 board_config=\
     if test ${board} = zynq; then \
         echo Booting on Zynq; \
         setenv kernel_bootcmd bootm; \
-        setenv initrd_addr 0x8000000; \
-        setenv initrd_high 0x17f00000; \
-        setenv fdt_high 0x18000000; \
-        setenv kernel_mem_mb 384; \
-        setenv startup_script_addr 0x18000000; \
-        setenv extra_image_addr 0x18100000; \
     else \
         echo Booting on ZynqMP; \
         setenv kernel_bootcmd booti; \
-        setenv initrd_addr 0x10000000; \
-        setenv kernel_mem_mb 512; \
-        setenv startup_script_addr 0x20000000; \
-        setenv extra_image_addr 0x20100000; \
     fi
 boot_kernel=\
     echo Booting kernel...; \
     ${kernel_bootcmd} ${kernel_addr} ${initrd_addr} ${fdt_addr}
+
+# max tarball size is 1GB/512 bytes_per_sector
+tarball_max_sect=2097152
+
+# chosen/startup will be run when Linux boots:
+#   - extract 'ivinstall.preformat' script from tarball image on SD/eMMC on the
+#       fly by piping image to 'tar'.
+#   - 'ivinstall.preformat' script partitions the SD/eMMC and formats the first
+#       partition.
+#   - extract 'ivinstall' from tarball image on SD/eMMC on the fly by piping
+#       image to 'tar'.
 set_fdt_chosen=\
     fdt addr ${fdt_addr}; \
     fdt set /chosen startup "\
-        echo Extracting startup images...; \
-        bdevmem -H ${startup_script_addr} > /tmp/startup; \
-        bdevmem -H ${extra_image_addr} > /tmp/extra_image; \
-        source /tmp/startup; \
+        echo Preformat SD/eMMC...; \
+        dd if=/dev/mmcblk${tarball_devnum} bs=512 \
+            skip=\$((${tarball_sect_offset})) count=${tarball_max_sect} | \
+            tar xzf - -O ivinstall.preformat > /tmp/ivinstall.preformat; \
+        bash /tmp/ivinstall.preformat; \
+        mkdir -p /tmp/mnt; \
+        mount /dev/mmcblk${tarball_devnum}p1 /tmp/mnt; \
+        mkdir /tmp/mnt/tmp; \
+        cd /tmp/mnt/tmp; \
+        dd if=/dev/mmcblk${tarball_devnum} bs=512 \
+            skip=\$((${tarball_sect_offset})) count=${tarball_max_sect} | \
+            tar xzf -; \
+        sh startup.sh; \
         "
