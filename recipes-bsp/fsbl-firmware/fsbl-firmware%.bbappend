@@ -11,8 +11,6 @@ SRC_URI_append_zynq = "\
     file://ps7_init-pre-and-post-hooks.patch \
     "
 
-SRC_URI_append_00108 = " file://eMMC-HS200-speed-workaround.patch"
-
 # These patches must be applied after configure because configure dynamically
 # creates some sources (based off of the XSA hardware def), and these patches
 # are applied to them.
