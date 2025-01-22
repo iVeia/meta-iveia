@@ -10,10 +10,7 @@ BITFILE_PATH := "${THISDIR}/files"
 BITFILE_FILE = "xilinx.bit"
 
 do_compile() {
-    cat ${BITFILE_PATH}/${BITFILE_FILE} > ${B}/${BITFILE_FILE}
-
-    # Extra vars to append to BITFILE_FILE
-    echo "machine=${MACHINE}" >> ${B}/${BITFILE_FILE}
+    cp ${BITFILE_PATH}/${BITFILE_FILE}  ${B}/${BITFILE_FILE}
 }
 
 do_deploy() {

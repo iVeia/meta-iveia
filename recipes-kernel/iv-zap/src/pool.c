@@ -4,7 +4,6 @@
  * (C) Copyright 2008-2021, iVeia, LLC
  *
  */
-#include <linux/slab.h>
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/errno.h>
@@ -192,8 +191,6 @@ pool_create(
 
 	ppool->size = size;
 	ppool->buf_paddr = buf_paddr;
-
-	ppool->pentries = kmalloc(max_packets * sizeof(struct pool_entry),GFP_KERNEL);
 
 	init_waitqueue_head( &ppool->freeq );
 	init_waitqueue_head( &ppool->fifoq );

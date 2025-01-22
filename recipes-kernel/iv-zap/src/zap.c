@@ -1038,11 +1038,6 @@ static int zap_probe(struct platform_device *pdev)
         tx_pool_sz = rx_pool_sz = rmem->size / 2;
     }
 
-	if (nozap) {
-		printk(KERN_WARNING "zap: driver disabled by kernel cmdline\n");
-		return 0;
-	}
-
     //create_proc_read_entry("iveia/zap", 0, NULL, zap_read_procmem, NULL);
 	/*
 	 * Get a range of minor numbers to work with, using static major.

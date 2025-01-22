@@ -54,6 +54,7 @@ IV_TAR_FILE_MAP = "\
 
 IV_TAR_FILE_MAP_append_zynqmp = "\
     ${DEPLOY_DIR_IMAGE}/Image                               :   boot/Image \
+    ${DEPLOY_DIR_IMAGE}/xilinx.bit                          :   boot/xilinx.bit \
     ${THISDIR}/files/qspi-zynqmp.tcl                        :   jtag/qspi.tcl \
     ${THISDIR}/files/ivinstall-zynqmp.tcl                   :   jtag/ivinstall.tcl \
     ${DEPLOY_DIR_IMAGE}/pmu-firmware-${MACHINE}.elf         :   elf/pmu.elf \
