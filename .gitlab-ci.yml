@@ -30,14 +30,13 @@ build-job:
     # issues.
     DL_DIR: cache/downloads
 
-    # MACHINE list.
-    # TODO: add back in MACHINEs that currently have broken builds: 00108
     MACHINES: >-
       00049
       00068
       00090
       00102
       00104
+      00108
       00114
       00122
       00126
