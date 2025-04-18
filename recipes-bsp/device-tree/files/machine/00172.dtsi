@@ -1,0 +1,23 @@
+#include <atlas-z8-inc.dtsi>
+
+/ {
+    model = "Atlas-II Z8e";
+    compatible = "iveia,00172", "iveia,atlas-z8", "xlnx,zynqmp";
+};
+
+&usb0 {
+    // PSGTR Lane 0, USB0, PSGTR refclk0 (100MHz)
+	phys = <&psgtr 0 PHY_TYPE_USB3 0 0>;
+};
+
+&spi1 {
+    tpm_tis@0 {
+        compatible = "tcg,tpm_tis-spi";
+        status = "okay";
+        reg = <0>;
+        spi-max-frequency = <500000>;
+        /* TPM_PIRQ#   = MIO7 */
+        /* TPM_SW_RST# = MIO8 */
+    };
+};
+
