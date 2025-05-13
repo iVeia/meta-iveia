@@ -18,7 +18,7 @@ IVIO_DIR_zynq = "ivio/zynq"
 SRC_URI += " \
     file://atlas-z7-inc.dtsi \
     file://atlas-z8-inc.dtsi \
-    file://machine/ \
+    file://machine/${MACHINE}.dtsi \
     file://${IVIO_DIR}/ \
     "
 
