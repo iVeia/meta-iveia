@@ -1,6 +1,6 @@
 # XSA files (formerly HDF)
 
-Each subdirectory corresponds to a MACHINE (iVeia mainboard) that contains a
+Each subdirectory corresponds to a MACHINE (iVeia SoM) that contains a
 system.xsa file.  The system.xsa is the hardware description file exported from
 Vivado.  Yocto uses this to generate device-tree and bootloader source.  Vivado
 creates system.xsa files using the "Export Hardware" feature.

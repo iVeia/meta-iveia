@@ -146,7 +146,7 @@ IS_TARGET=$((IS_ZYNQMP_TARGET || IS_ZYNQ_TARGET))
 #
 [[ -z "$@" ]] || error "Extra invalid options were supplied: $@"
 (($OPTIND <= 1)) && help
-[[ -n "$MACHINE" ]] || error "INTERNAL ERROR: mainboard not available"
+[[ -n "$MACHINE" ]] || error "INTERNAL ERROR: SoM not available"
 if [[ -n "$IOBOARD" ]]; then
     grep -q "\<$IOBOARD\>" <<<"$IOBOARDS" || error 'invalid ioboard "'$IOBOARD'"'
 fi

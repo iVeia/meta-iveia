@@ -1,11 +1,11 @@
 #
 # Create several DTB files:
 #   ${MACHINE}.dtb
-#       iVeia mainboard DTB.  Created by combining the Xilinx DTG generated
-#       system-top.dts with the iVeia mainboard DTS file added as a "#include"
+#       iVeia SoM DTB.  Created by combining the Xilinx DTG generated
+#       system-top.dts with the iVeia SoM DTS file added as a "#include"
 #       at the end.
 #   ${MACHINE}_${IVIO}_combo.dtb
-#       Combination of mainboard and ioboard DTSs.  Like the above DTB, but
+#       Combination of SoM and ioboard DTSs.  Like the above DTB, but
 #       additionally with the user specified IVIO DTS tacked on to the end.
 #       Currently required as the method to get the IVIO DTS info into U-Boot.
 #   *_overlay.dtbo

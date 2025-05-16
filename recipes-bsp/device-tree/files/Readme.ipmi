@@ -25,9 +25,9 @@ addresses.
 	};
 
     board subnodes (optional, used to specify ipmi location for each board type):
-        iv_mb: mainboard
-        iv_io: carrier io board
-        iv_bp: blackplane board 
+        iv_mb: MainBoard (SoM)
+        iv_io: carrier IO board
+        iv_bp: BackPlane board
 
             supported bus properties:
                 Either (i2c takes precedence):

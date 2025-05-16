@@ -250,7 +250,7 @@ LIMITATIONS
 
 SUPPORTED BOARDS
 
-    Mainboard supported:
+    SoM supported:
         $MACHINE
 
     IO boards supported:

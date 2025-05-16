@@ -46,11 +46,11 @@ final build products are:
 - **`uEnv.txt`**: REQUIRED boot script for U-Boot boot. Supports SD/eMMC
   or tftp boot.
 - **`devicetree/`**: directory containing devicetree files
-    - **`${MACHINE}.dtb`**: Mainboard (i.e. MACHINE) DTB
+    - **`${MACHINE}.dtb`**: SoM (i.e. MACHINE) DTB
     - **`${IVIO}_overlay.dtbo`**: IO board DT Overlays for all supported
       IO boards
     - **`${MACHINE}_{IVIO}_combo.dtb`**: Combined DT file that includes
-      the DT for both the Mainboard and IO board - only built when the
+      the DT for both the SoM and IO board - only built when the
       variable `IVIO` is set.
 - **`Image`**: Linux kernel image (**`uImage`** on Zynq-7000 platforms)
 - Root FS, in different formats:
@@ -73,5 +73,5 @@ to build.  When set, two things change:
   to the other DTB files).
 - U-Boot will use the above DTB, instead of the default **`${MACHINE}.dtb`**.
   This allows U-Boot, which does not support using internal DT overlay files,
-  to include both mainboard *and* IO board specific features.
+  to include both SoM *and* IO board specific features.
 
