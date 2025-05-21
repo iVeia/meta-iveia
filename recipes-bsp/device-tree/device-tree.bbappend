@@ -22,29 +22,34 @@ SRC_URI += " \
 
 DTC_BFLAGS = "-p ${DT_PADDING_SIZE} -@ -H epapr"
 
+OVERLAYS_NOT_COMPAT_00102 = "1"
+OVERLAYS_NOT_COMPAT_00126 = "1"
+
 do_configure_append() {
     # Create DTS for ${MACHINE}.dtb
     echo "#include <${IV_MB_DTSI}>" >> ${DT_FILES_PATH}/system-top.dts
     mv ${DT_FILES_PATH}/system-top.dts ${DT_FILES_PATH}/${MACHINE}.dts
 
-    # Combo DTBs, one for each overlay
-    OVERLAY_SUFFIX="_overlay.dts"
-    for IVIO in ${WORKDIR}/${IVIO_DIR}/*${OVERLAY_SUFFIX}; do
-        IVIO=$(basename ${IVIO})
-        IVIO=${IVIO%$OVERLAY_SUFFIX}
+    if [ -z "${OVERLAYS_NOT_COMPAT}" ]; then
+        # Combo DTBs, one for each overlay
+        OVERLAY_SUFFIX="_overlay.dts"
+        for IVIO in ${WORKDIR}/${IVIO_DIR}/*${OVERLAY_SUFFIX}; do
+            IVIO=$(basename ${IVIO})
+            IVIO=${IVIO%$OVERLAY_SUFFIX}
 
-        COMBO_DTS="${DT_FILES_PATH}/${MACHINE}_${IVIO}_combo.dts"
-        cp ${DT_FILES_PATH}/${MACHINE}.dts ${COMBO_DTS}
-        IVIO_DTS=${WORKDIR}/${IVIO_DIR}/${IVIO}${OVERLAY_SUFFIX}
-        if [ ! -f ${IVIO_DTS} ]; then
-            bbfatal "Invalid IVIO board (${IVIO})."
-        fi
-        grep -v "/plugin/\|/dts-v1/" ${IVIO_DTS} > ${WORKDIR}/${IVIO}.dtsi
-        echo "#include <${IVIO}.dtsi>" >> ${COMBO_DTS}
-    done
+            COMBO_DTS="${DT_FILES_PATH}/${MACHINE}_${IVIO}_combo.dts"
+            cp ${DT_FILES_PATH}/${MACHINE}.dts ${COMBO_DTS}
+            IVIO_DTS=${WORKDIR}/${IVIO_DIR}/${IVIO}${OVERLAY_SUFFIX}
+            if [ ! -f ${IVIO_DTS} ]; then
+                bbfatal "Invalid IVIO board (${IVIO})."
+            fi
+            grep -v "/plugin/\|/dts-v1/" ${IVIO_DTS} > ${WORKDIR}/${IVIO}.dtsi
+            echo "#include <${IVIO}.dtsi>" >> ${COMBO_DTS}
+        done
 
-    # DTS overlays for each ioboard
-    cp ${WORKDIR}/${IVIO_DIR}/*${OVERLAY_SUFFIX} ${DT_FILES_PATH}
+        # DTS overlays for each ioboard
+        cp ${WORKDIR}/${IVIO_DIR}/*${OVERLAY_SUFFIX} ${DT_FILES_PATH}
+    fi
 }
 
 do_deploy() {
