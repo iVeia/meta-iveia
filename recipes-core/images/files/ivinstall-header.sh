@@ -76,7 +76,7 @@ SAVEARGS="$*"
 unset ONLY_OPTION
 unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_QSPI_DIRECT DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD
 unset JTAG_REMOTE MODE SKIP_ROOTFS SSH_TARGET USE_INITRD USER_FAT_SIZE USER_LABEL USER_ROOTFS_SIZE
-unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE USER_TMPDIR
+unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE USER_TEMP_DIR
 unset PREPARTITION_ONLY POSTPARTITION_ONLY
 unset HW_SERVER JTAG_INDEX XILINX_VIRTUAL_CABLE
 SD_MODE=0
@@ -108,7 +108,7 @@ while getopts "a:A:B:b:cCde:fH:hI:i:jJ:kn:opPqQs:t:vV:xX:zZ" opt; do
         q) DO_QSPI=1 ;;
         Q) DO_QSPI_DIRECT=1 ;;
         s) MODE=$SSH_MODE; SSH_TARGET="$OPTARG" ;;
-        t) USER_TMPDIR="$OPTARG"; ;;
+        t) USER_TEMP_DIR="$OPTARG"; ;;
         v) DO_VERSION=1; ONLY_OPTION="$opt"; break ;;
         V) XILINX_VIRTUAL_CABLE="$OPTARG" ;;
         x) DO_EXTRACT=1; ONLY_OPTION="$opt"; break ;;
@@ -185,17 +185,17 @@ if ((FORCE_SD_MODE)); then
     MODE=$SD_MODE
 fi
 
-extract_archive_to_TMPDIR()
+extract_archive_to_TEMP_DIR()
 {
     if [ -n "$1" ]; then
-        TMPDIR="$1"
-        mkdir -p "$TMPDIR" || error "Could not create TMPDIR"
+        TEMP_DIR="$1"
+        mkdir -p "$TEMP_DIR" || error "Could not create TEMP_DIR"
     else
-        TMPDIR=$(mktemp -d)
+        TEMP_DIR=$(mktemp -d)
     fi
-    on_exit() { rm -rf $TMPDIR; }
+    on_exit() { rm -rf $TEMP_DIR; }
     trap on_exit EXIT
-    tail -n+$ARCHIVE_START "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
+    tail -n+$ARCHIVE_START "$CMD" | tar -xz -C $TEMP_DIR || error "untar archive failed"
 }
 
 #
@@ -221,16 +221,16 @@ fi
 if ((DO_EXTRACT)); then
     info "Extracting Image Archive..."
     if [[ -n "$EXTRACT_DIR" ]]; then
-        TMPDIR="$EXTRACT_DIR"
-        mkdir "$TMPDIR" || error "Unable to create dir \"$EXTRACT_DIR\""
+        TEMP_DIR="$EXTRACT_DIR"
+        mkdir "$TEMP_DIR" || error "Unable to create dir \"$EXTRACT_DIR\""
     else
-        TMPDIR=$(mktemp -d)
+        TEMP_DIR=$(mktemp -d)
     fi
-    tail -n+$ARCHIVE_START "$CMD" | tar -xz -C "$TMPDIR" || error "Untar failed"
-    head -$((ARCHIVE_START-1)) "$CMD" > "$TMPDIR"/.header || error "Header extract failed"
+    tail -n+$ARCHIVE_START "$CMD" | tar -xz -C "$TEMP_DIR" || error "Untar failed"
+    head -$((ARCHIVE_START-1)) "$CMD" > "$TEMP_DIR"/.header || error "Header extract failed"
 
     echo "Contents extracted to:"
-    echo "    $TMPDIR"
+    echo "    $TEMP_DIR"
     exit 0
 fi
 
@@ -326,7 +326,7 @@ setup_jtag()
     # WORKAROUND: Often, when trying to install on a target that has just
     # been powercycled, JTAG loads can fail.  The issue appears related to
     # letting the target run fully into Linux (but this is not always
-    # true).  Because the extract_archive_to_TMPDIR function takes a while
+    # true).  Because the extract_archive_to_TEMP_DIR function takes a while
     # to run, the actual load doesn't happen until far along into the boot.
     # The fix is to run a script right NOW that halts the processor, before
     # Linux has a chance to boot.
@@ -362,8 +362,8 @@ run_jtag_tcl()
         fi
     else
         verify xsdb
-        TMPDIR=$(mktemp -d)
-        cp $JTAG_FILES $TMPDIR/
+        TEMP_DIR=$(mktemp -d)
+        cp $JTAG_FILES $TEMP_DIR/
 
         # list of options for xsdb TCL script
         XSDB_ARGS=""
@@ -385,17 +385,17 @@ run_jtag_tcl()
         fi
 
         #
-        # Must run from $TMPDIR dir, but must leave this function in
+        # Must run from $TEMP_DIR dir, but must leave this function in
         # original dir - so run in subshell
         #
         # DO NOT USE double-quote for $XSDB_ARGS!  It is meant to be
         # interpreted by xsdb as (maybe empty) list of command-line args.
         (
-            cd $TMPDIR
+            cd $TEMP_DIR
             xsdb "$TCL" $XSDB_ARGS
         ) || error "Failed running TCL script to program QSPI flash"
 
-        rm -rf $TMPDIR
+        rm -rf $TEMP_DIR
     fi
 }
 
@@ -429,8 +429,8 @@ if ((DO_QSPI_DIRECT)); then
     setup_jtag
 
     info "Extracting archive..."
-    extract_archive_to_TMPDIR
-    cd $TMPDIR
+    extract_archive_to_TEMP_DIR
+    cd $TEMP_DIR
     add_header jtag/uEnv.qspi.txt uEnv.qspi.txt.bin
     add_header boot/boot.bin boot.bin.bin
 
@@ -539,13 +539,13 @@ if ((MODE==JTAG_MODE)); then
     setup_jtag
 
     info "Extracting Image Archive for JTAG mode..."
-    if [[ -n "$USER_TMPDIR" ]]; then
-        extract_archive_to_TMPDIR "$USER_TMPDIR"
+    if [[ -n "$USER_TEMP_DIR" ]]; then
+        extract_archive_to_TEMP_DIR "$USER_TEMP_DIR"
     else
-        extract_archive_to_TMPDIR
+        extract_archive_to_TEMP_DIR
     fi
-    cp "$CMD" $TMPDIR || error "Cannot copy ivinstall image to TMPDIR"
-    cd $TMPDIR
+    cp "$CMD" $TEMP_DIR || error "Cannot copy ivinstall image to TEMP_DIR"
+    cd $TEMP_DIR
     if ((ONLY_BOOT)); then
         # Use empty tarball.tgz.bin - we don't use it when only booting
         echo > tarball.tgz.bin
@@ -696,21 +696,21 @@ elif ((MODE==SD_MODE)); then
     fi
 
     if ((DO_COPY || DO_QSPI)); then
-        unset TMPMNT TMPDIR
+        unset TMPMNT TEMP_DIR
         on_exit() {
             if [[ -n "$TMPMNT" ]]; then
                 umount "${TMPMNT}" 2>/dev/null
                 rmdir "$MNT"
             fi
-            if [[ -n "$TMPDIR" ]]; then
-                rm -rf "$TMPDIR"
+            if [[ -n "$TEMP_DIR" ]]; then
+                rm -rf "$TEMP_DIR"
             fi
         }
         trap on_exit EXIT
 
-        TMPDIR=$(mktemp -d)
+        TEMP_DIR=$(mktemp -d)
         info "Extracting Image Archive..."
-        tail -n+$ARCHIVE_START "$CMD" | tar -xz -C $TMPDIR || error "untar archive failed"
+        tail -n+$ARCHIVE_START "$CMD" | tar -xz -C $TEMP_DIR || error "untar archive failed"
     fi
 
     if ((DO_COPY)); then
@@ -727,35 +727,35 @@ elif ((MODE==SD_MODE)); then
         fi
 
         info "Copying boot files to DEVICE ($DEVICE)"
-        cp -v $TMPDIR/boot/* "$MNT" || error "copy boot files failed"
-        cp -v $TMPDIR/devicetree/$MACHINE.dtb "$MNT" || error "copy dtb failed"
+        cp -v $TEMP_DIR/boot/* "$MNT" || error "copy boot files failed"
+        cp -v $TEMP_DIR/devicetree/$MACHINE.dtb "$MNT" || error "copy dtb failed"
         if [[ -n "$IOBOARD" ]]; then
-            cp -v $TMPDIR/devicetree/${IOBOARD}_overlay.dtbo "$MNT/overlay.dtbo" || \
+            cp -v $TEMP_DIR/devicetree/${IOBOARD}_overlay.dtbo "$MNT/overlay.dtbo" || \
                 error "copy dtbo failed"
         fi
 
         if ((USE_INITRD)); then
             info "Copying initrd rootfs to DEVICE ($DEVICE)"
-            cp -v $TMPDIR/rootfs/initrd "$MNT" || error "copy initrd failed"
+            cp -v $TEMP_DIR/rootfs/initrd "$MNT" || error "copy initrd failed"
         elif ((!SKIP_ROOTFS)); then
             verify e2label findmnt
             if [ -n "$DO_COPY_SELF" ]; then
                 info "Copying ivinstall script to ext4 rootfs"
-                ext4_sz=$(stat --printf="%s" $TMPDIR/rootfs/rootfs.ext4)
+                ext4_sz=$(stat --printf="%s" $TEMP_DIR/rootfs/rootfs.ext4)
                 ivinstall_sz=$(stat --printf="%s" $0)
-                resize2fs $TMPDIR/rootfs/rootfs.ext4 $((($ext4_sz + $ivinstall_sz)/1024))K
-                mkdir $TMPDIR/rootfs/mnt
-                mount -o loop $TMPDIR/rootfs/rootfs.ext4 $TMPDIR/rootfs/mnt
-                mkdir -p $TMPDIR/rootfs/mnt/home/root
-                cp $0 $TMPDIR/rootfs/mnt/home/root
+                resize2fs $TEMP_DIR/rootfs/rootfs.ext4 $((($ext4_sz + $ivinstall_sz)/1024))K
+                mkdir $TEMP_DIR/rootfs/mnt
+                mount -o loop $TEMP_DIR/rootfs/rootfs.ext4 $TEMP_DIR/rootfs/mnt
+                mkdir -p $TEMP_DIR/rootfs/mnt/home/root
+                cp $0 $TEMP_DIR/rootfs/mnt/home/root
                 sync
-                umount $TMPDIR/rootfs/mnt
+                umount $TEMP_DIR/rootfs/mnt
             fi
             info "Copying ext4 rootfs to DEVICE ($DEVICE) partition 3"
             ((${#PARTS[*]} > 3)) || error "partition 3 of $DEVICE does not exist"
             umount /dev/${PARTS[3]} 2>/dev/null
             findmnt /dev/${PARTS[3]} && error "partition 3 already mounted, cannot install rootfs"
-            dd if=$TMPDIR/rootfs/rootfs.ext4 of=/dev/${PARTS[3]} bs=1M 2>/dev/null || \
+            dd if=$TEMP_DIR/rootfs/rootfs.ext4 of=/dev/${PARTS[3]} bs=1M 2>/dev/null || \
                 error "dd ext4 rootfs failed"
             e2label /dev/${PARTS[3]} ${LABEL}ROOTFS || \
                 (warn "ROOTFS label failed, disk label not set."; \
@@ -765,9 +765,9 @@ elif ((MODE==SD_MODE)); then
     fi
 
     if ((DO_QSPI)); then
-        [[ -f $TMPDIR/boot/boot.bin ]] || error "boot.bin missing from archive"
+        [[ -f $TEMP_DIR/boot/boot.bin ]] || error "boot.bin missing from archive"
         flash_erase /dev/mtd0 0 0 || error "flash_erase failed"
-        flashcp $TMPDIR/boot/boot.bin /dev/mtd0 || error "flashcp failed"
+        flashcp $TEMP_DIR/boot/boot.bin /dev/mtd0 || error "flashcp failed"
     fi
 
     # Sync just in case user does unsafe eject
