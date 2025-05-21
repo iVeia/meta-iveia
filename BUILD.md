@@ -43,15 +43,18 @@ final build products are:
   `program_flash` tool.
 - **`boot.bin`**: Contains FSBL, ATF, PMUFW and U-Boot. Can sit on SD, or
   be burned to QSPI.  See "Booting" section.
+- **`bootbin/`**: directory containing boot.bin files of the form
+  **`boot_${MACHINE}_${IVIO}_combo.bin`**.  These files are identical to 
+  **`boot.bin`**, EXCEPT they use the "combo" DT file from the 
+  **`devicetree/`** directory.
 - **`uEnv.txt`**: REQUIRED boot script for U-Boot boot. Supports SD/eMMC
   or tftp boot.
 - **`devicetree/`**: directory containing devicetree files
     - **`${MACHINE}.dtb`**: SoM (i.e. MACHINE) DTB
     - **`${IVIO}_overlay.dtbo`**: IO board DT Overlays for all supported
       IO boards
-    - **`${MACHINE}_{IVIO}_combo.dtb`**: Combined DT file that includes
-      the DT for both the SoM and IO board - only built when the
-      variable `IVIO` is set.
+    - **`${MACHINE}_${IVIO}_combo.dtb`**: Combined DT file that includes
+      the DT for both the SoM and IO board, one for each IO board.
 - **`Image`**: Linux kernel image (**`uImage`** on Zynq-7000 platforms)
 - Root FS, in different formats:
     - **`iveia-image-minimal-${MACHINE}.cpio.gz.u-boot`**: U-Boot initrd
@@ -65,13 +68,3 @@ final build products are:
 
 The `MACHINE` used above maps directly to an iVeia SoM. For example, the
 Atlas-II-Z8 HP (board 00122), uses the name `MACHINE=00122`.
-
-The `IVIO` variable is optional, and can be specified as a command line
-environment variable or a configuration setting.  It defines an iVeia IO board
-to build.  When set, two things change:
-- The **`devicetree/${MACHINE}_{IVIO}_combo.dtb`** will be built (in addition
-  to the other DTB files).
-- U-Boot will use the above DTB, instead of the default **`${MACHINE}.dtb`**.
-  This allows U-Boot, which does not support using internal DT overlay files,
-  to include both SoM *and* IO board specific features.
-

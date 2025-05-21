@@ -52,6 +52,14 @@ do_configure_append() {
     fi
 }
 
+do_install_append() {
+    # Share DTBs to the ${datadir} for use by other recipes.
+    for DTB_FILE in `ls *.dtb *.dtbo`; do
+        install -Dm644 ${B}/${DTB_FILE} ${D}${datadir}/devicetree/${DTB_FILE}
+    done
+}
+FILES_${PN} += "${datadir}/devicetree/*"
+
 do_deploy() {
     # Xilinx appends to devicetree.bbclass's deploy, and we can't use their
     # mods (which are based on system-top.dtb, which we've renamed).
