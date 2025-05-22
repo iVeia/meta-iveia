@@ -76,7 +76,7 @@ SAVEARGS="$*"
 unset ONLY_OPTION
 unset DO_COPY DO_EXTRACT DO_FORMAT DO_QSPI DO_QSPI_DIRECT DO_VERSION ENDMSG FORCE_SD_MODE IOBOARD
 unset JTAG_REMOTE MODE SKIP_ROOTFS SSH_TARGET USE_INITRD USER_FAT_SIZE USER_LABEL USER_ROOTFS_SIZE
-unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE USER_TEMP_DIR
+unset ONLY_BOOT EXTRACT_DIR DO_ASSEMBLE
 unset PREPARTITION_ONLY POSTPARTITION_ONLY
 unset HW_SERVER JTAG_INDEX XILINX_VIRTUAL_CABLE
 SD_MODE=0
@@ -108,7 +108,6 @@ while getopts "a:A:B:b:cCde:fH:hI:i:jJ:kn:opPqQs:t:vV:xX:zZ" opt; do
         q) DO_QSPI=1 ;;
         Q) DO_QSPI_DIRECT=1 ;;
         s) MODE=$SSH_MODE; SSH_TARGET="$OPTARG" ;;
-        t) USER_TEMP_DIR="$OPTARG"; ;;
         v) DO_VERSION=1; ONLY_OPTION="$opt"; break ;;
         V) XILINX_VIRTUAL_CABLE="$OPTARG" ;;
         x) DO_EXTRACT=1; ONLY_OPTION="$opt"; break ;;
@@ -503,7 +502,7 @@ fi
 #           - partially partitions/formats the SD/eMMC, avoiding the tarball
 #           - extracts tarball from SD/eMMC into the first partition
 #       - run startup.sh, which ivinstalls with user's args, plus -P
-#           (postpartition) and -t (extract to specific temp location)
+#           (postpartition).
 #
 # Memory layout:
 #   MB      ADDR
@@ -539,11 +538,7 @@ if ((MODE==JTAG_MODE)); then
     setup_jtag
 
     info "Extracting Image Archive for JTAG mode..."
-    if [[ -n "$USER_TEMP_DIR" ]]; then
-        extract_archive_to_TEMP_DIR "$USER_TEMP_DIR"
-    else
-        extract_archive_to_TEMP_DIR
-    fi
+    extract_archive_to_TEMP_DIR
     cp "$CMD" $TEMP_DIR || error "Cannot copy ivinstall image to TEMP_DIR"
     cd $TEMP_DIR
     if ((ONLY_BOOT)); then
@@ -551,7 +546,7 @@ if ((MODE==JTAG_MODE)); then
         echo > tarball.tgz.bin
         add_header jtag/uEnv.boot.txt uEnv.txt.bin
     else
-        echo "bash ./ivinstall -Z -t ivtmp -P $SAVEARGS" > startup.sh
+        echo "bash ./ivinstall -Z -P $SAVEARGS" > startup.sh
         mv $(basename "$CMD") ivinstall
         echo "set -- -p $DEVICE" > ivinstall.preformat
         head -$((ARCHIVE_START-1)) ivinstall >> ivinstall.preformat \
