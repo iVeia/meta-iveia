@@ -44,6 +44,7 @@ IV_TAR_FILE_MAP = "\
     ${DEPLOY_DIR_IMAGE}/boot.bin                            :   boot/boot.bin \
     ${DEPLOY_DIR_IMAGE}/uEnv.txt                            :   boot/uEnv.txt \
     ${DEPLOY_DIR_IMAGE}/devicetree                          :   devicetree \
+    ${DEPLOY_DIR_IMAGE}/bootbin                             :   bootbin \
     ${DEPLOY_DIR_IMAGE}/${IVIMG}-${MACHINE}.cpio.gz.u-boot  :   rootfs/initrd \
     ${DEPLOY_DIR_IMAGE}/${IVIMG}-${MACHINE}.ext4            :   rootfs/rootfs.ext4 \
     ${DEPLOY_DIR_IMAGE}/startup.sh                          :   boot/startup.sh \
