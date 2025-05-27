@@ -7,7 +7,8 @@
 
 # __INSERT_YOCTO_VARS_HERE_DO_NOT_REMOVE_THIS_LINE__
 
-CMD="$0"
+abspath() { echo "$(cd "$(dirname "$1")" && pwd -P)/$(basename "$1")"; }
+CMD=$(abspath "$0")
 
 endmsg()
 {
@@ -65,6 +66,25 @@ getfilesize()
 {
     wc -c "$1" | awk '{print $1}'
 }
+
+#
+# Create a master temp dir for all temp work which will get cleaned up at end.
+#
+unset TEMP_MNT TEMP_DIR
+on_exit() {
+    # Try unmount regarless if it's been mounted.
+    umount "$TEMP_MNT" 2>/dev/null
+
+    if [[ -n "$TEMP_DIR" ]]; then
+        rm -rf "$TEMP_DIR"
+    fi
+}
+trap on_exit EXIT
+TEMP_DIR=$(mktemp -d)
+TEMP_MNT="$TEMP_DIR/mnt"
+mkdir "$TEMP_MNT"
+ARCHIVE_DIR="$TEMP_DIR/archive"
+mkdir "$ARCHIVE_DIR"
 
 #
 # Process args
@@ -184,17 +204,14 @@ if ((FORCE_SD_MODE)); then
     MODE=$SD_MODE
 fi
 
-extract_archive_to_TEMP_DIR()
+extract_archive()
 {
-    if [ -n "$1" ]; then
-        TEMP_DIR="$1"
-        mkdir -p "$TEMP_DIR" || error "Could not create TEMP_DIR"
-    else
-        TEMP_DIR=$(mktemp -d)
-    fi
-    on_exit() { rm -rf $TEMP_DIR; }
-    trap on_exit EXIT
-    tail -n+$ARCHIVE_START "$CMD" | tar -xz -C $TEMP_DIR || error "untar archive failed"
+    tail -n+$ARCHIVE_START "$CMD" | tar -xz -C "$1"
+}
+
+extract_header()
+{
+    head -$((ARCHIVE_START-1)) "$CMD" > "$1"
 }
 
 #
@@ -220,16 +237,16 @@ fi
 if ((DO_EXTRACT)); then
     info "Extracting Image Archive..."
     if [[ -n "$EXTRACT_DIR" ]]; then
-        TEMP_DIR="$EXTRACT_DIR"
-        mkdir "$TEMP_DIR" || error "Unable to create dir \"$EXTRACT_DIR\""
+        PERMANENT_ARCHIVE_DIR="$EXTRACT_DIR"
+        mkdir "$PERMANENT_ARCHIVE_DIR" || error "Unable to create dir \"$EXTRACT_DIR\""
     else
-        TEMP_DIR=$(mktemp -d)
+        PERMANENT_ARCHIVE_DIR="$ARCHIVE_DIR"
     fi
-    tail -n+$ARCHIVE_START "$CMD" | tar -xz -C "$TEMP_DIR" || error "Untar failed"
-    head -$((ARCHIVE_START-1)) "$CMD" > "$TEMP_DIR"/.header || error "Header extract failed"
+    extract_archive "$PERMANENT_ARCHIVE_DIR" || error "extract_archive failed for -[Xx]"
+    extract_header "$PERMANENT_ARCHIVE_DIR"/.header || error "extract_header failed for -[Xx]"
 
     echo "Contents extracted to:"
-    echo "    $TEMP_DIR"
+    echo "    $PERMANENT_ARCHIVE_DIR"
     exit 0
 fi
 
@@ -286,18 +303,20 @@ add_header()
 #
 run_remote_tcl_in_windows()
 {
-    BAT_TMP=$(mktemp)
+
+    WIN_BAT_FILENAME="winxsdb.bat"
+    WIN_BAT_ABSPATH="$TEMP_DIR/${WIN_BAT_FILENAME}"
     TCL="$1"
     ADAPTER="$2"
-    cat <<-EOF >${BAT_TMP}
+    cat <<-EOF >${WIN_BAT_ABSPATH}
 		cd iv_staging
 		call xsdb $TCL $ADAPTER
 		set err=%errorlevel%
 		call xsdb -eval "after 1000"
 		exit %err%
 		EOF
-    scp ${SSH_OPTS} ${BAT_TMP} ${JTAG_REMOTE}:winxsdb.bat || error "scp $TCL to JTAG_REMOTE failed"
-    ssh ${SSH_OPTS} ${JTAG_REMOTE} winxsdb.bat || error "xsdb $TCL TCL/JTAG failure"
+    scp ${SSH_OPTS} ${WIN_BAT_ABSPATH} ${JTAG_REMOTE}: || error "scp $TCL to JTAG_REMOTE failed"
+    ssh ${SSH_OPTS} ${JTAG_REMOTE} ${WIN_BAT_FILENAME} || error "xsdb $TCL TCL/JTAG failure"
 }
 
 #
@@ -325,13 +344,13 @@ setup_jtag()
     # WORKAROUND: Often, when trying to install on a target that has just
     # been powercycled, JTAG loads can fail.  The issue appears related to
     # letting the target run fully into Linux (but this is not always
-    # true).  Because the extract_archive_to_TEMP_DIR function takes a while
+    # true).  Because the extract_archive function takes a while
     # to run, the actual load doesn't happen until far along into the boot.
     # The fix is to run a script right NOW that halts the processor, before
     # Linux has a chance to boot.
     #
     info "Attempting to halt target..."
-    HALT_TCL_ABSPATH=$(mktemp -d)/halt.tcl
+    HALT_TCL_ABSPATH="$TEMP_DIR/halt.tcl"
     cat <<-'EOF' > ${HALT_TCL_ABSPATH}
 		# __INSERT_YOCTO_HALT_HERE_DO_NOT_REMOVE_THIS_LINE__
 		EOF
@@ -361,8 +380,8 @@ run_jtag_tcl()
         fi
     else
         verify xsdb
-        TEMP_DIR=$(mktemp -d)
-        cp $JTAG_FILES $TEMP_DIR/
+        JTAG_DIR="$TEMP_DIR/jtag"
+        cp $JTAG_FILES $JTAG_DIR/
 
         # list of options for xsdb TCL script
         XSDB_ARGS=""
@@ -384,17 +403,17 @@ run_jtag_tcl()
         fi
 
         #
-        # Must run from $TEMP_DIR dir, but must leave this function in
+        # Must run from $JTAG_DIR dir, but must leave this function in
         # original dir - so run in subshell
         #
         # DO NOT USE double-quote for $XSDB_ARGS!  It is meant to be
         # interpreted by xsdb as (maybe empty) list of command-line args.
         (
-            cd $TEMP_DIR
+            cd $JTAG_DIR
             xsdb "$TCL" $XSDB_ARGS
         ) || error "Failed running TCL script to program QSPI flash"
 
-        rm -rf $TEMP_DIR
+        rm -rf $JTAG_DIR
     fi
 }
 
@@ -428,8 +447,8 @@ if ((DO_QSPI_DIRECT)); then
     setup_jtag
 
     info "Extracting archive..."
-    extract_archive_to_TEMP_DIR
-    cd $TEMP_DIR
+    extract_archive "$ARCHIVE_DIR" || error "extract_archive failed for QSPI direct"
+    cd "$ARCHIVE_DIR"
     add_header jtag/uEnv.qspi.txt uEnv.qspi.txt.bin
     add_header boot/boot.bin boot.bin.bin
 
@@ -538,19 +557,18 @@ if ((MODE==JTAG_MODE)); then
     setup_jtag
 
     info "Extracting Image Archive for JTAG mode..."
-    extract_archive_to_TEMP_DIR
-    cp "$CMD" $TEMP_DIR || error "Cannot copy ivinstall image to TEMP_DIR"
-    cd $TEMP_DIR
+    extract_archive "$ARCHIVE_DIR" || error "extract_archive failed for JTAG"
+    cp "$CMD" "$ARCHIVE_DIR/ivinstall" || error "Cannot copy ivinstall image to ARCHIVE_DIR"
+    cd $ARCHIVE_DIR
     if ((ONLY_BOOT)); then
         # Use empty tarball.tgz.bin - we don't use it when only booting
         echo > tarball.tgz.bin
         add_header jtag/uEnv.boot.txt uEnv.txt.bin
     else
         echo "bash ./ivinstall -Z -P $SAVEARGS" > startup.sh
-        mv $(basename "$CMD") ivinstall
-        echo "set -- -p $DEVICE" > ivinstall.preformat
-        head -$((ARCHIVE_START-1)) ivinstall >> ivinstall.preformat \
-            || error "Preformat extract failed"
+        echo "set -- -p $DEVICE" > preformat.head
+        extract_header preformat.tail || error "Preformat extract failed"
+        cat preformat.head preformat.tail > ivinstall.preformat || error "Preformat cat failed"
         tar czf tarball.tgz startup.sh ivinstall.preformat ivinstall
         echo tarball_devnum=${DEVICE:0-1} >> jtag/uEnv.ivinstall.txt
         echo tarball_sect_offset=$(printf "0x%x" ${P2_START}) >> jtag/uEnv.ivinstall.txt
@@ -570,7 +588,7 @@ if ((MODE==JTAG_MODE)); then
 
 elif ((MODE==SSH_MODE)); then
     verify ssh scp
-    scp ${SSH_OPTS} $CMD ${SSH_TARGET}:/tmp || error "scp failed"
+    scp ${SSH_OPTS} ${CMD} ${SSH_TARGET}:/tmp || error "scp failed"
     # Don't error() on ssh failure - let the error come from the remote
     ssh ${SSH_OPTS} ${SSH_TARGET} bash /tmp/$(basename ${CMD}) -Z $SAVEARGS
 
@@ -691,66 +709,51 @@ elif ((MODE==SD_MODE)); then
     fi
 
     if ((DO_COPY || DO_QSPI)); then
-        unset TMPMNT TEMP_DIR
-        on_exit() {
-            if [[ -n "$TMPMNT" ]]; then
-                umount "${TMPMNT}" 2>/dev/null
-                rmdir "$MNT"
-            fi
-            if [[ -n "$TEMP_DIR" ]]; then
-                rm -rf "$TEMP_DIR"
-            fi
-        }
-        trap on_exit EXIT
-
-        TEMP_DIR=$(mktemp -d)
         info "Extracting Image Archive..."
-        tail -n+$ARCHIVE_START "$CMD" | tar -xz -C $TEMP_DIR || error "untar archive failed"
+        extract_archive "$ARCHIVE_DIR" || error "extract_archive failed for copy"
     fi
 
     if ((DO_COPY)); then
         if [[ -b "$DEVICE" ]]; then
             verify mount
             [[ $(uname) = Darwin ]] && error "block devices not supported on macos"
-            TMPMNT=$(mktemp -d)
-            MNT="$TMPMNT"
-
             ((${#PARTS[*]} > 1)) || error "partition 1 of $DEVICE does not exist"
-            mount /dev/${PARTS[1]} "$MNT" || error "could not mount partition 1 for copy"
+            mount /dev/${PARTS[1]} "$TEMP_MNT" || error "could not mount partition 1 for copy"
+            DEST="$TEMP_MNT"
         else
-            MNT="$DEVICE"
+            DEST="$DEVICE"
         fi
 
         info "Copying boot files to DEVICE ($DEVICE)"
-        cp -v $TEMP_DIR/boot/* "$MNT" || error "copy boot files failed"
-        cp -v $TEMP_DIR/devicetree/$MACHINE.dtb "$MNT" || error "copy dtb failed"
+        cp -v $ARCHIVE_DIR/boot/* "$DEST" || error "copy boot files failed"
+        cp -v $ARCHIVE_DIR/devicetree/$MACHINE.dtb "$DEST" || error "copy dtb failed"
         if [[ -n "$IOBOARD" ]]; then
-            cp -v $TEMP_DIR/devicetree/${IOBOARD}_overlay.dtbo "$MNT/overlay.dtbo" || \
+            cp -v $ARCHIVE_DIR/devicetree/${IOBOARD}_overlay.dtbo "$DEST/overlay.dtbo" || \
                 error "copy dtbo failed"
         fi
 
         if ((USE_INITRD)); then
             info "Copying initrd rootfs to DEVICE ($DEVICE)"
-            cp -v $TEMP_DIR/rootfs/initrd "$MNT" || error "copy initrd failed"
+            cp -v $ARCHIVE_DIR/rootfs/initrd "$DEST" || error "copy initrd failed"
         elif ((!SKIP_ROOTFS)); then
             verify e2label findmnt
             if [ -n "$DO_COPY_SELF" ]; then
                 info "Copying ivinstall script to ext4 rootfs"
-                ext4_sz=$(stat --printf="%s" $TEMP_DIR/rootfs/rootfs.ext4)
+                ext4_sz=$(stat --printf="%s" $ARCHIVE_DIR/rootfs/rootfs.ext4)
                 ivinstall_sz=$(stat --printf="%s" $0)
-                resize2fs $TEMP_DIR/rootfs/rootfs.ext4 $((($ext4_sz + $ivinstall_sz)/1024))K
-                mkdir $TEMP_DIR/rootfs/mnt
-                mount -o loop $TEMP_DIR/rootfs/rootfs.ext4 $TEMP_DIR/rootfs/mnt
-                mkdir -p $TEMP_DIR/rootfs/mnt/home/root
-                cp $0 $TEMP_DIR/rootfs/mnt/home/root
+                resize2fs $ARCHIVE_DIR/rootfs/rootfs.ext4 $((($ext4_sz + $ivinstall_sz)/1024))K
+                mkdir $ARCHIVE_DIR/rootfs/mnt
+                mount -o loop $ARCHIVE_DIR/rootfs/rootfs.ext4 $ARCHIVE_DIR/rootfs/mnt
+                mkdir -p $ARCHIVE_DIR/rootfs/mnt/home/root
+                cp $0 $ARCHIVE_DIR/rootfs/mnt/home/root
                 sync
-                umount $TEMP_DIR/rootfs/mnt
+                umount $ARCHIVE_DIR/rootfs/mnt
             fi
             info "Copying ext4 rootfs to DEVICE ($DEVICE) partition 3"
             ((${#PARTS[*]} > 3)) || error "partition 3 of $DEVICE does not exist"
             umount /dev/${PARTS[3]} 2>/dev/null
             findmnt /dev/${PARTS[3]} && error "partition 3 already mounted, cannot install rootfs"
-            dd if=$TEMP_DIR/rootfs/rootfs.ext4 of=/dev/${PARTS[3]} bs=1M 2>/dev/null || \
+            dd if=$ARCHIVE_DIR/rootfs/rootfs.ext4 of=/dev/${PARTS[3]} bs=1M 2>/dev/null || \
                 error "dd ext4 rootfs failed"
             e2label /dev/${PARTS[3]} ${LABEL}ROOTFS || \
                 (warn "ROOTFS label failed, disk label not set."; \
@@ -760,9 +763,9 @@ elif ((MODE==SD_MODE)); then
     fi
 
     if ((DO_QSPI)); then
-        [[ -f $TEMP_DIR/boot/boot.bin ]] || error "boot.bin missing from archive"
+        [[ -f $ARCHIVE_DIR/boot/boot.bin ]] || error "boot.bin missing from archive"
         flash_erase /dev/mtd0 0 0 || error "flash_erase failed"
-        flashcp $TEMP_DIR/boot/boot.bin /dev/mtd0 || error "flashcp failed"
+        flashcp $ARCHIVE_DIR/boot/boot.bin /dev/mtd0 || error "flashcp failed"
     fi
 
     # Sync just in case user does unsafe eject
