@@ -204,9 +204,19 @@ if ((FORCE_SD_MODE)); then
     MODE=$SD_MODE
 fi
 
-extract_archive()
+extract_archive_asis()
 {
     tail -n+$ARCHIVE_START "$CMD" | tar -xz -C "$1"
+}
+
+extract_archive()
+{
+    extract_archive_asis "$1"
+
+    # If an IOBOARD was given, use the IO board specific boot.bin
+    if [[ -n "$IOBOARD" ]]; then
+        cp "$1/bootbin/boot_${MACHINE}_${IOBOARD}_combo.bin" "$1/boot/boot.bin"
+    fi
 }
 
 extract_header()
@@ -242,7 +252,7 @@ if ((DO_EXTRACT)); then
     else
         PERMANENT_ARCHIVE_DIR="$ARCHIVE_DIR"
     fi
-    extract_archive "$PERMANENT_ARCHIVE_DIR" || error "extract_archive failed for -[Xx]"
+    extract_archive_asis "$PERMANENT_ARCHIVE_DIR" || error "extract_archive_asis failed for -[Xx]"
     extract_header "$PERMANENT_ARCHIVE_DIR"/.header || error "extract_header failed for -[Xx]"
 
     echo "Contents extracted to:"
