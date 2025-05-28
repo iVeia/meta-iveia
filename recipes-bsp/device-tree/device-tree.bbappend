@@ -22,9 +22,8 @@ SRC_URI += " \
 
 DTC_BFLAGS = "-p ${DT_PADDING_SIZE} -@ -H epapr"
 
-# Do not create combo DT MACHINE/overlays for Helios and generic MACHINEs
-OVERLAYS_NOT_COMPAT_00102 = "1"
-OVERLAYS_NOT_COMPAT_00126 = "1"
+# Do not create combo DT MACHINE/overlays for Helios and generic Atlas MACHINEs
+OVERLAYS_NOT_COMPAT_helios = "1"
 OVERLAYS_NOT_COMPAT_atlas-z7 = "1"
 OVERLAYS_NOT_COMPAT_atlas-z8 = "1"
 
