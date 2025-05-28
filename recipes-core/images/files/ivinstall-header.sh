@@ -742,23 +742,15 @@ elif ((MODE==SD_MODE)); then
                 error "copy dtbo failed"
         fi
 
+        if [ -n "$DO_COPY_SELF" ]; then
+            cp -v "$CMD" "$DEST" || error "could not copy ivinstall image to dest"
+        fi
+
         if ((USE_INITRD)); then
             info "Copying initrd rootfs to DEVICE ($DEVICE)"
             cp -v $ARCHIVE_DIR/rootfs/initrd "$DEST" || error "copy initrd failed"
         elif ((!SKIP_ROOTFS)); then
             verify e2label findmnt
-            if [ -n "$DO_COPY_SELF" ]; then
-                info "Copying ivinstall script to ext4 rootfs"
-                ext4_sz=$(stat --printf="%s" $ARCHIVE_DIR/rootfs/rootfs.ext4)
-                ivinstall_sz=$(stat --printf="%s" $0)
-                resize2fs $ARCHIVE_DIR/rootfs/rootfs.ext4 $((($ext4_sz + $ivinstall_sz)/1024))K
-                mkdir $ARCHIVE_DIR/rootfs/mnt
-                mount -o loop $ARCHIVE_DIR/rootfs/rootfs.ext4 $ARCHIVE_DIR/rootfs/mnt
-                mkdir -p $ARCHIVE_DIR/rootfs/mnt/home/root
-                cp $0 $ARCHIVE_DIR/rootfs/mnt/home/root
-                sync
-                umount $ARCHIVE_DIR/rootfs/mnt
-            fi
             info "Copying ext4 rootfs to DEVICE ($DEVICE) partition 3"
             ((${#PARTS[*]} > 3)) || error "partition 3 of $DEVICE does not exist"
             umount /dev/${PARTS[3]} 2>/dev/null

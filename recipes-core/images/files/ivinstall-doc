@@ -131,11 +131,9 @@ FORMAT OPTIONS
         partition 3.
 
     -C
-        Copy this install script to /home/root of install device. This is
-        useful when creating an sd card that will be used to update emmc on a
-        device.  Copy this install script to /home/root of install device as
-        ivinstall-${MACHINE}.  This is useful when creating an sd card that
-        will be used to update emmc on a device.  Implies -c (copy).
+        Copy the ivinstall script itself along with the boot files.  Useful
+        when creating an SD card that will be used to update eMMC on a device.
+        Implies -c (copy).
 
     -d
         Copies the initrd instead of ext4 rootfs.  Implies -c (copy).
