@@ -10,6 +10,7 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 IVIMG := "iveia-image-${IMAGE_TYPE}"
 do_deploy[depends] = "${IVIMG}:do_build"
 DEPENDS_append = " fsbl u-boot-xlnx u-boot-uenv xilinx-bootbin device-tree linux-xlnx ivstartup"
+DEPENDS_append = " xilinx-bootbin-combos"
 DEPENDS_append_zynqmp = " pmu-firmware arm-trusted-firmware"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
