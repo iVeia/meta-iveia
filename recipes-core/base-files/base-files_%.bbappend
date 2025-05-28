@@ -12,10 +12,6 @@ SRC_URI_append_zynqmp += "\
     file://zynqmp.hwmon \
     "
 
-SRC_URI_append_atlas-z8 += "\
-    file://atlas-z8.hwmon \
-    "
-
 do_install_append () {
 	install -d ${D}/media
 	install -m 0755 -d ${D}/etc/sensors.d/

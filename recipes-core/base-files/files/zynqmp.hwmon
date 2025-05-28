@@ -1,3 +1,6 @@
+chip "lm75-*"
+    label temp1 "Atlas SoM"
+
 chip "ams_ctrl_hwmon-*"     
     label in1 "PS PLL0"
     label in2 "PS BATT"
