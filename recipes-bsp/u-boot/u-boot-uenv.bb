@@ -6,11 +6,11 @@ INHIBIT_DEFAULT_DEPS = "1"
 
 inherit deploy
 
-UENV_PATH := "${THISDIR}/files"
 UENV_FILE = "uEnv.txt"
+SRC_URI = "file://${UENV_FILE}"
 
 do_compile() {
-    cat ${UENV_PATH}/${UENV_FILE} > ${B}/${UENV_FILE}
+    cat ${WORKDIR}/${UENV_FILE} > ${B}/${UENV_FILE}
 
     # Extra vars to append to UENV_FILE
     echo "machine=${MACHINE}" >> ${B}/${UENV_FILE}
