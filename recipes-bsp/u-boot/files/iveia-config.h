@@ -1,10 +1,12 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
     "bootenv_addr=0x600000\0" \
     "bootenv_file=uEnv.txt\0" \
-    "boot_targets=mmc0 mmc1 dhcp\0" \
+    "bootseq=mmc0 mmc1 dhcp\0" \
     "loadenv_mmc0=load mmc 0 ${bootenv_addr} ${altpath}/${bootenv_file}\0" \
     "loadenv_mmc1=load mmc 1 ${bootenv_addr} ${altpath}/${bootenv_file}\0" \
-    "loadenv_dhcp=dhcp ${bootenv_addr} ${altpath}/${bootenv_file}\0" \
+    "autoload=no\0" \
+    "ethprime=eth3\0" \
+    "loadenv_dhcp=dhcp && tftpboot ${bootenv_addr} ${altpath}/${bootenv_file}\0" \
     "jtag_boot_magic=4a544147\0" \
     "loadenv_jtag=\n" \
     "    setexpr scratch_addr  ${bootenv_addr} - 0x10; \n" \
@@ -36,15 +38,17 @@
     "    if test ${board} = zynq -a ${magic} = ${jtag_boot_magic}; then \n" \
     "        mw.l ${zynq_forced_jtag_magic_addr} 0; \n" \
     "        echo JTAG Magic found - forcing JTAG boot; \n" \
-    "        setenv boot_targets jtag ${boot_targets}; \n" \
+    "        setenv modeboot jtagboot; \n" \
     "    fi;\0" \
     "pauseboot=setenv pauseboot_on 1; boot\0" \
     "iv-bootseq=\n" \
     "    run zynq_test_forced_jtag; \n" \
-    "    setexpr first_target sub ' .*' '' \"${boot_targets} \"; \n" \
-    "    setexpr other_targets gsub \" ${first_target} \" ' ' \" ${boot_targets} \"; \n" \
+    "    if test ${modeboot} = jtagboot; then \n" \
+    "        setenv bootseq jtag ${bootseq}; \n" \
+    "    fi; \n" \
     "    setenv break; \n" \
-    "    for tgt in ${first_target} ${other_targets}; do \n" \
+    "    echo Running boot sequence: ${bootseq}; \n" \
+    "    for tgt in ${bootseq}; do \n" \
     "        if test -z \"${break}\"; then \n" \
     "            echo Attempting load of ${altpath}/${bootenv_file} from ${tgt}...; \n" \
     "            run loadtgt; \n" \
