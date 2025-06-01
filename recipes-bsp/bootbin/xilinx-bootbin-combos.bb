@@ -21,21 +21,32 @@ do_compile() {
     # For each combo, use bootgen.bif from xilinx-bootbin recipe, and modify
     # *.dtb to be a *_combo.dtb.  Then rebuild with bootgen.
     #
-    for DTB in ${STAGING_DATADIR}/devicetree/*_combo.dtb; do
-        sed "s/\/${MACHINE}.dtb$/\/$(basename ${DTB})/" ${BIF_FILE_PATH} > ${B}/bootgen.bif
-        BIN_BASENAME=$(basename $DTB)
-        BIN_BASENAME_NO_EXTENSION=${BIN_BASENAME%.*}
-        BIN=boot_${BIN_BASENAME_NO_EXTENSION}.bin
-        bootgen -image ${B}/bootgen.bif -arch ${SOC_FAMILY} -w -o ${B}/bootbin/${BIN}
-        if [ ! -e ${B}/bootbin/${BIN} ]; then
-            bbfatal "bootgen failed. See log"
-        fi
-    done
+    # There may not be ANY combos that match the shell wildcard.  We use the idiom 
+    #   "set -- ...*...; if [ -e "$1" ]; then"
+    # as a portable way to test if the glob macthes or not.
+    #
+    set -- ${STAGING_DATADIR}/devicetree/*_combo.dtb
+    if [ -e "$1" ]; then
+        for DTB in "$@"; do
+            sed "s/\/${MACHINE}.dtb$/\/$(basename ${DTB})/" ${BIF_FILE_PATH} > ${B}/bootgen.bif
+            BIN_BASENAME=$(basename $DTB)
+            BIN_BASENAME_NO_EXTENSION=${BIN_BASENAME%.*}
+            BIN=boot_${BIN_BASENAME_NO_EXTENSION}.bin
+            bootgen -image ${B}/bootgen.bif -arch ${SOC_FAMILY} -w -o ${B}/bootbin/${BIN}
+            if [ ! -e ${B}/bootbin/${BIN} ]; then
+                bbfatal "bootgen failed. See log"
+            fi
+        done
+    fi
 }
 
 do_deploy() {
-    install -d ${DEPLOYDIR}/bootbin/
-    install -Dm 0644 ${B}/bootbin/* ${DEPLOYDIR}/bootbin/
+    # Portably test if wildcard glob matches
+    set -- ${B}/bootbin/*
+    if [ -e "$1" ]; then
+        install -d ${DEPLOYDIR}/bootbin/
+        install -Dm 0644 "$@" ${DEPLOYDIR}/bootbin/
+    fi
 }
 addtask do_deploy after do_compile before do_build
 

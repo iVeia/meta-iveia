@@ -215,7 +215,8 @@ extract_archive()
 
     # If an IOBOARD was given, use the IO board specific boot.bin
     if [[ -n "$IOBOARD" ]]; then
-        cp "$1/bootbin/boot_${MACHINE}_${IOBOARD}_combo.bin" "$1/boot/boot.bin"
+        cp "$1/bootbin/boot_${MACHINE}_${IOBOARD}_combo.bin" "$1/boot/boot.bin" \
+            || error "no combo bootbin for IOBOARD ($IOBOARD)"
     fi
 }
 
