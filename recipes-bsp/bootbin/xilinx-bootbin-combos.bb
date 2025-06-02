@@ -42,9 +42,9 @@ do_compile() {
 
 do_deploy() {
     # Portably test if wildcard glob matches
+    install -d ${DEPLOYDIR}/bootbin/
     set -- ${B}/bootbin/*
     if [ -e "$1" ]; then
-        install -d ${DEPLOYDIR}/bootbin/
         install -Dm 0644 "$@" ${DEPLOYDIR}/bootbin/
     fi
 }
