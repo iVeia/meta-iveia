@@ -1,7 +1,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
     "bootenv_addr=0x600000\0" \
     "bootenv_file=uEnv.txt\0" \
-    "bootseq=mmc0 mmc1 dhcp\0" \
+    "iv_boot_targets=mmc0 mmc1 dhcp\0" \
     "loadenv_mmc0=load mmc 0 ${bootenv_addr} ${altpath}/${bootenv_file}\0" \
     "loadenv_mmc1=load mmc 1 ${bootenv_addr} ${altpath}/${bootenv_file}\0" \
     "autoload=no\0" \
@@ -41,14 +41,14 @@
     "        setenv modeboot jtagboot; \n" \
     "    fi;\0" \
     "pauseboot=setenv pauseboot_on 1; boot\0" \
-    "iv-bootseq=\n" \
+    "iv_boot_sequencer=\n" \
     "    run zynq_test_forced_jtag; \n" \
     "    if test ${modeboot} = jtagboot; then \n" \
-    "        setenv bootseq jtag ${bootseq}; \n" \
+    "        setenv iv_boot_targets jtag ${iv_boot_targets}; \n" \
     "    fi; \n" \
     "    setenv break; \n" \
-    "    echo Running boot sequence: ${bootseq}; \n" \
-    "    for tgt in ${bootseq}; do \n" \
+    "    echo Running boot sequence: ${iv_boot_targets}; \n" \
+    "    for tgt in ${iv_boot_targets}; do \n" \
     "        if test -z \"${break}\"; then \n" \
     "            echo Attempting load of ${altpath}/${bootenv_file} from ${tgt}...; \n" \
     "            run loadtgt; \n" \
