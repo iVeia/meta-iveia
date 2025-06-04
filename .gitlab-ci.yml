@@ -1,5 +1,6 @@
 stages:
   - build
+  - install
   - test
   - release
   - deploy
@@ -16,6 +17,20 @@ variables:
   IVINSTALL_ABS_PATH: ${CI_PROJECT_DIR}/${IVINSTALL_REL_PATH}
   IVINSTALL_TGT: ivinstall-full
 
+  # MACHINEs that will be built and installed on the TFTP server
+  MACHINES: >-
+    00049
+    00068
+    00090
+    00102
+    00104
+    00108
+    00114
+    00122
+    00126
+    00127
+    00130
+
 build-job:
   stage: build
   image: ubuntu:18.04
@@ -29,19 +44,6 @@ build-job:
     # ONLY downloads are cached - caching the sstate-cache can cause build
     # issues.
     DL_DIR: cache/downloads
-
-    MACHINES: >-
-      00049
-      00068
-      00090
-      00102
-      00104
-      00108
-      00114
-      00122
-      00126
-      00127
-      00130
 
     SDKS: >-
       atlas-z7
@@ -114,6 +116,26 @@ build-job:
       - ${IVINSTALL_REL_PATH}
     reports:
       dotenv: vars.env
+
+install-job:
+  stage: install
+  tags:
+    - ivtest
+  variables:
+    TFTP_DIR: /srv/tftp
+  script:
+    - cp ${CI_PROJECT_DIR}/recipes-core/images/files/uEnv.shim.txt ${TFTP_DIR}/uEnv.txt
+    - cd ${TFTP_DIR}
+    - pwd
+    - ls -laR
+    - |
+      set -v # Required to force display multiline command
+      for m in $MACHINES; do
+        rm -rf ${m} || exit 1
+        mkdir ${m} || exit 1
+        ${IVINSTALL_ABS_PATH}/ivinstall-full-${m} -d ${m} || exit 1
+      done
+    - ls -laR
 
 test-job:
   stage: test

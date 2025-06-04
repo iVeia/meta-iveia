@@ -1,0 +1,21 @@
+#
+# Top level uEnv.txt shim that loads the images by PN.
+#
+# Works by setting the ${altpath}, which is used by uEnv.txt as the directory
+# of the boot images.  The ${altpath} is set to the PN (5-digit part number) of
+# the SoM.
+#
+# Note: iv_mb is of the form:
+#   205-nnnnn-vv-rr,sssss,PartName
+# where
+#   nnnnn: part number
+#   vv: variant
+#   rr: revision
+#   sssss: serial number
+#
+bootenv_cmd=\
+    setenv pn ${iv_mb}; \
+    setexpr pn sub "^205-" ""; \
+    setexpr pn sub "-.*" "" ; \
+    setenv altpath ${pn}; \
+    boot
