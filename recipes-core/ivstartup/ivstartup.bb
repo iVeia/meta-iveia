@@ -7,7 +7,7 @@ inherit update-rc.d
 INITSCRIPT_NAME = "ivstartup.sh"
 INITSCRIPT_PARAMS = "start 99 S ."
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI = "\
     file://ivstartup.sh \
@@ -19,8 +19,8 @@ do_install() {
 	install -Dm 0755 ${WORKDIR}/startup.sh ${D}/boot/startup.sh
 }
 
-FILES_${PN} = "${sysconfdir}/init.d/ivstartup.sh"
-FILES_${PN} += "/boot/startup.sh"
+FILES:${PN} = "${sysconfdir}/init.d/ivstartup.sh"
+FILES:${PN} += "/boot/startup.sh"
 
 do_deploy() {
 	install -Dm 0755 ${WORKDIR}/startup.sh ${DEPLOYDIR}/startup.sh

@@ -10,9 +10,9 @@
 #       Combination of SoM DTS and ioboard DTS, for each ioboard.
 #
 IV_MB_DTSI = "machine/${MACHINE}.dtsi"
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-IVIO_DIR_zynqmp = "ivio/zynqmp"
-IVIO_DIR_zynq = "ivio/zynq"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+IVIO_DIR:zynqmp = "ivio/zynqmp"
+IVIO_DIR:zynq = "ivio/zynq"
 SRC_URI += " \
     file://atlas-z7-inc.dtsi \
     file://atlas-z8-inc.dtsi \
@@ -23,11 +23,11 @@ SRC_URI += " \
 DTC_BFLAGS = "-p ${DT_PADDING_SIZE} -@ -H epapr"
 
 # Do not create combo DT MACHINE/overlays for Helios and generic Atlas MACHINEs
-OVERLAYS_NOT_COMPAT_helios = "1"
-OVERLAYS_NOT_COMPAT_atlas-z7 = "1"
-OVERLAYS_NOT_COMPAT_atlas-z8 = "1"
+OVERLAYS_NOT_COMPAT:helios = "1"
+OVERLAYS_NOT_COMPAT:atlas-z7 = "1"
+OVERLAYS_NOT_COMPAT:atlas-z8 = "1"
 
-do_configure_append() {
+do_configure:append() {
     # Create DTS for ${MACHINE}.dtb
     echo "#include <${IV_MB_DTSI}>" >> ${DT_FILES_PATH}/system-top.dts
     mv ${DT_FILES_PATH}/system-top.dts ${DT_FILES_PATH}/${MACHINE}.dts
@@ -54,13 +54,13 @@ do_configure_append() {
     fi
 }
 
-do_install_append() {
+do_install:append() {
     # Share DTBs to the ${datadir} for use by other recipes.
     for DTB_FILE in `ls *.dtb *.dtbo`; do
         install -Dm644 ${B}/${DTB_FILE} ${D}${datadir}/devicetree/${DTB_FILE}
     done
 }
-FILES_${PN} += "${datadir}/devicetree/*"
+FILES:${PN} += "${datadir}/devicetree/*"
 
 do_deploy() {
     # Xilinx appends to devicetree.bbclass's deploy, and we can't use their

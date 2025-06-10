@@ -8,4 +8,4 @@ UBOOT_MACHINE = "xilinx_${SOC_FAMILY}_virt_config"
 SERIAL_CONSOLE = "115200 ttyPS0"
 SERIAL_CONSOLES_CHECK = "${SERIAL_CONSOLES}"
 
-ERROR_QA_remove = "version-going-backwards"
+ERROR_QA:remove = "version-going-backwards"

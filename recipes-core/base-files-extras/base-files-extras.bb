@@ -1,9 +1,9 @@
 SUMMARY = "Miscellaneous extra utility files for the base system"
 LICENSE = "CLOSED"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI_append += "\
+SRC_URI:append = "\
     file://overlay-mgr \
     file://overlay_mgr_completion \
     file://pl-mgr \
@@ -17,11 +17,11 @@ SRC_URI_append += "\
     file://sysctl.conf \
     "
 
-RDEPENDS_${PN} += " bash"
+RDEPENDS:${PN} += " bash"
 
-FILES_${PN}_append = " /lib/firmware/dt-overlays"
+FILES:${PN}:append = " /lib/firmware/dt-overlays"
 
-do_install_append () {
+do_install:append () {
         install -Dm 0755 ${WORKDIR}/overlay-mgr ${D}/usr/bin/overlay-mgr
         install -Dm 0755 ${WORKDIR}/overlay_mgr_completion ${D}/etc/bash_completion.d/overlay_mgr_completion
         install -Dm 0755 ${WORKDIR}/pl-mgr ${D}/usr/bin/pl-mgr

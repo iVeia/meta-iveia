@@ -1,9 +1,9 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/atp-uut:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files/atp-uut:"
 
-RDEPENDS_${PN} += "bash"
+RDEPENDS:${PN} += "bash"
 
-SRC_URI_append += "\
+SRC_URI:append = "\
     file://uut-gpio \
     file://uut_gpio_completion \
     file://temp_sensor \
@@ -16,7 +16,7 @@ SRC_URI_append += "\
     file://gpio_expander \
    "
 
-do_install_append () {
+do_install:append () {
     install -Dm 0755 ${WORKDIR}/uut-gpio ${D}/usr/bin/uut-gpio
     install -Dm 0755 ${WORKDIR}/uut_gpio_completion ${D}/etc/bash_completion.d/uut_gpio_completion
 
