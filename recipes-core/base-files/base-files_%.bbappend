@@ -1,36 +1,36 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI_append += "\
+SRC_URI:append = "\
     file://issue \
     "
 
-SRC_URI_append_zynq += "\
+SRC_URI:append:zynq = "\
     file://zynq.hwmon \
     "
 
-SRC_URI_append_zynqmp += "\
+SRC_URI:append:zynqmp = "\
     file://zynqmp.hwmon \
     "
 
-do_install_append () {
+do_install:append () {
 	install -d ${D}/media
 	install -m 0755 -d ${D}/etc/sensors.d/
 	cp ${WORKDIR}/*.hwmon ${D}/etc/sensors.d/
 	chmod 0755 ${D}/etc/sensors.d/*
 }
 
-SRC_URI_append_00102 += "\
+SRC_URI:append:00102 = "\
     file://brcm-firmware/ \
    "
 
 DEPENDS = "rsync-native"
 
-do_install_append_00102 () {
+do_install:append:00102 () {
 	install -d ${D}/lib/firmware/brcm
 	rsync -lr ${B}/brcm-firmware/ ${D}/lib/firmware/brcm
 }
 
-FILES_${PN}_append = " /media/sd0 /media/sd1"
+FILES:${PN}:append = " /media/sd0 /media/sd1"
 
 do_install_basefilesissue () {
 	install -m 644 ${WORKDIR}/issue*  ${D}${sysconfdir}

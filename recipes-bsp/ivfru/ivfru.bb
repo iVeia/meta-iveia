@@ -1,10 +1,10 @@
 SUMMARY = "Utility for accessing and modifying IPMI FRU data"
 LICENSE = "CLOSED"
 
-RDEPENDS_${PN} += "bash"
-RDEPENDS_${PN} += "i2c-tools"
+RDEPENDS:${PN} += "bash"
+RDEPENDS:${PN} += "i2c-tools"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/../shared/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/../shared/files:"
 
 SRC_URI = ""
 SRC_URI += "file://ivfru.c"
@@ -14,7 +14,7 @@ SRC_URI += "file://ivfru_plat.c"
 SRC_URI += "file://ivfru_plat.h"
 S = "${WORKDIR}"
 
-CFLAGS_append_00130 = " -DCONFIG_EEPROM_IPMI_ALTERNATE_FOR_00130"
+CFLAGS:append:00130 = " -DCONFIG_EEPROM_IPMI_ALTERNATE_FOR_00130"
 
 do_compile() {
     ${CC} -o ${PN} ivfru.c ivfru_common.c ivfru_plat.c ${CFLAGS} ${LDFLAGS}

@@ -1,19 +1,19 @@
 # Remove uneeded packages included by Xilinx.
 # Note: meson depends on python3, which is huge!
-IMAGE_INSTALL_remove += "bridge-utils"
-IMAGE_INSTALL_remove += "can-utils"
-IMAGE_INSTALL_remove += "htop"
-IMAGE_INSTALL_remove += "iperf3"
-IMAGE_INSTALL_remove += "meson"
+IMAGE_INSTALL:remove += "bridge-utils"
+IMAGE_INSTALL:remove += "can-utils"
+IMAGE_INSTALL:remove += "htop"
+IMAGE_INSTALL:remove += "iperf3"
+IMAGE_INSTALL:remove += "meson"
 
-IMAGE_FSTYPES_remove = " \
+IMAGE_FSTYPES:remove = " \
     cpio.gz cpio.bz2 \
     ext3 ext3.bz2 \
     tar.gz tar.bz2 \
     jffs2 \
     wic.qemu-sd \
     "
-IMAGE_FSTYPES_append = " ext4 tar.xz"
+IMAGE_FSTYPES:append = " ext4 tar.xz"
 
 # Boot binaries (boot.bin and uEnv.txt)
 IMAGE_INSTALL += "u-boot-uenv"
@@ -31,7 +31,7 @@ IMAGE_INSTALL += "kernel-module-iv-ocp"
 IMAGE_INSTALL += "kernel-module-iv-zap"
 IMAGE_INSTALL += "ivfru"
 
-IMAGE_CLASSES_remove = "image-types-xilinx-qemu qemuboot-xilinx"
+IMAGE_CLASSES:remove = "image-types-xilinx-qemu qemuboot-xilinx"
 
 # Required for ivinstall:
 IMAGE_INSTALL += "parted"

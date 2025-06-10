@@ -66,7 +66,7 @@ static int mdio_i2c_gen_probe(struct i2c_client *client,
 	return of_mdiobus_register(bus, np);
 }
 
-static int mdio_i2c_gen_remove(struct i2c_client *client)
+static int mdio_i2c_gen:remove(struct i2c_client *client)
 {
 	return 0;
 }
@@ -83,7 +83,7 @@ static struct i2c_driver mdio_i2c_gen_driver = {
 		.of_match_table = of_match_ptr(mdio_i2c_gen_of_match),
 	},
 	.probe		= mdio_i2c_gen_probe,
-	.remove	= mdio_i2c_gen_remove,
+	.remove	= mdio_i2c_gen:remove,
 };
 
 module_i2c_driver(mdio_i2c_gen_driver);

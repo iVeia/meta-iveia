@@ -3,5 +3,5 @@ SRC_URI_BAD = \
     "git://git.eclipse.org/gitroot/tcf/org.eclipse.tcf.agent.git;branch=master;protocol=https"
 SRC_URI_GOOD = \
     "git://git.eclipse.org/r/tcf/org.eclipse.tcf.agent.git;branch=master;protocol=https"
-SRC_URI_remove = "${SRC_URI_BAD}"
-SRC_URI_prepend = "${SRC_URI_GOOD} "
+SRC_URI:remove = "${SRC_URI_BAD}"
+SRC_URI:prepend = "${SRC_URI_GOOD} "

@@ -9,11 +9,11 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 # depends on do_populate_sysroot, which ${IVIMG} doesn't have.
 IVIMG := "iveia-image-${IMAGE_TYPE}"
 do_deploy[depends] = "${IVIMG}:do_build"
-DEPENDS_append = " fsbl u-boot-xlnx u-boot-uenv xilinx-bootbin device-tree linux-xlnx ivstartup"
-DEPENDS_append = " xilinx-bootbin-combos"
-DEPENDS_append_zynqmp = " pmu-firmware arm-trusted-firmware"
+DEPENDS:append = " fsbl u-boot-xlnx u-boot-uenv xilinx-bootbin device-tree linux-xlnx ivstartup"
+DEPENDS:append = " xilinx-bootbin-combos"
+DEPENDS:append:zynqmp = " pmu-firmware arm-trusted-firmware"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 HEADER_DOC = "ivinstall-doc"
 HEADER_ORIG = "ivinstall-header.sh"
 HEADER = "ivinstall-header-final.sh"
@@ -54,7 +54,7 @@ IV_TAR_FILE_MAP = "\
     ${THISDIR}/files/uEnv.qspi.txt                          :   jtag/uEnv.qspi.txt \
     "
 
-IV_TAR_FILE_MAP_append_zynqmp = "\
+IV_TAR_FILE_MAP:append:zynqmp = "\
     ${DEPLOY_DIR_IMAGE}/Image                               :   boot/Image \
     ${THISDIR}/files/qspi-zynqmp.tcl                        :   jtag/qspi.tcl \
     ${THISDIR}/files/ivinstall-zynqmp.tcl                   :   jtag/ivinstall.tcl \
@@ -62,7 +62,7 @@ IV_TAR_FILE_MAP_append_zynqmp = "\
     ${DEPLOY_DIR_IMAGE}/arm-trusted-firmware.elf            :   elf/atf.elf \
     "
 
-IV_TAR_FILE_MAP_append_zynq = "\
+IV_TAR_FILE_MAP:append:zynq = "\
     ${DEPLOY_DIR_IMAGE}/uImage                              :   boot/uImage \
     ${THISDIR}/files/qspi-zynq.tcl                          :   jtag/qspi.tcl \
     ${THISDIR}/files/ivinstall-zynq.tcl                     :   jtag/ivinstall.tcl \

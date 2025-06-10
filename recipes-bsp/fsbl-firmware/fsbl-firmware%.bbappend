@@ -1,11 +1,11 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI_append_zynqmp = "\
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+SRC_URI:append:zynqmp = "\
     file://banner-added-additional-CRLF.patch \
     file://iveia-version-banner.patch \
     file://QSPI32-Workaround-for-unfinished-QSPI-transfer.patch \
     file://force-XSDPS_DEFAULT_SPEED_MODE-for-EMMC-boot-target.patch \
     "
-SRC_URI_append_zynq = "\
+SRC_URI:append:zynq = "\
     file://iveia-version-banner-zynq.patch \
     file://weaken-fsbl-hooks-zynq.patch \
     file://ps7_init-pre-and-post-hooks.patch \
@@ -22,21 +22,32 @@ do_post_configure_copy () {
 }
 inherit post-configure-patches
 PSU_INIT_PATCH          := "${THISDIR}/files/psu_init_zynqmp.patch"
-PSU_INIT_PATCH_atlas-z8 := "${THISDIR}/files/psu_init_atlas-z8.patch"
-PSU_INIT_PATCH_00126    := "${THISDIR}/files/psu_init_00126.patch"
-PSU_INIT_PATCH_00146    := "${THISDIR}/files/psu_init_00146.patch"
-POST_CONFIGURE_PATCHES_zynqmp := "\
+PSU_INIT_PATCH:atlas-z8 := "${THISDIR}/files/psu_init_atlas-z8.patch"
+PSU_INIT_PATCH:00126    := "${THISDIR}/files/psu_init_00126.patch"
+PSU_INIT_PATCH:00146    := "${THISDIR}/files/psu_init_00146.patch"
+POST_CONFIGURE_PATCHES:zynqmp := "\
+    ${THISDIR}/files/add-iveia-init-hook.patch \
     ${THISDIR}/files/add_sequence_boot.patch \
     ${PSU_INIT_PATCH} \
     "
+
+# Remove patch ddr-dots which fails on 00146
+POST_CONFIGURE_PATCHES:remove:00146 := "\
+    ${THISDIR}/files/ddr-dots.patch \
+    "
+
+# Remove patch ddr-dots which conflicts with helios-z8-mods
+POST_CONFIGURE_PATCHES:remove:00126 := "\
+    ${THISDIR}/files/ddr-dots.patch \
+    "
 # helios-z8-mods must be applied before psu_init_00126 patch
-POST_CONFIGURE_PATCHES_prepend_00126 := "\
+POST_CONFIGURE_PATCHES:prepend:00126 := "\
     ${THISDIR}/files/helios-z8-mods.patch \
     "
 
 FSBL_DIR := "${THISDIR}"
 
-FSBL_SRCS_zynqmp := "\
+FSBL_SRCS:zynqmp := "\
     ${THISDIR}/files/iv_z8_init.c \
     ${THISDIR}/files/*.h \
     ${THISDIR}/files/iv_z8_sequence_boot.c \
@@ -44,32 +55,32 @@ FSBL_SRCS_zynqmp := "\
     ${THISDIR}/files/iv_z8_user_boot_sequence.c \
     ${THISDIR}/../shared/files/iveia-ipmi.h \
     "
-FSBL_SRCS_zynq := "\
+FSBL_SRCS:zynq := "\
     ${THISDIR}/files/zynq-hooks.c \
     "
-FSBL_SRCS_append_atlas-z8 := " ${THISDIR}/files/atlas-z8.c"
-FSBL_SRCS_append_00104 := " ${THISDIR}/files/00104.c"
-FSBL_SRCS_append_00104-fs001 := " ${THISDIR}/files/00104.c"
-FSBL_SRCS_append_00104-fs002 := " ${THISDIR}/files/00104.c"
-FSBL_SRCS_append_00108 := " ${THISDIR}/files/00108.c"
-FSBL_SRCS_append_00114 := " ${THISDIR}/files/00114.c"
-FSBL_SRCS_append_00126 := " ${THISDIR}/files/00126.c"
-FSBL_SRCS_append_00127 := " ${THISDIR}/files/00127.c"
-FSBL_SRCS_append_00131 := " ${THISDIR}/files/00131.c"
-FSBL_SRCS_append_00133 := " ${THISDIR}/files/00133.c"
-FSBL_SRCS_append_00146 := " ${THISDIR}/files/00104.c"
-FSBL_SRCS_append_00172 := " ${THISDIR}/files/00172.c"
-FSBL_SRCS_append_00172-fs001 := " ${THISDIR}/files/00172.c"
-FSBL_SRCS_append_00172-fs002 := " ${THISDIR}/files/00172.c"
-FSBL_SRCS_append_00172-fs003 := " ${THISDIR}/files/00172.c"
+FSBL_SRCS:append:atlas-z8 := " ${THISDIR}/files/atlas-z8.c"
+FSBL_SRCS:append:00104 := " ${THISDIR}/files/00104.c"
+FSBL_SRCS:append:00104-fs001 := " ${THISDIR}/files/00104.c"
+FSBL_SRCS:append:00104-fs002 := " ${THISDIR}/files/00104.c"
+FSBL_SRCS:append:00108 := " ${THISDIR}/files/00108.c"
+FSBL_SRCS:append:00114 := " ${THISDIR}/files/00114.c"
+FSBL_SRCS:append:00126 := " ${THISDIR}/files/00126.c"
+FSBL_SRCS:append:00127 := " ${THISDIR}/files/00127.c"
+FSBL_SRCS:append:00131 := " ${THISDIR}/files/00131.c"
+FSBL_SRCS:append:00133 := " ${THISDIR}/files/00133.c"
+FSBL_SRCS:append:00146 := " ${THISDIR}/files/00104.c"
+FSBL_SRCS:append:00172 := " ${THISDIR}/files/00172.c"
+FSBL_SRCS:append:00172-fs001 := " ${THISDIR}/files/00172.c"
+FSBL_SRCS:append:00172-fs002 := " ${THISDIR}/files/00172.c"
+FSBL_SRCS:append:00172-fs003 := " ${THISDIR}/files/00172.c"
 
-YAML_COMPILER_FLAGS_append_00049 = " -DNO_CLKGEN"
-YAML_COMPILER_FLAGS_append_00102 = " -DNO_I2C"
-YAML_COMPILER_FLAGS_append_atlas-z8 = " -DFORCE_BOOT_BY_PN"
+YAML_COMPILER_FLAGS:append:00049 = " -DNO_CLKGEN"
+YAML_COMPILER_FLAGS:append:00102 = " -DNO_I2C"
+YAML_COMPILER_FLAGS:append:atlas-z8 = " -DFORCE_BOOT_BY_PN"
 
 inherit switch-uart
 XPARAMETERS_H = "${B}/fsbl-firmware/zynqmp_fsbl_bsp/psu_cortexa53_0/include/xparameters.h"
-SWITCH_UART_00126 := "0"
+SWITCH_UART:00126 := "0"
 
 inherit iveia-version-header
 IVEIA_VERSION_HEADER_FILE = "${B}/fsbl-firmware/iveia_version.h"
@@ -78,11 +89,11 @@ IVEIA_VERSION_HEADER_FILE = "${B}/fsbl-firmware/iveia_version.h"
 # Create variants of FSBL that have alternate iVeia boot sequences.  See
 # files/iv_z8_user_boot_sequence.c
 #
-do_compile_prepend_zynqmp() {
+do_compile:prepend:zynqmp() {
     echo "" > ${B}/flags.mak
 }
 
-do_compile_append_zynqmp() {
+do_compile:append:zynqmp() {
     cd ${B}/${XSCTH_PROJ}
     cp executable.elf ${B}/executable-default.elf
 
@@ -100,10 +111,9 @@ do_compile_append_zynqmp() {
     cp ${B}/executable-default.elf executable.elf
 }
 
-do_deploy_append_zynqmp() {
+do_deploy:append:zynqmp() {
     install -Dm 0644 ${B}/executable-qspi32.elf ${DEPLOYDIR}/fsbl-${MACHINE}-qspi32.elf
     install -Dm 0644 ${B}/executable-qspi24.elf ${DEPLOYDIR}/fsbl-${MACHINE}-qspi24.elf
 }
 
-#YAML_COMPILER_FLAGS_append = " -DFSBL_DEBUG -DFSBL_DEBUG_INFO"
-
+#YAML_COMPILER_FLAGS:append = " -DFSBL_DEBUG -DFSBL_DEBUG_INFO"

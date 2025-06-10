@@ -6,7 +6,7 @@ inherit update-rc.d
 INITSCRIPT_NAME = "sdmount.sh"
 INITSCRIPT_PARAMS = "start 50 S ."
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI = "\
     file://sdmount.sh \
@@ -16,5 +16,5 @@ do_install() {
     install -Dm 0755 ${WORKDIR}/sdmount.sh ${D}${sysconfdir}/init.d/sdmount.sh
 }
 
-FILES_${PN} = "${sysconfdir}/init.d/sdmount.sh"
+FILES:${PN} = "${sysconfdir}/init.d/sdmount.sh"
 

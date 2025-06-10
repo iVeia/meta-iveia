@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
     file://iveia-version-banner.patch \
@@ -25,11 +25,11 @@ SRC_URI += " \
     file://Documentation/devicetree/bindings/net/mdio-i2c-gen.txt;subdir=git \
     "
 
-SRC_URI_append_00068 = " \
+SRC_URI:append:00068 = " \
     file://pca953x.cfg \
     "
 
-SRC_URI_append_00049 = " \
+SRC_URI:append:00049 = " \
     file://pca953x.cfg \
     file://usb-net.cfg \
     file://usbnet-rename-to-eth.patch \
@@ -39,7 +39,7 @@ SRC_URI_append_00049 = " \
 # https://github.com/FreddyXin/ax88179_178a/issues/6
 # https://unix.stackexchange.com/a/713046
 #
-KERNEL_MODULE_PROBECONF_append_00049 = "ax88179_178a"
+KERNEL_MODULE_PROBECONF:append:00049 = "ax88179_178a"
 module_conf_ax88179_178a = "softdep ax88179_178a pre: cdc_mbim"
 
 

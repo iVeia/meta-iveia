@@ -317,7 +317,7 @@ struct file_operations ocp_fops = {
  * Thefore, it must be careful to work correctly even if some of the items
  * have not been initialized
  */
-static int ocp_remove(struct platform_device *pdev)
+static int ocp:remove(struct platform_device *pdev)
 {
 	struct ocp_dev *ocp_devp = platform_get_drvdata(pdev);
     int i;
@@ -420,7 +420,7 @@ static int ocp_probe(struct platform_device *pdev)
     return 0;
 
 fail:
-    ocp_remove( pdev );
+    ocp:remove( pdev );
     return err;
 }
 
@@ -434,7 +434,7 @@ MODULE_DEVICE_TABLE(of, ocp_of_match);
 
 static struct platform_driver ocp_driver = {
 	.probe = ocp_probe,
-	.remove = ocp_remove,
+	.remove = ocp:remove,
 	.driver = {
 		.name = "iv-ocp",
 		.of_match_table = ocp_of_match,
