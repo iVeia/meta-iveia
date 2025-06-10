@@ -392,6 +392,7 @@ run_jtag_tcl()
     else
         verify xsdb
         JTAG_DIR="$TEMP_DIR/jtag"
+        mkdir -p $JTAG_DIR
         cp $JTAG_FILES $JTAG_DIR/
 
         # list of options for xsdb TCL script
@@ -423,8 +424,6 @@ run_jtag_tcl()
             cd $JTAG_DIR
             xsdb "$TCL" $XSDB_ARGS
         ) || error "Failed running TCL script to program QSPI flash"
-
-        rm -rf $JTAG_DIR
     fi
 }
 
