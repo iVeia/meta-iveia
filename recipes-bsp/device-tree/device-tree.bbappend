@@ -37,7 +37,7 @@ OVERLAYS_NOT_COMPAT:atlas-z8 = "1"
 do_configure:append() {
     # Create DTS for ${MACHINE}.dtb
     echo "#include <${IV_MB_DTSI}>" >> ${DT_FILES_PATH}/system-top.dts
-    mv ${DT_FILES_PATH}/system-top.dts ${DT_FILES_PATH}/${MACHINE}.dts
+    cp ${DT_FILES_PATH}/system-top.dts ${DT_FILES_PATH}/${MACHINE}.dts
 
     if [ -z "${OVERLAYS_NOT_COMPAT}" ]; then
         # Combo DTBs, one for each overlay
