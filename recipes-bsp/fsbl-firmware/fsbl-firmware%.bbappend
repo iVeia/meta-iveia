@@ -1,10 +1,10 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append:zynqmp = "\
-    file://banner-added-additional-CRLF.patch \
     file://iveia-version-banner.patch \
     file://QSPI32-Workaround-for-unfinished-QSPI-transfer.patch \
     file://force-XSDPS_DEFAULT_SPEED_MODE-for-EMMC-boot-target.patch \
     "
+
 SRC_URI:append:zynq = "\
     file://iveia-version-banner-zynq.patch \
     file://weaken-fsbl-hooks-zynq.patch \
@@ -26,20 +26,10 @@ PSU_INIT_PATCH:atlas-z8 := "${THISDIR}/files/psu_init_atlas-z8.patch"
 PSU_INIT_PATCH:00126    := "${THISDIR}/files/psu_init_00126.patch"
 PSU_INIT_PATCH:00146    := "${THISDIR}/files/psu_init_00146.patch"
 POST_CONFIGURE_PATCHES:zynqmp := "\
-    ${THISDIR}/files/add-iveia-init-hook.patch \
     ${THISDIR}/files/add_sequence_boot.patch \
     ${PSU_INIT_PATCH} \
     "
 
-# Remove patch ddr-dots which fails on 00146
-POST_CONFIGURE_PATCHES:remove:00146 := "\
-    ${THISDIR}/files/ddr-dots.patch \
-    "
-
-# Remove patch ddr-dots which conflicts with helios-z8-mods
-POST_CONFIGURE_PATCHES:remove:00126 := "\
-    ${THISDIR}/files/ddr-dots.patch \
-    "
 # helios-z8-mods must be applied before psu_init_00126 patch
 POST_CONFIGURE_PATCHES:prepend:00126 := "\
     ${THISDIR}/files/helios-z8-mods.patch \
@@ -49,7 +39,7 @@ FSBL_DIR := "${THISDIR}"
 
 FSBL_SRCS:zynqmp := "\
     ${THISDIR}/files/iv_z8_init.c \
-    ${THISDIR}/files/*.h \
+    ${THISDIR}/files/clkinit_*.h \
     ${THISDIR}/files/iv_z8_sequence_boot.c \
     ${THISDIR}/files/iv_z8_sequence_boot.h \
     ${THISDIR}/files/iv_z8_user_boot_sequence.c \
