@@ -1,10 +1,10 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append:zynqmp = "\
-    file://banner-added-additional-CRLF.patch \
     file://iveia-version-banner.patch \
     file://QSPI32-Workaround-for-unfinished-QSPI-transfer.patch \
     file://force-XSDPS_DEFAULT_SPEED_MODE-for-EMMC-boot-target.patch \
     "
+
 SRC_URI:append:zynq = "\
     file://iveia-version-banner-zynq.patch \
     file://weaken-fsbl-hooks-zynq.patch \
@@ -44,7 +44,7 @@ FSBL_DIR := "${THISDIR}"
 
 FSBL_SRCS:zynqmp := "\
     ${THISDIR}/files/iv_z8_init.c \
-    ${THISDIR}/files/*.h \
+    ${THISDIR}/files/clkinit_*.h \
     ${THISDIR}/files/iv_z8_sequence_boot.c \
     ${THISDIR}/files/iv_z8_sequence_boot.h \
     ${THISDIR}/files/iv_z8_user_boot_sequence.c \
