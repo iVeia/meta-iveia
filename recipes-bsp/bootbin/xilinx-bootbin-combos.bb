@@ -13,7 +13,7 @@ DEPENDS += "bootgen-native"
 DEPENDS += "xilinx-bootbin"
 DEPENDS += "device-tree"
 
-BIF_FILE_PATH = "${STAGING_DATADIR}/bootgen.bif"
+BIF_FILE_PATH = "${DEPLOY_DIR_IMAGE}/bootgen.bif"
 
 do_compile[depends] += "fsbl-firmware:do_deploy"
 
