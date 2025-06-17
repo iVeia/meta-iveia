@@ -5,6 +5,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append = "\
     file://include-iVeia-Kconfig.patch \
     file://Kconfig;subdir=git/board/iveia \
+    file://atlas.env;subdir=git/board/iveia/atlas \
     "
 
 # C sources
@@ -12,13 +13,11 @@ SRC_URI:append = "\
     file://iveia-init.c;subdir=git/board/xilinx/common \
     file://iveia-ipmi.h;subdir=git/board/xilinx/common \
     file://eeprom-ipmi-00130.c;subdir=git/board/xilinx/common \
-    file://iveia-config.h;subdir=git/include/configs \
     "
 
 # Patches & CFG
 SRC_URI:append = "\
     file://xilinx-board-common.patch \    
-    file://setexpr-Add-explicit-support-for-32-and-64-bit-ints.patch \
     file://Fix-saveenv-causes-next-boot-to-skip-board_late_init.patch \
     file://add-iv-ipmi-fdt-hooks.patch \
     file://uboot.cfg \
@@ -26,7 +25,7 @@ SRC_URI:append = "\
     file://ivfru.c;subdir=git/cmd \
     file://ivfru_common.h;subdir=git/include \
     file://ivfru_common.c;subdir=git/cmd \
-    file://ivfru_plat.h;subdir=git/cmd \
+    file://ivfru_plat.h;subdir=git/include \
     file://ivfru_plat.c;subdir=git/cmd \
     "
 
@@ -39,12 +38,6 @@ SRC_URI:append:00068 = "\
     "
 SRC_URI:append:00130 = "\
     file://uboot-00130.cfg \
-    "
-SRC_URI:append:zynq = "\
-    file://add-iveia-config-overriding-xilinx-zynq.patch \
-    "
-SRC_URI:append:zynqmp = "\
-    file://add-iveia-config-overriding-xilinx-zynqmp.patch \
     "
 
 inherit iveia-version-header

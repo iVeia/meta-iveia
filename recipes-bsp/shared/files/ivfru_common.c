@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <vsprintf.h>
 
 #define MIN_YEAR 1996
 #define FRU_END_MARKER 0xC1
@@ -773,7 +774,7 @@ int ivfru_display(void *location)
         printf("%-*s0x%02x\n", FIELD_NAME_DISPLAY_WIDTH, "Lang code:", bia->language_code);
 	if(length > 3) {
 		ipmi_time_to_date(bia->mfg_date_time, &day, &month, &year);
-        printf("%-*s0x%02x\n", FIELD_NAME_DISPLAY_WIDTH, "Mfg Date:", day, month, year);
+        printf("%-*s%02d/%02d/%02d\n", FIELD_NAME_DISPLAY_WIDTH, "Mfg Date:", day, month, year);
 	}
 
 	length -= sizeof(*bia);

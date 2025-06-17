@@ -1,6 +1,6 @@
-From 3c215433adfecdda8a42e214046e586ba8b96f30 Mon Sep 17 00:00:00 2001
+From f989d6e4a1303abf95f00a0f0ca9110558426804 Mon Sep 17 00:00:00 2001
 From: Brian Silverman <bsilverman@iveia.com>
-Date: Wed, 8 Apr 2020 11:37:41 -0400
+Date: Wed, 11 Jun 2025 15:38:35 -0400
 Subject: [PATCH] Fix: saveenv causes next boot to skip board_late_init()
 
 We always want board_late_init() to fully run, because even when the env was
@@ -10,21 +10,21 @@ previously saved, we still need to determine the bootmode, reset reason, etc.
  1 file changed, 5 deletions(-)
 
 diff --git a/board/xilinx/zynqmp/zynqmp.c b/board/xilinx/zynqmp/zynqmp.c
-index 853f4f9..762fd6a 100644
+index 062e2e829de..34f311cb29b 100644
 --- a/board/xilinx/zynqmp/zynqmp.c
 +++ b/board/xilinx/zynqmp/zynqmp.c
-@@ -583,11 +583,6 @@ int board_late_init(void)
- 	usb_ether_init();
- #endif
+@@ -522,11 +522,6 @@ int board_late_init(void)
+ 	if (multiboot >= 0)
+ 		env_set_hex("multiboot", multiboot);
  
 -	if (!(gd->flags & GD_FLG_ENV_DEFAULT)) {
 -		debug("Saved variables - Skipping\n");
 -		return 0;
 -	}
 -
-	if (!CONFIG_IS_ENABLED(ENV_VARS_UBOOT_RUNTIME_CONFIG))
-		return 0;
-
+ 	if (!IS_ENABLED(CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG))
+ 		return 0;
+ 
 -- 
-2.7.4
+2.25.1
 

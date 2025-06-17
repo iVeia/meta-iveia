@@ -1,19 +1,19 @@
-From 03a93624ee6045219030a2b006c01b7d8118ea66 Mon Sep 17 00:00:00 2001
-From: "emil.m" <emil.m@dicortech.com>
-Date: Mon, 16 Oct 2023 12:13:28 +0530
-Subject: [PATCH] Include ivfru command
+From 7fc7f0239c08aec57c9e1c0e52e27df0c00bcf91 Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Thu, 12 Jun 2025 09:28:26 -0400
+Subject: [PATCH] include ivfru command
 
 ---
- cmd/Makefile | 5 +++
+ cmd/Makefile | 5 +++++
  1 file changed, 5 insertions(+)
 
 diff --git a/cmd/Makefile b/cmd/Makefile
-index dd86675bf2..a153eee229 100644
+index 320f0b5266e..b088fbe4241 100644
 --- a/cmd/Makefile
 +++ b/cmd/Makefile
-@@ -191,6 +191,11 @@ obj-$(CONFIG_CMD_BLOB) += blob.o
- # Android Verified Boot 2.0
- obj-$(CONFIG_CMD_AVB) += avb.o
+@@ -228,6 +228,11 @@ obj-$(CONFIG_CMD_AVB) += avb.o
+ # Foundries.IO SCP03
+ obj-$(CONFIG_CMD_SCP03) += scp03.o
  
 +# iVeia IPMI FRU info utility
 +obj-y += ivfru.o
@@ -22,7 +22,7 @@ index dd86675bf2..a153eee229 100644
 +
  obj-$(CONFIG_ARM) += arm/
  obj-$(CONFIG_RISCV) += riscv/
- obj-$(CONFIG_X86) += x86/
+ obj-$(CONFIG_SANDBOX) += sandbox/
 -- 
 2.25.1
 

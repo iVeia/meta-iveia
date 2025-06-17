@@ -45,7 +45,7 @@ static int get_qspi_info_from_label(const char *ipmi_label, int *bus, int *cs, i
 		fdt_for_each_subnode(part_ofnode, fdt, flash_ofnode) {
 			if(strncmp(fdt_get_name(fdt, part_ofnode, NULL), "partition", 9) != 0)
 				continue;
-			char *label = fdt_getprop(fdt, part_ofnode, "label", NULL);
+			char *label = (char *) fdt_getprop(fdt, part_ofnode, "label", NULL);
 			if(!label)
 				continue;
 			if(strcmp(ipmi_label, label) != 0)
@@ -53,9 +53,7 @@ static int get_qspi_info_from_label(const char *ipmi_label, int *bus, int *cs, i
 
 			// Get SPI bus
 			struct udevice *spidev = flashdev->parent;
-			*bus = spidev->seq;
-			if(*bus < 0)
-				*bus = spidev->req_seq;
+			*bus = spidev->seq_;
 			if(*bus < 0)
 				continue;
 
@@ -140,7 +138,7 @@ static int ivfru_read_qspi(int bus, int cs, int offset, void *data, int size)
 	struct udevice *dev;
 
 	/* speed and mode will be read from DT */
-	err = spi_flash_probe_bus_cs(bus, cs, 3000000, 0, &dev);
+	err = spi_flash_probe_bus_cs(bus, cs, &dev);
 	if (err)
 		return IVFRU_RET_IO_ERROR;
 
@@ -257,14 +255,14 @@ int ivfru_plat_read_from_board(enum ivfru_board board, void *mem, int offset, in
 		return IVFRU_RET_INVALID_DEVICE_TREE;
 	}
 
-	if ( (val = fdt_getprop(fdt, class_node, "i2c", NULL) )) {
+	if ( (val = (fdt32_t *)fdt_getprop(fdt, class_node, "i2c", NULL) )) {
 		bus = fdt32_to_cpu(*(val + 0));
 		addr = fdt32_to_cpu(*(val + 1));
 		ipmi_offset = fdt32_to_cpu(*(val + 2));
 
 		if(ivfru_read_i2c(bus, addr, ipmi_offset + offset, (void *) mem, size) != IVFRU_RET_SUCCESS)
 			return IVFRU_RET_IO_ERROR;
-	} else if ( (ipmi_label = fdt_getprop(fdt, class_node, "qspi", NULL) )) {
+	} else if ( (ipmi_label = (char *) fdt_getprop(fdt, class_node, "qspi", NULL) )) {
 		if ( (val = fdt_getprop(fdt, class_node, "qspi_offset", NULL) ))
 			qspi_offset = fdt32_to_cpu(*(val + 0));
 		if(get_qspi_info_from_label(ipmi_label, &bus, &cs, &ipmi_offset) != IVFRU_RET_SUCCESS) {
@@ -398,7 +396,7 @@ int ivfru_plat_write_to_board(enum ivfru_board board, void *mem, int size)
 			printf("Error: Failed to write to i2c storage!\n");
 			return IVFRU_RET_IO_ERROR;
 		}
-	} else if ( (ipmi_label = fdt_getprop(fdt, class_node, "qspi", NULL) )) {
+	} else if ( (ipmi_label = (char *) fdt_getprop(fdt, class_node, "qspi", NULL) )) {
 		if ( (val = fdt_getprop(fdt, class_node, "qspi_offset", NULL) ))
 			qspi_offset = fdt32_to_cpu(*(val + 0));
 		if(get_qspi_info_from_label(ipmi_label, &bus, &cs, &ipmi_offset) != IVFRU_RET_SUCCESS) {

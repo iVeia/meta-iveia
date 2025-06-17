@@ -1,51 +1,63 @@
-diff --git a/common/fdt_support.c b/common/fdt_support.c
-index 3440e42a25..8fbd888d57 100644
---- a/common/fdt_support.c
-+++ b/common/fdt_support.c
-@@ -17,6 +17,9 @@
- #include <exports.h>
+From 3188e3c73ca9abf1b42f437ea56ba7ff14c6ef62 Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Thu, 12 Jun 2025 09:15:45 -0400
+Subject: [PATCH] add iv ipmi fdt hooks
+
+---
+ boot/bootm.c       | 7 ++++++-
+ boot/fdt_support.c | 6 ++++++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/boot/bootm.c b/boot/bootm.c
+index cb61485c226..d2ecbaf74ca 100644
+--- a/boot/bootm.c
++++ b/boot/bootm.c
+@@ -34,6 +34,8 @@
+ #include <bootm.h>
+ #include <image.h>
+ 
++extern int iv_ipmi_chosen(void *fdt);
++
+ #define MAX_CMDLINE_SIZE	SZ_4K
+ 
+ #define IH_INITRD_ARCH IH_ARCH_DEFAULT
+@@ -328,8 +330,11 @@ int bootm_find_images(int flag, int argc, char *const argv[], ulong start,
+ 		return 1;
+ 	}
+ 
+-	if (IS_ENABLED(CONFIG_CMD_FDT))
++	if (IS_ENABLED(CONFIG_CMD_FDT)) {
+ 		set_working_fdt_addr(map_to_sysmem(images.ft_addr));
++		iv_ipmi_chosen(images.ft_addr);
++	}
++
+ #endif
+ 
+ #if CONFIG_IS_ENABLED(FIT)
+diff --git a/boot/fdt_support.c b/boot/fdt_support.c
+index b15d07765fe..b5a0a6f78d7 100644
+--- a/boot/fdt_support.c
++++ b/boot/fdt_support.c
+@@ -23,6 +23,8 @@
  #include <fdtdec.h>
+ #include <version.h>
  
 +extern int iv_ipmi_scan( void *fdt );
-+
 +
  /**
   * fdt_getprop_u32_default_node - Return a node's property or a default
   *
-@@ -1750,6 +1753,10 @@ int fdt_overlay_apply_verbose(void *fdt, void *fdto)
+@@ -2099,6 +2101,10 @@ int fdt_overlay_apply_verbose(void *fdt, void *fdto)
  			printf("make sure you've compiled with -@\n");
  		}
  	}
 +
-+    // rescan for ipmi updates after overlay successfully applied
-+    iv_ipmi_scan( fdt );
++	// rescan for ipmi updates after overlay successfully applied
++	iv_ipmi_scan( fdt );
 +
  	return err;
  }
  #endif
+-- 
+2.25.1
 
-diff --git a/common/bootm.c b/common/bootm.c
-index 167eea4a1e..46423f6194 100644
---- a/common/bootm.c
-+++ b/common/bootm.c
-@@ -30,6 +30,8 @@
- #include <bootm.h>
- #include <image.h>
- 
-+extern iv_ipmi_chosen(void *fdt);
-+
- #ifndef CONFIG_SYS_BOOTM_LEN
- /* use 8MByte as default max gunzip size */
- #define CONFIG_SYS_BOOTM_LEN	0x800000
-@@ -286,8 +288,10 @@ int bootm_find_images(int flag, int argc, char *const argv[], ulong start,
- 		return 1;
- 	}
- 
--	if (CONFIG_IS_ENABLED(CMD_FDT))
-+	if (CONFIG_IS_ENABLED(CMD_FDT)) {
- 		set_working_fdt_addr(map_to_sysmem(images.ft_addr));
-+		iv_ipmi_chosen(images.ft_addr);
-+    }
- #endif
- 
- #if IMAGE_ENABLE_FIT

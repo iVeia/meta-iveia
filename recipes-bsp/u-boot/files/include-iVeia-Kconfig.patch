@@ -1,6 +1,6 @@
-From 56e732e6bc5b3124dc7dd67ba9366744fc4d2938 Mon Sep 17 00:00:00 2001
+From 48e1cc4bb12421c8ba710a7cca40ce82d1c512d6 Mon Sep 17 00:00:00 2001
 From: Brian Silverman <bsilverman@iveia.com>
-Date: Thu, 26 May 2022 17:04:34 -0400
+Date: Thu, 12 Jun 2025 09:24:24 -0400
 Subject: [PATCH] include iVeia Kconfig
 
 ---
@@ -8,11 +8,11 @@ Subject: [PATCH] include iVeia Kconfig
  1 file changed, 1 insertion(+)
 
 diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 2a15414..5327125 100644
+index dca493eaf55..63dad0ce9f1 100644
 --- a/arch/arm/Kconfig
 +++ b/arch/arm/Kconfig
-@@ -2037,6 +2037,7 @@ source "board/phytium/durian/Kconfig"
- source "board/phytium/durian/Kconfig"
+@@ -2370,6 +2370,7 @@ source "board/phytium/durian/Kconfig"
+ source "board/phytium/pomelo/Kconfig"
  source "board/xen/xenguest_arm64/Kconfig"
  
 +source "board/iveia/Kconfig"
@@ -20,5 +20,5 @@ index 2a15414..5327125 100644
  
  endmenu
 -- 
-2.7.4
+2.25.1
 

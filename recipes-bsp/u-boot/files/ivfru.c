@@ -4,6 +4,7 @@
 #include <command.h>
 #include <vsprintf.h>
 #include "ivfru_common.h"
+#include "ivfru_plat.h"
 
 static int do_ivfru_read(struct cmd_tbl *cmdtp, int flag, int argc,
 		       char *const argv[])

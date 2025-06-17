@@ -16,6 +16,7 @@
 #include <spi_flash.h>
 #include <iveia_version.h>
 #include <ivfru_common.h>
+#include <ivfru_plat.h>
 #include "iveia-ipmi.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -185,9 +186,8 @@ static char * get_board_name_from_class(IV_BOARD_CLASS class)
         case IV_BOARD_CLASS_MB: return "Main Board";
         case IV_BOARD_CLASS_IO: return "IO Board";
         case IV_BOARD_CLASS_BP: return "BP Board";
+        default: return "Unknown Board";
     }
-
-    return "Unknown Board";
 }
 
 static void print_board_info(IV_BOARD_CLASS class)
@@ -431,17 +431,17 @@ static int board_scan_ipmi( IV_BOARD_CLASS brd_class, void *fdt )
     char iv_ipmi[ivfru_len];
     ivfru_plat_set_buffer(iv_ipmi);
 
-    if(ivfru_read(board, &iv_ipmi, 1) != IVFRU_RET_SUCCESS) {
+    if(ivfru_read(board, iv_ipmi, 1) != IVFRU_RET_SUCCESS) {
         printf("WARNING: Unable to read FRU for %s\n", get_board_name_from_class(brd_class));
         return -EIO;
     }
 
-    if(ivfru_validate(&iv_ipmi, NULL, 0) != IVFRU_RET_SUCCESS) {
+    if(ivfru_validate(iv_ipmi, NULL, 0) != IVFRU_RET_SUCCESS) {
         printf("WARNING: Unable to validate FRU for %s\n", get_board_name_from_class(brd_class));
         return -EBADMSG;
     }
 
-    ivfru_get_bia_predefined_fields(&iv_ipmi, &product_raw, &product_len, &sn_raw, &sn_len, &pn_raw, &pn_len);
+    ivfru_get_bia_predefined_fields(iv_ipmi, &product_raw, &product_len, &sn_raw, &sn_len, &pn_raw, &pn_len);
     set_ipmi_env(brd_class, product_raw, product_len, sn_raw, sn_len, pn_raw, pn_len, fdt);
     print_board_info(brd_class);
 
