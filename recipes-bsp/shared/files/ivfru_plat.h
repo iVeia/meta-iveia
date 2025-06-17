@@ -8,9 +8,9 @@ int ivfru_plat_read_from_location(void *location);
 int ivfru_plat_write_to_location(void *location);
 
 int ivfru_plat_set_buffer(void *buffer);
-void *ivfru_plat_get_buffer();
+void *ivfru_plat_get_buffer(void);
 int ivfru_plat_reserve_memory(int size);
 int ivfru_plat_set_image_size(int size);
-int ivfru_plat_get_image_size();
+int ivfru_plat_get_image_size(void);
 
 #endif // __IVFRU_PLAT_H__

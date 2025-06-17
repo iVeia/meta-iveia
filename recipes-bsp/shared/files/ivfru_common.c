@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <vsprintf.h>
 
 #define MIN_YEAR 1996
 #define FRU_END_MARKER 0xC1
