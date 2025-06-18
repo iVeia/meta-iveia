@@ -43,4 +43,7 @@ and will include the applicable variants.  If a `MACHINE` has no feature sets, t
 | 00104       | NA                        | Any
 | 00104-fs001 | Speed -2, PS 4GB          | 12
 | 00104-fs002 | Speed -1, PS 8GB          | 13
+| 00172       | Same as fs002             | Any
+| 00172-fs001 | PS 2GB                    | 01
+| 00172-fs002 | PS 512MB                  | 02
 

@@ -13,12 +13,18 @@ IV_MB_DTSI = "machine/${MACHINE}.dtsi"
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 IVIO_DIR_zynqmp = "ivio/zynqmp"
 IVIO_DIR_zynq = "ivio/zynq"
-SRC_URI += " \
+SRC_URI_append = " \
     file://atlas-z7-inc.dtsi \
     file://atlas-z8-inc.dtsi \
     file://machine/${MACHINE}.dtsi \
     file://${IVIO_DIR}/ \
     "
+
+# For MACHINEs that #include other MACHINEs, we must include the other
+# MACHINE's dtsi.
+SRC_URI_append_00104-fs001 = "file://machine/00104.dtsi"
+SRC_URI_append_00172-fs001 = "file://machine/00172.dtsi"
+SRC_URI_append_00172-fs002 = "file://machine/00172.dtsi"
 
 DTC_BFLAGS = "-p ${DT_PADDING_SIZE} -@ -H epapr"
 
