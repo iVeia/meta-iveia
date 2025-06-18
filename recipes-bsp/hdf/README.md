@@ -25,7 +25,6 @@ To recreate the Vivado project XPR file:
 
           vivado -mode batch -source design*bd.tcl
 
-    - The resulting project is located at: "vivado myproj/project_1.xpr"
 - Otherwise if the system.xsa was created with a Vivado version after 2019.2:
     - A TCL script for the Block Design (design.tcl) must have been previously
       saved alongside the system.xsa.
@@ -35,7 +34,7 @@ To recreate the Vivado project XPR file:
 
 To modify setting from Vivado:
 
-- Open the project:
+- Open the XPR project:
 
       vivado myproj/project_1.xpr
 
