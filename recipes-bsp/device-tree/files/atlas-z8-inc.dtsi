@@ -8,6 +8,8 @@
         /* uart1 is console */
         serial0 = &uart1;
         serial1 = &uart0;
+        mmc0 = &sdhci0;
+        mmc1 = &sdhci1;
     };
 
     iv_ipmi: iv_ipmi {
@@ -15,7 +17,7 @@
         #address-cells = <0x01>;
         #size-cells = <0x01>;
 
-		// see Readme.ipmi
+        // see Readme.ipmi
 
         iv_ipmi_mb: iv_mb {
             i2c = < 1 0x52 0 >;  // < bus_num addr offset >
@@ -24,31 +26,31 @@
         iv_ipmi_io: iv_io {
             i2c = < 0 0x53 0 >;  // < bus_num addr offset >
         };
-	};
+    };
 
-	refclk0: silabs_clkgen_0 {
-		compatible = "fixed-clock";
-		#clock-cells = <0>;
-		clock-frequency = <100000000>;
-	};
+    refclk0: silabs_clkgen_0 {
+        compatible = "fixed-clock";
+        #clock-cells = <0>;
+        clock-frequency = <100000000>;
+    };
 
-	refclk1: silabs_clkgen_1 {
-		compatible = "fixed-clock";
-		#clock-cells = <0>;
-		clock-frequency = <125000000>;
-	};
+    refclk1: silabs_clkgen_1 {
+        compatible = "fixed-clock";
+        #clock-cells = <0>;
+        clock-frequency = <125000000>;
+    };
 
-	refclk2: silabs_clkgen_2 {
-		compatible = "fixed-clock";
-		#clock-cells = <0>;
-		clock-frequency = <26000000>;
-	};
+    refclk2: silabs_clkgen_2 {
+        compatible = "fixed-clock";
+        #clock-cells = <0>;
+        clock-frequency = <26000000>;
+    };
 
-	refclk3: silabs_clkgen_3 {
-		compatible = "fixed-clock";
-		#clock-cells = <0>;
-		clock-frequency = <125000000>;
-	};
+    refclk3: silabs_clkgen_3 {
+        compatible = "fixed-clock";
+        #clock-cells = <0>;
+        clock-frequency = <125000000>;
+    };
 
     reserved-memory {
         #address-cells = <0x02>;
@@ -66,9 +68,9 @@
 };
 
 &psgtr {
-	status = "okay";
-	clocks = <&refclk0>, <&refclk1>, <&refclk2>, <&refclk3>;
-	clock-names = "ref0", "ref1", "ref2", "ref3";
+    status = "okay";
+    clocks = <&refclk0>, <&refclk1>, <&refclk2>, <&refclk3>;
+    clock-names = "ref0", "ref1", "ref2", "ref3";
 };
 
 /*
