@@ -1,0 +1,25 @@
+From 66437f08153aec34e84b8b03dd90e60469619d43 Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Fri, 20 Jun 2025 14:37:41 -0400
+Subject: [PATCH] u-boot: append iv_board_late_init() to chain
+
+---
+ board/xilinx/common/board.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/board/xilinx/common/board.c b/board/xilinx/common/board.c
+index 8afdd1026c6..120347b39a3 100644
+--- a/board/xilinx/common/board.c
++++ b/board/xilinx/common/board.c
+@@ -493,7 +493,7 @@ int board_late_init_xilinx(void)
+ 	if (ret)
+ 		printf("%s: Saving run time variables FAILED\n", __func__);
+ 
+-	return 0;
++	return iv_board_late_init();
+ }
+ #endif
+ 
+-- 
+2.25.1
+

@@ -5,18 +5,12 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append = "\
     file://include-iVeia-Kconfig.patch \
     file://Kconfig;subdir=git/board/iveia \
-    file://atlas.env;subdir=git/board/iveia/atlas \
-    "
-
-# C sources
-SRC_URI:append = "\
-    file://iveia-init.c;subdir=git/board/xilinx/common \
-    file://iveia-ipmi.h;subdir=git/board/xilinx/common \
-    file://eeprom-ipmi-00130.c;subdir=git/board/xilinx/common \
+    file://atlas/;subdir=git/board/iveia \
     "
 
 # Patches & CFG
 SRC_URI:append = "\
+    file://append-iv_board_late_init-to-chain.patch \
     file://xilinx-board-common.patch \    
     file://Fix-saveenv-causes-next-boot-to-skip-board_late_init.patch \
     file://add-iv-ipmi-fdt-hooks.patch \
@@ -39,6 +33,10 @@ SRC_URI:append:00068 = "\
 SRC_URI:append:00130 = "\
     file://uboot-00130.cfg \
     "
+
+do_configure:append() {
+    echo  "#undef CFG_EXTRA_ENV_SETTINGS" >> ${S}/include/configs/xilinx_zynqmp.h
+}
 
 inherit iveia-version-header
 IVEIA_VERSION_HEADER_FILE = "${S}/include/iveia_version.h"
