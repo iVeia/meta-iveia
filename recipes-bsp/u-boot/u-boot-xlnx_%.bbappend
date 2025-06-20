@@ -1,26 +1,19 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/../shared/files:"
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-# Kconfig
 SRC_URI:append = "\
-    file://include-iVeia-Kconfig.patch \
-    file://Kconfig;subdir=git/board/iveia \
     file://atlas/;subdir=git/board/iveia \
-    "
-
-# Patches & CFG
-SRC_URI:append = "\
     file://append-iv_board_late_init-to-chain.patch \
-    file://xilinx-board-common.patch \    
     file://Fix-saveenv-causes-next-boot-to-skip-board_late_init.patch \
     file://add-iv-ipmi-fdt-hooks.patch \
     file://uboot.cfg \
-    file://include-ivfru-command.patch \
-    file://ivfru.c;subdir=git/cmd \
-    file://ivfru_common.h;subdir=git/include \
-    file://ivfru_common.c;subdir=git/cmd \
-    file://ivfru_plat.h;subdir=git/include \
-    file://ivfru_plat.c;subdir=git/cmd \
+    "
+
+# Shared ivfru files must be compied separately to atlas dir
+SRC_URI:append = "\
+    file://ivfru_common.h;subdir=git/board/iveia/atlas \
+    file://ivfru_common.c;subdir=git/board/iveia/atlas \
+    file://ivfru_plat.h;subdir=git/board/iveia/atlas \
     "
 
 # MACHINE specific patches
@@ -36,6 +29,7 @@ SRC_URI:append:00130 = "\
 
 do_configure:append() {
     echo  "#undef CFG_EXTRA_ENV_SETTINGS" >> ${S}/include/configs/xilinx_zynqmp.h
+    echo  'source "board/iveia/atlas/Kconfig"' >> ${S}/Kconfig
 }
 
 inherit iveia-version-header
