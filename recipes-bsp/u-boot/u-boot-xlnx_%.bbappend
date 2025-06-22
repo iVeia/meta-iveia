@@ -14,6 +14,7 @@ SRC_URI:append = "\
     file://ivfru_common.h;subdir=git/board/iveia/atlas \
     file://ivfru_common.c;subdir=git/board/iveia/atlas \
     file://ivfru_plat.h;subdir=git/board/iveia/atlas \
+    file://iveia-ipmi.h;subdir=git/board/iveia/atlas \
     "
 
 # MACHINE specific patches
