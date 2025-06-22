@@ -53,7 +53,7 @@ index b15d07765fe..b5a0a6f78d7 100644
  	}
 +
 +	// rescan for ipmi updates after overlay successfully applied
-+	iv_ipmi_scan( fdt );
++	iv_ipmi_scan( (void *) fdt );
 +
  	return err;
  }

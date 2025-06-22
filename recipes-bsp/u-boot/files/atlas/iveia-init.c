@@ -128,8 +128,8 @@ static int iv_board_match(IV_BOARD_CLASS class, IV_BOARD_FIELD field,
  *
  * Returns non-zero on match
  */
-__attribute__((unused))
-static int iv_mb_board_ord_match(char * s)
+static int iv_mb_board_ord_match(char *s) __attribute__((unused));
+static int iv_mb_board_ord_match(char *s)
 {
     return iv_board_match(IV_BOARD_CLASS_MB, IV_BOARD_FIELD_PN,
                     IV_BOARD_SUBFIELD_PN_ORDINAL, s);
@@ -140,7 +140,8 @@ static int iv_mb_board_ord_match(char * s)
  *
  * Returns non-zero on match
  */
-static int iv_io_board_ord_match(char * s)
+static int iv_io_board_ord_match(char *s) __attribute__((unused));
+static int iv_io_board_ord_match(char *s)
 {
     return iv_board_match(IV_BOARD_CLASS_IO, IV_BOARD_FIELD_PN,
                     IV_BOARD_SUBFIELD_PN_ORDINAL, s);
@@ -518,7 +519,7 @@ int misc_init_r(void)
 		#error More than four meta-iveia* layers not supported
 	#endif
 
-    iv_ipmi_scan( gd->fdt_blob );
+    iv_ipmi_scan((void *) gd->fdt_blob);
 
     return 0;
 }
