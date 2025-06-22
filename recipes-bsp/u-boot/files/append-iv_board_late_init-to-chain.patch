@@ -4,18 +4,19 @@ Date: Fri, 20 Jun 2025 14:37:41 -0400
 Subject: [PATCH] u-boot: append iv_board_late_init() to chain
 
 ---
- board/xilinx/common/board.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ board/xilinx/common/board.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/board/xilinx/common/board.c b/board/xilinx/common/board.c
-index 8afdd1026c6..120347b39a3 100644
+index 8afdd1026c6..9ed4fcc600b 100644
 --- a/board/xilinx/common/board.c
 +++ b/board/xilinx/common/board.c
-@@ -493,7 +493,7 @@ int board_late_init_xilinx(void)
+@@ -493,7 +493,8 @@ int board_late_init_xilinx(void)
  	if (ret)
  		printf("%s: Saving run time variables FAILED\n", __func__);
  
 -	return 0;
++    int iv_board_late_init(void);
 +	return iv_board_late_init();
  }
  #endif
