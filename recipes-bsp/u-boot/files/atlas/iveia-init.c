@@ -523,3 +523,17 @@ int misc_init_r(void)
 
     return 0;
 }
+
+int iv_board_late_init(void)
+{
+    //
+    // Remove unused Xilinx env vars
+    //
+    env_set("fdt_file", NULL);
+    env_set("loadaddr", NULL);
+    env_set("preboot", NULL);
+    env_set("script_offset_f", NULL);
+    env_set("scriptaddr", NULL);
+
+    return 0;
+}
