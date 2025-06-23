@@ -66,10 +66,6 @@ FSBL_SRCS:append:00172 := " ${THISDIR}/files/00172.c"
 YAML_COMPILER_FLAGS:append:00049 = " -DNO_CLKGEN"
 YAML_COMPILER_FLAGS:append:00102 = " -DNO_I2C"
 
-inherit switch-uart
-XPARAMETERS_H = "${B}/fsbl-firmware/zynqmp_fsbl_bsp/psu_cortexa53_0/include/xparameters.h"
-SWITCH_UART:00126 := "0"
-
 inherit iveia-version-header
 IVEIA_VERSION_HEADER_FILE = "${B}/fsbl-firmware/iveia_version.h"
 
