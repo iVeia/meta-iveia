@@ -1,25 +1,22 @@
-From 5763c710ef0f8be240e255c786aceea5b32a0dd5 Mon Sep 17 00:00:00 2001
+From 353f2852f7f4269580ec4867d26a6f16c414ea32 Mon Sep 17 00:00:00 2001
 From: Brian Silverman <bsilverman@iveia.com>
-Date: Thu, 23 Apr 2020 13:08:11 -0400
+Date: Tue, 24 Jun 2025 12:39:51 -0400
 Subject: [PATCH] iveia version banner
 
 ---
- init/main.c | 3 +++
- 1 file changed, 3 insertions(+)
+ init/main.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
 diff --git a/init/main.c b/init/main.c
-index 32b2a8affafd..2e4c36ddaa6f 100644
+index c787e94cc898..a2fffcbf96f4 100644
 --- a/init/main.c
 +++ b/init/main.c
-@@ -98,6 +98,7 @@
- #include <linux/mem_encrypt.h>
- #include <linux/kcsan.h>
- #include <linux/init_syscalls.h>
+@@ -1,3 +1,4 @@
 +#include <iveia_version.h>
- 
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -866,6 +867,24 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+  *  linux/init/main.c
+@@ -895,6 +896,24 @@ void start_kernel(void)
  	boot_cpu_init();
  	page_address_init();
  	pr_notice("%s", linux_banner);
@@ -43,6 +40,7 @@ index 32b2a8affafd..2e4c36ddaa6f 100644
 +	#endif
  	early_security_init();
  	setup_arch(&command_line);
- 	setup_boot_config(command_line);
---
-2.7.4
+ 	setup_boot_config();
+-- 
+2.25.1
+
