@@ -1,10 +1,12 @@
 # Remove uneeded packages included by Xilinx.
 # Note: meson depends on python3, which is huge!
-IMAGE_INSTALL:remove += "bridge-utils"
-IMAGE_INSTALL:remove += "can-utils"
-IMAGE_INSTALL:remove += "htop"
-IMAGE_INSTALL:remove += "iperf3"
-IMAGE_INSTALL:remove += "meson"
+IMAGE_INSTALL:remove = "\
+    bridge-utils \
+    can-utils \
+    htop \
+    iperf3 \
+    meson \
+    "
 
 IMAGE_FSTYPES:remove = " \
     cpio.gz cpio.bz2 \
