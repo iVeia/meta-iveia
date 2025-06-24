@@ -935,7 +935,7 @@ struct file_operations zap_fops = {
  * Thefore, it must be careful to work correctly even if some of the items
  * have not been initialized
  */
-static int zap:remove(struct platform_device *pdev)
+static int zap_remove(struct platform_device *pdev)
 {
     int i;
 
@@ -1116,7 +1116,7 @@ static int zap_probe(struct platform_device *pdev)
 	return 0;
 
   fail:
-	zap:remove( pdev );
+	zap_remove( pdev );
 	return err;
 }
 
@@ -1129,7 +1129,7 @@ MODULE_DEVICE_TABLE(of, zap_of_match);
 
 static struct platform_driver zap_driver = {
 	.probe = zap_probe,
-	.remove = zap:remove,
+	.remove = zap_remove,
 	.driver = {
 		.name = "zap",
 		.of_match_table = zap_of_match,
