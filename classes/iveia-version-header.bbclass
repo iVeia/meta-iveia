@@ -38,6 +38,7 @@ do_pre_compile_version () {
             #define IVEIA_SRC_BUILD_HASH "${SRC_BUILD_HASH}"
             #define IVEIA_BUILD_DATE "${IVEIA_BUILD_DATE}"
             #define IVEIA_MACHINE "${MACHINE}"
+            #define IVEIA_NUM_LAYERS ${IVEIA_NUM_LAYERS}
 			EOF
         for i in `seq $IVEIA_NUM_LAYERS`; do
             # Note: POSIX does not support bash/ksh variable indirect
