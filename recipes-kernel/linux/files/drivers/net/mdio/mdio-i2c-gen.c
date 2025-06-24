@@ -14,8 +14,7 @@
 #include <linux/mdio/mdio-i2c.h>
 
 
-static int mdio_i2c_gen_probe(struct i2c_client *client,
-				 const struct i2c_device_id *id)
+static int mdio_i2c_gen_probe(struct i2c_client *client)
 {
 	struct device *dev = &client->dev;
 	struct device_node *np = dev->of_node;
@@ -25,7 +24,8 @@ static int mdio_i2c_gen_probe(struct i2c_client *client,
 	unsigned int i2c_addr;
 	int ret;
 
-	bus = mdio_i2c_alloc(dev, client->adapter);
+	bus = mdio_i2c_alloc(dev, client->adapter, MDIO_I2C_C45);
+
 	if (IS_ERR(bus)){
 		return PTR_ERR(bus);
 	}
@@ -66,9 +66,8 @@ static int mdio_i2c_gen_probe(struct i2c_client *client,
 	return of_mdiobus_register(bus, np);
 }
 
-static int mdio_i2c_gen:remove(struct i2c_client *client)
+static void mdio_i2c_gen_remove(struct i2c_client *client)
 {
-	return 0;
 }
 
 static const struct of_device_id mdio_i2c_gen_of_match[] = {
@@ -83,7 +82,7 @@ static struct i2c_driver mdio_i2c_gen_driver = {
 		.of_match_table = of_match_ptr(mdio_i2c_gen_of_match),
 	},
 	.probe		= mdio_i2c_gen_probe,
-	.remove	= mdio_i2c_gen:remove,
+	.remove	= mdio_i2c_gen_remove,
 };
 
 module_i2c_driver(mdio_i2c_gen_driver);
