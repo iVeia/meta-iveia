@@ -11,7 +11,7 @@ IVIMG := "iveia-image-${IMAGE_TYPE}"
 do_deploy[depends] = "${IVIMG}:do_build"
 DEPENDS:append = " fsbl u-boot-xlnx u-boot-uenv xilinx-bootbin device-tree linux-xlnx ivstartup"
 DEPENDS:append = " xilinx-bootbin-combos"
-DEPENDS:append:zynqmp = " pmu-firmware arm-trusted-firmware"
+DEPENDS:append:zynqmp = " pmu-firmware virtual/arm-trusted-firmware"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 HEADER_DOC = "ivinstall-doc"
