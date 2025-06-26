@@ -526,7 +526,7 @@ static int events_probe(struct platform_device *pdev)
 	}
 	memset(events_dev, 0, sizeof(struct events_dev));
 
-	events_dev->class = class_create(THIS_MODULE, "events");
+	events_dev->class = class_create("events");
 	if (IS_ERR(events_dev->class)){
 		err = PTR_ERR(events_dev->class);
 		goto fail;
