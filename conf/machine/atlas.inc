@@ -1,5 +1,3 @@
-EXTRA_IMAGE_FEATURES += "fpga-manager"
-
 UBOOT_MACHINE = "xilinx_${SOC_FAMILY}_virt_defconfig"
 
 ERROR_QA:remove = "version-going-backwards"
