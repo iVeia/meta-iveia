@@ -4,7 +4,12 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+
+#ifdef __UBOOT__
+// Uboot defines snprintf in a different header file than stdio
 #include <vsprintf.h>
+#endif
+
 
 #define MIN_YEAR 1996
 #define FRU_END_MARKER 0xC1

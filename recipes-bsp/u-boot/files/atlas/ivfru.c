@@ -2,7 +2,6 @@
 
 #include <common.h>
 #include <command.h>
-#include <vsprintf.h>
 #include "ivfru_common.h"
 #include "ivfru_plat.h"
 
