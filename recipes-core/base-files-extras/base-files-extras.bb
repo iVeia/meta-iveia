@@ -19,7 +19,7 @@ SRC_URI:append = "\
 
 RDEPENDS:${PN} += " bash"
 
-FILES:${PN}:append = " /lib/firmware/dt-overlays"
+FILES:${PN}:append = " ${libdir}/firmware/dt-overlays"
 
 do_install:append () {
         install -Dm 0755 ${WORKDIR}/overlay-mgr ${D}/usr/bin/overlay-mgr
@@ -32,7 +32,7 @@ do_install:append () {
         install -Dm 0755 ${WORKDIR}/dtc-converter ${D}/usr/bin/dtc-converter
         install -Dm 0644 ${WORKDIR}/bashrc_dev.sh ${D}/etc/profile.d/bashrc_dev.sh
         install -Dm 0755 ${WORKDIR}/ldd ${D}/usr/bin/ldd
-        install -d ${D}/lib/firmware/dt-overlays
+        install -d ${D}${libdir}/firmware/dt-overlays
         install -Dm 0644 ${WORKDIR}/sysctl.conf ${D}/etc/sysctl.conf
 }
 
