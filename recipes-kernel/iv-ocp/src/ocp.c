@@ -386,7 +386,7 @@ static int ocp_probe(struct platform_device *pdev)
     //TODO: allocate mappings array here, free in remove()
     ocp_devp->mappings = kzalloc(sizeof(struct ocp_mapping) * ocp_devp->num_addr_spaces, GFP_KERNEL);
 
-    ocp_devp->class = class_create(THIS_MODULE, "ocp");
+    ocp_devp->class = class_create("ocp");
     if (IS_ERR(ocp_devp->class))
         return PTR_ERR(ocp_devp->class);
 

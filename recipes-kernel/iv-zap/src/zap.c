@@ -1053,7 +1053,7 @@ static int zap_probe(struct platform_device *pdev)
 		goto fail;
 	}
 
-	zap_devp->class = class_create(THIS_MODULE, "zap");
+	zap_devp->class = class_create("zap");
 	if (IS_ERR(zap_devp->class)){
 		err = PTR_ERR(zap_devp->class);
 		goto fail;
