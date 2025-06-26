@@ -187,7 +187,7 @@ out:
 	return ret;
 }
 
-static int iveia_fb:remove(struct platform_device *dev)
+static int iveia_fb_remove(struct platform_device *dev)
 {
 	struct fb_info *info = platform_get_drvdata(dev);
     struct iveia_fb_par * par;
@@ -218,7 +218,7 @@ MODULE_DEVICE_TABLE(of, ivfbdev_of_match);
 
 static struct platform_driver iveia_fb_driver = {
 	.probe	    = iveia_fb_probe,
-	.remove     = iveia_fb:remove,
+	.remove     = iveia_fb_remove,
 	.driver     = {
 		.name	= MODNAME,
 		.of_match_table = ivfbdev_of_match,

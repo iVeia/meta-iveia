@@ -115,11 +115,11 @@ static int iveia_pwm_probe(struct platform_device *pdev)
 
 }
 
-static int iveia_pwm:remove(struct platform_device *pdev)
+static int iveia_pwm_remove(struct platform_device *pdev)
 {
 	struct iveia_pwm_chip *iveia_pwm = platform_get_drvdata(pdev);
 
-	return pwmchip:remove(&iveia_pwm->chip);
+	return pwmchip_remove(&iveia_pwm->chip);
 }
 
 static struct platform_driver iveia_pwm_driver = {
@@ -128,7 +128,7 @@ static struct platform_driver iveia_pwm_driver = {
 		.of_match_table = of_match_ptr(iveia_pwm_dt_ids),
 	},
 	.probe = iveia_pwm_probe,
-	.remove = iveia_pwm:remove,
+	.remove = iveia_pwm_remove,
 };
 module_platform_driver(iveia_pwm_driver);
 
