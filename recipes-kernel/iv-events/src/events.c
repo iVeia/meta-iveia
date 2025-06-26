@@ -429,7 +429,7 @@ struct file_operations events_fops = {
  * Thefore, it must be careful to work correctly even if some of the items
  * have not been initialized
  */
-static int events:remove(struct platform_device *pdev)
+static int events_remove(struct platform_device *pdev)
 {
 	pr_info("iv-events - REMOVE\n");
 
@@ -440,7 +440,7 @@ static int events:remove(struct platform_device *pdev)
 		}
 
 		if ( events_dev->dbg_dentry ) {
-			debugfs:remove_recursive(events_dev->dbg_dentry);
+			debugfs_remove_recursive(events_dev->dbg_dentry);
 		}
 
 		if ( events_dev->vsoc_mem) {
@@ -611,7 +611,7 @@ static int events_probe(struct platform_device *pdev)
 	return 0;
 
 fail:
-	events:remove(pdev);
+	events_remove(pdev);
 	return err;
 }
 
@@ -624,7 +624,7 @@ MODULE_DEVICE_TABLE(of, events_of_match);
 
 static struct platform_driver events_driver = {
 	.probe = events_probe,
-	.remove = events:remove,
+	.remove = events_remove,
 	.driver = {
 		.name = "iv-events",
 		.of_match_table = events_of_match,

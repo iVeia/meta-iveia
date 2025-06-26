@@ -255,7 +255,7 @@ error:
   return ret;
 };
 
-static int ivpass:remove(struct platform_device *pdev) {
+static int ivpass_remove(struct platform_device *pdev) {
   struct ivpass_info *info = platform_get_drvdata(pdev);
   struct v4l2_subdev *subdev = &info->subdev;
   
@@ -290,7 +290,7 @@ static struct platform_driver ivpass_driver = {
 		.of_match_table	= ivpass_of_table,
 	},
 	.probe			= ivpass_probe,
-	.remove			= ivpass:remove,
+	.remove			= ivpass_remove,
 };
 module_platform_driver(ivpass_driver);
 
