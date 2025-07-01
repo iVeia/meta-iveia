@@ -8,10 +8,13 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 inherit deploy
 
 DEPENDS += "bootgen-native"
-DEPENDS += "xilinx-bootbin"
-DEPENDS += "device-tree"
 
-BIF_FILE_PATH = "${DEPLOY_DIR_IMAGE}/bootgen.bif"
+#
+# This recipe depends on other recipes to have finished putting their files in
+# the deploy dir.
+#
+do_compile[depends] += "xilinx-bootbin:do_deploy"
+do_compile[depends] += "device-tree:do_deploy"
 
 do_compile() {
     rm -rf ${B}/bootbin
@@ -25,11 +28,12 @@ do_compile() {
     #   "set -- ...*...; if [ -e "$1" ]; then"
     # as a portable way to test if the glob macthes or not.
     #
-    set -- ${STAGING_DATADIR}/devicetree/*_combo.dtb
+    set -- ${DEPLOY_DIR_IMAGE}/devicetree/*_combo.dtb
     if [ -e "$1" ]; then
         for DTB in "$@"; do
-            sed "s/\/${MACHINE}.dtb$/\/$(basename ${DTB})/" ${BIF_FILE_PATH} > ${B}/bootgen.bif
-            BIN_BASENAME=$(basename $DTB)
+            BIN_BASENAME=$(basename ${DTB})
+            sed "s/\/${MACHINE}.dtb$/\/${BIN_BASENAME}/" "${DEPLOY_DIR_IMAGE}/bootgen.bif" \
+                > ${B}/bootgen.bif
             BIN_BASENAME_NO_EXTENSION=${BIN_BASENAME%.*}
             BIN=boot_${BIN_BASENAME_NO_EXTENSION}.bin
             bootgen -image ${B}/bootgen.bif -arch ${SOC_FAMILY} -w -o ${B}/bootbin/${BIN}
