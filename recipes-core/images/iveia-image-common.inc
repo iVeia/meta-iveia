@@ -17,11 +17,8 @@ IMAGE_FSTYPES:remove = " \
     "
 IMAGE_FSTYPES:append = " ext4 tar.xz"
 
-# Boot binaries (boot.bin and uEnv.txt)
-IMAGE_INSTALL += "u-boot-uenv"
-IMAGE_INSTALL += "xilinx-bootbin"
-
 # iVeia boot
+IMAGE_INSTALL += "xilinx-bootbin"
 IMAGE_INSTALL += "ivstartup sdmount"
 
 IMAGE_INSTALL += "opkg"
