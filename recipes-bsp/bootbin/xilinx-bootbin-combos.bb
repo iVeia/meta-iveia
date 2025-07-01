@@ -10,10 +10,13 @@ inherit deploy
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 DEPENDS += "bootgen-native"
-DEPENDS += "xilinx-bootbin"
-DEPENDS += "device-tree"
 
-BIF_FILE_PATH = "${DEPLOY_DIR_IMAGE}/bootgen.bif"
+#
+# This recipe depends on other recipes to have finished putting their files in
+# the deploy dir.
+#
+do_compile[depends] += "xilinx-bootbin:do_deploy"
+do_compile[depends] += "device-tree:do_deploy"
 
 do_compile[depends] += "fsbl-firmware:do_deploy"
 
@@ -47,15 +50,14 @@ do_compile() {
     #   "set -- ...*...; if [ -e "$1" ]; then"
     # as a portable way to test if the glob macthes or not.
     #
-    #
-    set -- ${STAGING_DATADIR}/devicetree/*_combo.dtb
+    set -- ${DEPLOY_DIR_IMAGE}/devicetree/*_combo.dtb
     if [ -e "$1" ]; then
         for DTB in "$@"; do
             BIN_SUFFIX=$(basename $DTB)
             BIN_SUFFIX=${BIN_SUFFIX%.*}
             BIN_SUFFIX=${BIN_SUFFIX#${MACHINE}_}
 
-            sed "s/\/${MACHINE}.dtb$/\/$(basename ${DTB})/" ${BIF_FILE_PATH} > ${B}/bootgen.bif
+            sed "s/\/${MACHINE}.dtb$/\/$(basename ${DTB})/" "${DEPLOY_DIR_IMAGE}/bootgen.bif" > ${B}/bootgen.bif
             run_bootgen boot_${MACHINE}_${BIN_SUFFIX}.bin
 
             if [ "${SOC_FAMILY}" = "zynqmp" ]; then
