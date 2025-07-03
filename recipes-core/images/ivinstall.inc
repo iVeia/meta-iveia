@@ -5,14 +5,21 @@ inherit deploy
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-# ivinstall depends on the final iveia image - but it can't use DEPENDS, as it
-# depends on do_populate_sysroot, which ${IVIMG} doesn't have.
+# Must guarantee that all images are in deploy dir.  Note: rootfs images depend
+# on do_image_complete on iveia-image-*, instead of do_deploy
 IVIMG := "iveia-image-${IMAGE_TYPE}"
-do_deploy[depends] = "${IVIMG}:do_build"
-DEPENDS:append = " fsbl u-boot-xlnx xilinx-bootbin device-tree linux-xlnx ivstartup"
-DEPENDS:append = " xilinx-bootbin-combos"
-DEPENDS:append:zynqmp = " pmu-firmware virtual/arm-trusted-firmware"
-EXTRA_IMAGEDEPENDS:append = " u-boot-uenv xilinx-bootbin xilinx-bootbin-combos"
+DEPLOY_DEPENDENCIES:append = " ${IVIMG}:do_image_complete"
+DEPLOY_DEPENDENCIES:append = " fsbl-firmware:do_deploy"
+DEPLOY_DEPENDENCIES:append = " u-boot-xlnx:do_deploy"
+DEPLOY_DEPENDENCIES:append = " xilinx-bootbin:do_deploy"
+DEPLOY_DEPENDENCIES:append = " device-tree:do_deploy"
+DEPLOY_DEPENDENCIES:append = " linux-xlnx:do_deploy"
+DEPLOY_DEPENDENCIES:append = " ivstartup:do_deploy"
+DEPLOY_DEPENDENCIES:append = " xilinx-bootbin-combos:do_deploy"
+DEPLOY_DEPENDENCIES:append = " u-boot-uenv:do_deploy"
+DEPLOY_DEPENDENCIES:append:zynqmp = " pmu-firmware:do_deploy"
+DEPLOY_DEPENDENCIES:append:zynqmp = " virtual/arm-trusted-firmware:do_deploy"
+do_deploy[depends] += "${DEPLOY_DEPENDENCIES}"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 HEADER_DOC = "ivinstall-doc"
