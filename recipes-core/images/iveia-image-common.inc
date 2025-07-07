@@ -44,3 +44,4 @@ gen_os_release() {
 }
 IMAGE_PREPROCESS_COMMAND += "gen_os_release; "
 
+EXTRA_IMAGE_FEATURES += "empty-root-password serial-autologin-root"
