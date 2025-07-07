@@ -5,8 +5,9 @@ inherit deploy
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-# Must guarantee that all images are in deploy dir.  Note: rootfs images depend
-# on do_image_complete on iveia-image-*, instead of do_deploy
+# Must guarantee that all images are in deploy dir before we do_compile.  Note:
+# rootfs images depend on do_image_complete on iveia-image-*, instead of
+# do_deploy
 IVIMG := "iveia-image-${IMAGE_TYPE}"
 DEPLOY_DEPENDENCIES:append = " ${IVIMG}:do_image_complete"
 DEPLOY_DEPENDENCIES:append = " fsbl-firmware:do_deploy"
@@ -19,7 +20,7 @@ DEPLOY_DEPENDENCIES:append = " xilinx-bootbin-combos:do_deploy"
 DEPLOY_DEPENDENCIES:append = " u-boot-uenv:do_deploy"
 DEPLOY_DEPENDENCIES:append:zynqmp = " pmu-firmware:do_deploy"
 DEPLOY_DEPENDENCIES:append:zynqmp = " virtual/arm-trusted-firmware:do_deploy"
-do_deploy[depends] += "${DEPLOY_DEPENDENCIES}"
+do_compile[depends] += "${DEPLOY_DEPENDENCIES}"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 HEADER_DOC = "ivinstall-doc"
