@@ -167,6 +167,7 @@ IS_TARGET=$((IS_ZYNQMP_TARGET || IS_ZYNQ_TARGET))
 (($OPTIND <= 1)) && help
 [[ -n "$MACHINE" ]] || error "INTERNAL ERROR: SoM not available"
 if [[ -n "$IOBOARD" ]]; then
+    [[ "$IOBOARD" == "none" ]] && error 'invalid ioboard "'$IOBOARD'"'
     grep -q "\<$IOBOARD\>" <<<"$IOBOARDS" || error 'invalid ioboard "'$IOBOARD'"'
 fi
 if ((USER_FAT_SIZE)); then
