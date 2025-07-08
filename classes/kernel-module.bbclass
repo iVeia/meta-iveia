@@ -5,7 +5,7 @@
 #
 # All driver files and Makefile should sit in the recipe's subdir "src"
 #
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=d478fe1a3fa276aa27da65644e60b9fc"
 
 inherit module
