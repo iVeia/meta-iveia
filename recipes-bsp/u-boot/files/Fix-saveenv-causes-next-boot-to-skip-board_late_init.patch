@@ -1,16 +1,19 @@
-From f989d6e4a1303abf95f00a0f0ca9110558426804 Mon Sep 17 00:00:00 2001
+From aea0371c12fe1e94df2bd5afa3af4e94caa5de61 Mon Sep 17 00:00:00 2001
 From: Brian Silverman <bsilverman@iveia.com>
-Date: Wed, 11 Jun 2025 15:38:35 -0400
+Date: Wed, 9 Jul 2025 19:59:34 -0400
 Subject: [PATCH] Fix: saveenv causes next boot to skip board_late_init()
 
 We always want board_late_init() to fully run, because even when the env was
 previously saved, we still need to determine the bootmode, reset reason, etc.
+
+In addition, boot_targets_setup() should always run (regardless if
+CONFIG_DISTRO_DEFAULTS is set, because it determines and displays the bootmode.
 ---
- board/xilinx/zynqmp/zynqmp.c | 5 -----
- 1 file changed, 5 deletions(-)
+ board/xilinx/zynqmp/zynqmp.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
 diff --git a/board/xilinx/zynqmp/zynqmp.c b/board/xilinx/zynqmp/zynqmp.c
-index 062e2e829de..34f311cb29b 100644
+index 062e2e829de..c86a74a0ada 100644
 --- a/board/xilinx/zynqmp/zynqmp.c
 +++ b/board/xilinx/zynqmp/zynqmp.c
 @@ -522,11 +522,6 @@ int board_late_init(void)
@@ -25,6 +28,15 @@ index 062e2e829de..34f311cb29b 100644
  	if (!IS_ENABLED(CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG))
  		return 0;
  
+@@ -534,7 +529,7 @@ int board_late_init(void)
+ 	if (ret)
+ 		return ret;
+ 
+-	if (IS_ENABLED(CONFIG_DISTRO_DEFAULTS)) {
++	{
+ 		ret = boot_targets_setup();
+ 		if (ret)
+ 			return ret;
 -- 
 2.25.1
 
