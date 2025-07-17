@@ -2,6 +2,7 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/pinctrl/pinctrl-zynqmp.h>
 #include <dt-bindings/phy/phy.h>
+#include <dt-bindings/clock/xlnx-zynqmp-clk.h>
 
 / {
     aliases {
@@ -60,6 +61,30 @@
         iv_zap_pool: iv_zap_pool@0xee00000 {
             reg = <0x00 0xee00000 0x00 0x8000000>;
         };
+    };
+
+    fclk0: fclk0 {
+        status = "okay";
+        compatible = "xlnx,fclk";
+        clocks = <&zynqmp_clk PL0_REF>;
+    };
+
+    fclk1: fclk1 {
+        status = "okay";
+        compatible = "xlnx,fclk";
+        clocks = <&zynqmp_clk PL1_REF>;
+    };
+
+    fclk2: fclk2 {
+        status = "okay";
+        compatible = "xlnx,fclk";
+        clocks = <&zynqmp_clk PL2_REF>;
+    };
+
+    fclk3: fclk3 {
+        status = "okay";
+        compatible = "xlnx,fclk";
+        clocks = <&zynqmp_clk PL3_REF>;
     };
 };
 
