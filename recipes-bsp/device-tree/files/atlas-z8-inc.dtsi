@@ -204,6 +204,16 @@
     };
 };
 
+// iVeia Atlas z8 SoMs generally have a current sense resistor as SYSMON XADC
+// input.  This is accessed via channel 30, as listed in the linux source at:
+//      Documentation/devicetree/bindings/iio/adc/xlnx,zynqmp-ams.yaml
+// Note: usage requires the SYSMON XADC block is included in the PL.
+&ams_pl {
+    channel@30 {
+        reg = <30>;
+    };
+};
+
 &amba {
     iveia_ocp {
         compatible = "iv,ocp";
