@@ -7,6 +7,7 @@ SRC_URI += " \
     file://rtc.cfg \
     file://hwmon.cfg \
     file://usb-gadget.cfg \
+    file://gpio-sysfs.cfg \
     "
 
 
