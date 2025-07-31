@@ -7,8 +7,8 @@ exp_port_pin() {
 declare -A in
 declare -A out
 
-# 24-bit GPIO Expander - i2c-0 @ 0x22 (GPIO Base = 302)
-GPIO_EXP_22_BASE=310
+# 24-bit GPIO Expander - i2c-0 @ 0x22
+GPIO_EXP_22_BASE=690
 in+=(
 [slot-id-0]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 0 0) ))
 [slot-id-1]=$(( $GPIO_EXP_22_BASE + $(exp_port_pin 0 1) ))
@@ -30,7 +30,7 @@ out+=(
 )
 
 # SoC GPIO
-GPIO_SOC_BASE=334
+GPIO_SOC_BASE=516
 in+=(
 [usb-1-fault-n]=$(( $GPIO_SOC_BASE + 10 ))
 [usb-0-fault-n]=$(( $GPIO_SOC_BASE + 11 ))
