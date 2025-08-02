@@ -40,7 +40,10 @@ instead continue to reboot from the same device.
 ## SD Card (or eMMC)
 
 The boot process from SD/eMMC requires the following files on the first
-partition of the SD/eMMC (FAT32 formatted).  The files are listed in the order
+partition of the SD/eMMC (FAT32 formatted).  When the target has booted to
+Linux, the booting SD/eMMC is mounted at /media/sd.
+
+The files are listed in the order
 that they are loaded:
 - **`boot.bin`** (REQUIRED): Boots bootloaders up to U-Boot.
 - **`uEnv.txt`** (REQUIRED): Boot script loaded by U-Boot.

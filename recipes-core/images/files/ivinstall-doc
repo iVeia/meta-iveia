@@ -236,7 +236,21 @@ OTHER OPTIONS
 
     -x
         Extract only.  Extract contents of this installer to temp directory
-        and then exit.
+        and then exit.  Temp dir name is displayed.
+
+        The temp directory will contain the following subdirs:
+            - boot: base boot images, including Linux kernel.
+            - bootbin: boot.bin images for each MACHINE/IOBOARD combination.
+            - devicetree: MACHINE's device tree binary (*.dtb), plus DT
+              overlays (*_overlay.dtbo) for each IOBOARD.  In addition,
+              combined DT binaries (*_combo.dtb) for each MACHINE/IOBOARD
+              combination.
+            - elf: ELF format images for all bootloaders, used only when
+              loading manually over JTAG.
+            - jtag: TCL scripts for loading via JTAG, used internally by this
+              script.
+            - rootfs: ramfs (initrd) and EXT4 Root FS images.
+
 
     -X EXTRACT_DIR
         Extract only.  Same as -x, but with user supplied directory path that
