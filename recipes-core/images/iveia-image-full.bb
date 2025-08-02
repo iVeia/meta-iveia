@@ -28,4 +28,5 @@ IMAGE_INSTALL += "iptables"
 IMAGE_INSTALL += "usbutils"
 
 IMAGE_INSTALL += "python3"
+IMAGE_INSTALL += "procps"
 

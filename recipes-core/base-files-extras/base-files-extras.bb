@@ -14,7 +14,6 @@ SRC_URI:append = "\
     file://dtc-converter \
     file://bashrc_dev.sh \
     file://ldd \
-    file://sysctl.conf \
     "
 
 RDEPENDS:${PN} += " bash"
@@ -33,6 +32,5 @@ do_install:append () {
         install -Dm 0644 ${WORKDIR}/bashrc_dev.sh ${D}/etc/profile.d/bashrc_dev.sh
         install -Dm 0755 ${WORKDIR}/ldd ${D}/usr/bin/ldd
         install -d ${D}${libdir}/firmware/dt-overlays
-        install -Dm 0644 ${WORKDIR}/sysctl.conf ${D}/etc/sysctl.conf
 }
 
