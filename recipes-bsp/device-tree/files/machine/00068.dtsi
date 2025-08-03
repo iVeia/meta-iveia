@@ -44,8 +44,6 @@
 };
 
 &iv_ipmi_mb {
-    wp {
-        i2c_gpio = <1 0x70 6 1>;
-    };
+    wp-gpios = <&mb_gpio_expander 6 GPIO_ACTIVE_LOW>;
 };
 

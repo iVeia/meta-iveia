@@ -6,11 +6,9 @@
 #include <dt-bindings/pinctrl/pinctrl-zynqmp.h>
 #include <dt-bindings/phy/phy.h>
 
-&iv_ipmi {
-    iv_ipmi_io: iv_io {
-        i2c = < 0 0x53 0 >;  // < bus_num addr offset >
-        wp-gpios = <&tca6424_io 8 GPIO_ACTIVE_LOW>;
-    };
+&iv_ipmi_io {
+    i2c = < 0 0x53 0 >;  // < bus_num addr offset >
+    wp-gpios = <&tca6424_io 8 GPIO_ACTIVE_LOW>;
 };
 
 &gem0 {

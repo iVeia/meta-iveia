@@ -8,9 +8,7 @@
 
 &iv_ipmi_io {
     i2c = < 0 0x53 0 >;  // < bus_num addr offset >
-    wp {
-        i2c_gpio = < 0 0x22 8 1 >; // < bus_num addr gpio_num active_state >
-    };
+    wp-gpios = <&tca6424_io 8 GPIO_ACTIVE_LOW>;
 };
 
 &gem0 {
@@ -31,7 +29,7 @@
 };
 
 &i2c0 {
-    tca6424@22 {
+    tca6424_io: tca6424@22 {
         compatible = "ti,tca6424";
         reg = <0x22>;
         gpio-controller;
