@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <arpa/inet.h>
+#include <gpiod.h>
 
 #define IPMI_DT_PATH "/proc/device-tree/iv_ipmi/"
 #define BOARD_PREFIX "iv_"
@@ -20,6 +21,56 @@
 static void *image_buffer;
 static int buffer_size = 0;
 static int image_size = 0;
+
+/*
+ * gpio_open - Open a GPIO line for output
+ *
+ * gpiochip: GPIO chip number (e.g., 0 for gpiochip0)
+ * pin: GPIO pin number on the chip
+ * active_low: 1 if GPIO is active low, 0 if active high
+ *
+ * Returns GPIO line handle or NULL on failure
+ */
+static struct gpiod_line *gpio_open(int gpiochip, int pin, int active_low)
+{
+	struct gpiod_chip *chip;
+	struct gpiod_line *line;
+
+	chip = gpiod_chip_open_by_number(gpiochip);
+	if (!chip) {
+		return NULL;
+	}
+
+	line = gpiod_chip_get_line(chip, pin);
+	if (!line) {
+		gpiod_chip_close(chip);
+		return NULL;
+	}
+
+	int flags = active_low ? GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW : 0;
+	if (gpiod_line_request_output_flags(line, "ivfru", flags, 1) < 0) {
+		gpiod_chip_close(chip);
+		return NULL;
+	}
+
+	return line;
+}
+
+/*
+ * gpio_close - Close a GPIO line
+ *
+ * line: GPIO line handle to close
+ */
+static void gpio_close(struct gpiod_line *line)
+{
+	if (line) {
+		struct gpiod_chip *chip = gpiod_line_get_chip(line);
+		gpiod_line_release(line);
+		if (chip) {
+			gpiod_chip_close(chip);
+		}
+	}
+}
 
 /*
  * get_i2c_info_from_dt - Extracts the IPMI I2C EEPROM info from the device tree.
@@ -69,116 +120,84 @@ static int get_i2c_info_from_dt(enum ivfru_board board, uint32_t *bus, uint32_t 
 
 /*
  * get_wp_info_from_dt - Extracts the IPMI I2C EEPROM write-protect GPIO pin
- * info from the device tree.
+ * info from the device tree for use with libgpiod.
  *
  * Returns IVFRU_RET_SUCCESS iff the info was extracted successfully.
+ * Sets chip to the GPIO chip number, gpio to the pin number, and active to the polarity.
  */
-static int get_wp_info_from_dt(enum ivfru_board board, uint32_t *gpio, uint32_t *active)
+static int get_wp_info_from_dt(enum ivfru_board board, int *chip, int *pin, int *active_low)
 {
-	*gpio = -1;
-	*active = -1;
-
 	char *board_str = ivfru_board2str(board);
 	if(board_str == NULL) {
 		return IVFRU_RET_INVALID_ARGUMENT;
 	}
 
 	const int path_len = strlen(IPMI_DT_PATH) + strlen(BOARD_PREFIX)
-		+ strlen(board_str) + 1 /* slash */ + 2 /* wp */
-		+ 1 /* slash */ + 8 /* i2c_gpio */
+		+ strlen(board_str) + 1 /* slash */ + 9 /* wp-gpios */
 		+ 1 /* null term */;
-	char path_i2c_gpio[path_len];
-	char path_gpio[path_len];
-	strcpy(path_gpio, IPMI_DT_PATH);
-	strcat(path_gpio, BOARD_PREFIX);
-	strcat(path_gpio, board_str);
-	strcat(path_gpio, "/wp/");
-	strcpy(path_i2c_gpio, path_gpio);
-	strcat(path_gpio, "/gpio");
-	strcat(path_i2c_gpio, "/i2c_gpio");
+	char path_gpios[path_len];
+	strcpy(path_gpios, IPMI_DT_PATH);
+	strcat(path_gpios, BOARD_PREFIX);
+	strcat(path_gpios, board_str);
+	strcat(path_gpios, "/wp-gpios");
 
-	if(access(path_i2c_gpio, R_OK) == 0) {
-		int bus = -1;
-		int addr = -1;
-		int base = -1;
-
-		int fd = open(path_i2c_gpio, O_RDONLY);
+	if(access(path_gpios, R_OK) == 0) {
+		int fd = open(path_gpios, O_RDONLY);
 		if(fd < 0)
 			return IVFRU_RET_IO_ERROR;
 
-		int rlen = 0;
-		rlen += read(fd, &bus, sizeof(bus));
-		rlen += read(fd, &addr, sizeof(addr));
-		rlen += read(fd, gpio, sizeof(*gpio));
-		rlen += read(fd, active, sizeof(*active));
-		if(rlen != sizeof(bus) + sizeof(addr) + sizeof(*gpio) + sizeof(*active))
-			return IVFRU_RET_IO_ERROR;
+		// Standard GPIO reference format: <phandle pin flags>
+		uint32_t phandle, arg;
+		if (read(fd, &arg, sizeof(arg)) != sizeof(arg)) return IVFRU_RET_IO_ERROR;
+		phandle = ntohl(arg);
+		if (read(fd, &arg, sizeof(arg)) != sizeof(arg)) return IVFRU_RET_IO_ERROR;
+		*pin = ntohl(arg);
+		if (read(fd, &arg, sizeof(arg)) != sizeof(arg)) return IVFRU_RET_IO_ERROR;
+		*active_low = !!arg;
+		close(fd);
 
-		bus = ntohl(bus);
-		addr = ntohl(addr);
-		*gpio = ntohl(*gpio);
-		*active = ntohl(*active);
-
-		char temppath[100];
-		snprintf(temppath, sizeof(temppath) - 1, "/sys/bus/i2c/devices/%d-00%02x/gpio/", bus, addr);
-		DIR *dir = opendir(temppath);
-		if (dir == NULL)
+		// Find the GPIO chip name by searching /sys/bus/gpio/devices/ for matching phandle
+		DIR *gpio_dir = opendir("/sys/bus/gpio/devices");
+		if (!gpio_dir) {
 			return IVFRU_RET_IO_ERROR;
-		struct dirent *entry;
-		while ((entry = readdir(dir)) != NULL) {
-			char *end;
-			base = strtoul(entry->d_name + 8, &end, 10);
-			if(end > entry->d_name + 8 && *end == '\0')
-				break;
-			base = -1;
 		}
-		if(base == -1)
-			return IVFRU_RET_INVALID_DEVICE_TREE;
 
-		*gpio += base;
-
-		return IVFRU_RET_SUCCESS;
-	} else if(access(path_gpio, R_OK) == 0) {
-		int fd = open(path_gpio, O_RDONLY);
-		if(fd < 0)
-			return IVFRU_RET_IO_ERROR;
-
-		int rlen = 0;
-		rlen += read(fd, gpio, sizeof(*gpio));
-		rlen += read(fd, active, sizeof(*active));
-		if(rlen != sizeof(*gpio) + sizeof(*active))
-			return IVFRU_RET_IO_ERROR;
-
-		*gpio = ntohl(*gpio);
-		*active = ntohl(*active);
-		int base = -1;
-
-		DIR *dir = opendir("/sys/class/gpio/");
-		if (dir == NULL)
-			return IVFRU_RET_IO_ERROR;
+		int found = 0;
 		struct dirent *entry;
-		while ((entry = readdir(dir)) != NULL) {
-			if(strncmp(entry->d_name, "gpiochip", 8) != 0)
+		while ((entry = readdir(gpio_dir)) != NULL && !found) {
+			if (strncmp(entry->d_name, "gpiochip", 8) != 0)
 				continue;
-			char temppath[100];
-			char ofpath[1000];
-			snprintf(temppath, sizeof(temppath) - 1, "/sys/class/gpio/%s/device/of_node", entry->d_name);
-			int ofpathsz = readlink(temppath, ofpath, sizeof(ofpath));
-			if(ofpathsz < 1)
-				continue;
-			ofpath[ofpathsz] = '\0';
-			if(strncmp(ofpath + ofpathsz - strlen(ZYNQMP_GPIO_OFNODE), ZYNQMP_GPIO_OFNODE, strlen(ZYNQMP_GPIO_OFNODE)) != 0)
-				continue;
-			char *end;
-			base = strtoul(entry->d_name + 8, &end, 10);
-			if(end > entry->d_name + 8 && *end == '\0')
-				break;
-			base = -1;
-		}
-		if(base == -1)
-			return IVFRU_RET_INVALID_DEVICE_TREE;
 
-		*gpio += base;
+			// Check the phandle for this gpiochip
+			char phandle_path[300];
+			snprintf(phandle_path, sizeof(phandle_path),
+					"/sys/bus/gpio/devices/%s/of_node/phandle", entry->d_name);
+
+			int phandle_fd = open(phandle_path, O_RDONLY);
+			if (phandle_fd >= 0) {
+				uint32_t chip_phandle;
+				if (read(phandle_fd, &chip_phandle, sizeof(chip_phandle)) == sizeof(chip_phandle)) {
+					chip_phandle = ntohl(chip_phandle);
+					if (chip_phandle == phandle) {
+						// Found matching GPIO chip - extract chip number
+						// entry->d_name is like "gpiochip0", extract the number
+						char *end;
+						*chip = strtol(entry->d_name + 8, &end, 10);
+						if (end > entry->d_name + 8 && *end == '\0') {
+							found = 1;
+						} else {
+							*chip = -1;
+						}
+					}
+				}
+				close(phandle_fd);
+			}
+		}
+		closedir(gpio_dir);
+
+		if (!found) {
+			return IVFRU_RET_INVALID_DEVICE_TREE;
+		}
 
 		return IVFRU_RET_SUCCESS;
 	}
@@ -550,28 +569,26 @@ int ivfru_plat_write_to_board(enum ivfru_board board, void *mem, int size)
 
 	if (get_i2c_info_from_dt(board, &bus, &addr, &ipmi_offset) == IVFRU_RET_SUCCESS) {
 		// Deassert write-protect gpio
-		int gpio = -1;
-		int active = -1;
-		int gpioret = get_wp_info_from_dt(board, &gpio, &active);
-		if(gpioret == IVFRU_RET_SUCCESS) {
-			char cmd[100];
-			sprintf(cmd, "echo %d > /sys/class/gpio/export", gpio);
-			system(cmd);
-			sprintf(cmd, "echo out > /sys/class/gpio/gpio%d/direction", gpio);
-			system(cmd);
-			sprintf(cmd, "echo %d > /sys/class/gpio/gpio%d/value", !active, gpio);
-			system(cmd);
+		int chip, pin, active_low;
+		int gpioret = get_wp_info_from_dt(board, &chip, &pin, &active_low);
+		struct gpiod_line *wp_line = NULL;
+
+		if (gpioret == IVFRU_RET_SUCCESS) {
+			// Open GPIO line for write protection control
+			wp_line = gpio_open(chip, pin, active_low);
+			if (wp_line) {
+				// Disable write protection: set opposite of active state
+				gpiod_line_set_value(wp_line, 1);
+			}
 		}
 
 		int ret = ivfru_write_i2c(bus, addr, ipmi_offset, (void *) mem, size);
 
-		// Assert write-protect back after write
-		if(gpioret == IVFRU_RET_SUCCESS) {
-			char cmd[100];
-			sprintf(cmd, "echo %d > /sys/class/gpio/gpio%d/value", active, gpio);
-			system(cmd);
-			sprintf(cmd, "echo %d > /sys/class/gpio/unexport", gpio);
-			system(cmd);
+		// Re-assert write protection and cleanup
+		if (wp_line) {
+			// Re-enable write protection: set to active state
+			gpiod_line_set_value(wp_line, 0);
+			gpio_close(wp_line);
 		}
 
 		if(ret != IVFRU_RET_SUCCESS) {

@@ -3,6 +3,7 @@ LICENSE = "CLOSED"
 
 RDEPENDS:${PN} += "bash"
 RDEPENDS:${PN} += "i2c-tools"
+DEPENDS += "libgpiod"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/../shared/files:"
 
@@ -17,7 +18,7 @@ S = "${WORKDIR}"
 CFLAGS:append:00130 = " -DCONFIG_EEPROM_IPMI_ALTERNATE_FOR_00130"
 
 do_compile() {
-    ${CC} -o ${PN} ivfru.c ivfru_common.c ivfru_plat.c ${CFLAGS} ${LDFLAGS}
+    ${CC} -o ${PN} ivfru.c ivfru_common.c ivfru_plat.c ${CFLAGS} ${LDFLAGS} -lgpiod
 }
 
 do_install() {
