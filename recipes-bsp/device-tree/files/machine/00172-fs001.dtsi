@@ -1,6 +1,6 @@
 #include <machine/00172.dtsi>
 
-&spi1 {
+&spi0 {
     tpm_tis@0 {
         compatible = "tcg,tpm_tis-spi";
         status = "okay";
