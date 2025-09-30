@@ -1,0 +1,32 @@
+/dts-v1/;
+/plugin/;
+
+&i2c0 {
+    status = "okay";
+    clock-frequency = <400000>;
+
+    usb@2c {
+        compatible = "microchip,usb2514bi";
+        reg = <0x2C>;
+    };
+
+    rtc@68 {
+        compatible = "stm,m41t62";
+        reg = <0x68>;
+    };
+
+    tmp@48 {
+        compatible = "national,lm75";
+        reg = <0x48>;
+    };
+
+    eeprom@53 {
+        compatible = "atmel,24c32";
+        reg = <0x53>;
+    };
+};
+
+&i2c1 {
+    status = "disabled";
+};
+
