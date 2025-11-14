@@ -16,7 +16,7 @@ PROJECT_DIR="${LAYER_NAME}-project"
 
 if [ "$1" == DONTMOVELAYER ]; then
     MOVELAYER=0
-    LAYER_FINAL_DIR=..
+    LAYER_FINAL_DIR=../..
 else
     MOVELAYER=1
     LAYER_FINAL_DIR=sources
@@ -24,7 +24,7 @@ fi
 # Clear all positional args (REQUIRED for later "source" command)
 shift $#
 
-[ "$LAYER_DIR" != "$PWD" ] || error "Cannot run from within the $LAYER_NAME layer directory"
+((MOVELAYER)) && [ "$LAYER_DIR" = "$PWD" ] && error "Cannot run from within the $LAYER_NAME layer directory"
 [ $(basename "$LAYER_DIR") = "$LAYER_NAME" ] || error "layer dir must be named $LAYER_NAME"
 mkdir "$PROJECT_DIR" || error "\"$PROJECT_DIR\" must not already exist"
 

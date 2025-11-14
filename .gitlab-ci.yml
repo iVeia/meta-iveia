@@ -1,4 +1,8 @@
+#
+# Gitlab CI - build/test/release/deploy ivinstall
+# 
 stages:
+  - build-docker
   - build
   - install
   - test
@@ -16,6 +20,7 @@ variables:
   IVINSTALL_REL_PATH: out/ivinstall
   IVINSTALL_ABS_PATH: ${CI_PROJECT_DIR}/${IVINSTALL_REL_PATH}
   IVINSTALL_TGT: ivinstall-full
+  UBUNTU_VER: "18.04"
 
   # MACHINEs that will be built and installed on the TFTP server
   MACHINES: >-
@@ -31,9 +36,26 @@ variables:
     00127
     00130
 
+.build-docker-script: &build-docker-script
+  stage: build-docker
+  script:
+    - >
+      docker build
+      -t ubuntu-yocto:$UBUNTU_VER
+      -f ./scripts/docker/Dockerfile.ubuntu-yocto-$UBUNTU_VER .
+
+build-docker-stan:
+  tags: [stan]
+  <<: *build-docker-script
+
+build-docker-joe:
+  tags: [joe]
+  <<: *build-docker-script
+
 build-job:
   stage: build
-  image: ubuntu:18.04
+  tags: [docker]
+  image: ubuntu-yocto:$UBUNTU_VER
   variables:
     # Need unshallow clone so that `git describe` works for versioning
     GIT_STRATEGY: clone
@@ -52,62 +74,40 @@ build-job:
     # These targets need to be rebuilt (if cached) in order to build in the
     # latest version stamp
     CLEAN_TGTS: fsbl-firmware u-boot-xlnx linux-xlnx xilinx-bootbin ${IVINSTALL_TGT}
+
+    SS: source setupsdk
+    IMGDIR: build/tmp/deploy/images
   timeout: 10h
   cache:
     paths:
       - $DL_DIR
-  tags:
-    - docker
   script:
     # Save CI_JOB_URL
     - echo BUILD_JOB_URL=$CI_JOB_URL > vars.env
     
-    - apt update
-    - apt install -y python python3 python3-distutils
-    - apt install -y git curl gcc g++ gawk gnupg locales
-    - apt install -y make chrpath cpio wget diffstat texinfo parted xxd
-    - locale-gen "en_US.UTF-8"
-    - export LANG=en_US.UTF-8
+    - cat /etc/lsb-release
 
-    - curl https://storage.googleapis.com/git-repo-downloads/repo-1 > /usr/local/bin/repo
-    - chmod a+rx /usr/local/bin/repo
-
-    # Yocto builds cannot be run as root (the docker default).  All commands below
-    # related to the Yocto build are run under a new "builder" user.
-    - adduser --disabled-password --gecos "" builder
-    # Force user name - required to run git
-    - su builder -c 'git config --global user.email "builder@iveia.com"'
-    - su builder -c 'git config --global user.name "iVeia Builder"'
-    # Prevent repo utility from requesting "Enable color display ...?"
-    - su builder -c 'git config --global color.ui false'
-    # Fix github deprecation of git:// paths - required to get Xilinx source
-    - su builder -c 'git config --global url."https://".insteadOf git://'
-    # Required by Yocto build because git dir has different owner (root)
-    # than build dir (builder)
-    - su builder -c "git config --global --add safe.directory ${CI_PROJECT_DIR}"
-
-    - cd ..
-    - rm -rf meta-iveia-project
-    - su builder -c "${CI_PROJECT_NAME}/download DONTMOVELAYER"
-
+    - ./download DONTMOVELAYER
     - cd meta-iveia-project
+
     - echo "DL_DIR = \"${CI_PROJECT_DIR}/${DL_DIR}\"" >> build/conf/local.conf
     - mkdir -p ${IVINSTALL_ABS_PATH}
-    - |
-      set -v # Required to force display multiline command
-      SS="source setupsdk"
-      for m in $MACHINES; do
-        su builder -c "$SS && MACHINE=$m bitbake -c cleansstate ${CLEAN_TGTS}" || exit 1
-        su builder -c "$SS && MACHINE=$m bitbake ${IVINSTALL_TGT}" || exit 1
-        cp -v build/tmp/deploy/images/$m/${IVINSTALL_TGT}-$m ${IVINSTALL_ABS_PATH} || exit 1
+
+    # Build MACHINE ivinstalls.
+    - > # NOTE: YAML FOLDING REQUIRES ALIGNED INDENT BELOW
+      for m in $MACHINES; do 
+      ($SS && MACHINE=$m bitbake ${IVINSTALL_TGT}) || exit 1;
+      pwd;
+      cp -v $IMGDIR/$m/${IVINSTALL_TGT}-$m ${IVINSTALL_ABS_PATH} || exit 1;
       done
-    - |
-      set -v # Required to force display multiline command
-      SS="source setupsdk"
+
+    # Build SDKs.
+    - > # NOTE: YAML FOLDING REQUIRES ALIGNED INDENT BELOW
       for s in $SDKS; do
-        su builder -c "$SS && MACHINE=$s bitbake iveia-image-minimal -c populate_sdk" || exit 1
-        IMG_PREFIX=build/tmp/deploy/sdk/petalinux-glibc-x86_64-iveia-image-minimal
-        cp -v ${IMG_PREFIX}-*-${s}-toolchain-*.sh ${IVINSTALL_ABS_PATH} || exit 1
+      ($SS && MACHINE=$s bitbake iveia-image-minimal -c populate_sdk) || exit 1;
+      pwd;
+      IMG_PREFIX=build/tmp/deploy/sdk/petalinux-glibc-x86_64-iveia-image-minimal;
+      cp -v ${IMG_PREFIX}-*-${s}-toolchain-*.sh ${IVINSTALL_ABS_PATH} || exit 1;
       done
     - ls -la ${IVINSTALL_ABS_PATH}
 
@@ -119,8 +119,7 @@ build-job:
 
 install-job:
   stage: install
-  tags:
-    - ivtest
+  tags: [ivtest]
   variables:
     TFTP_DIR: /srv/tftp
   script:
@@ -128,19 +127,17 @@ install-job:
     - cd ${TFTP_DIR}
     - pwd
     - ls -laR
-    - |
-      set -v # Required to force display multiline command
+    - > # NOTE: YAML FOLDING REQUIRES ALIGNED INDENT BELOW
       for m in $MACHINES; do
-        rm -rf ${m} || exit 1
-        mkdir ${m} || exit 1
-        ${IVINSTALL_ABS_PATH}/ivinstall-full-${m} -d ${m} || exit 1
+      rm -rf ${m} || exit 1;
+      mkdir ${m} || exit 1;
+      ${IVINSTALL_ABS_PATH}/ivinstall-full-${m} -d ${m} || exit 1;
       done
     - ls -laR
 
 test-job:
   stage: test
-  tags:
-    - ivtest
+  tags: [ivtest]
   variables:
     TESTPLAN: iveia/nightly
   script:
@@ -180,8 +177,7 @@ test-job:
 release-job:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
-  tags:
-    - docker
+  tags: [docker]
   rules:
     - if: $CI_COMMIT_TAG    
   script:
@@ -198,8 +194,7 @@ release-job:
 
 deploy-job:
   stage: deploy
-  tags:
-    - nas
+  tags: [nas]
   rules:
     - if: $CI_COMMIT_TAG    
   script:

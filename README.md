@@ -37,6 +37,11 @@ including Ubuntu 16.04 and 18.04.
 
 meta-iveia is currently compatible with **Xilinx tools version: "2021.2"**.
 
+## Docker
+
+For host machines that are newer than the above Ubuntu versions, the BSP can be
+built using a docker container.  See [DOCKER.md](DOCKER.md) for more info.
+
 ## Download & Build
 
 For convenience, this layer includes a script to download all dependent Xilinx
