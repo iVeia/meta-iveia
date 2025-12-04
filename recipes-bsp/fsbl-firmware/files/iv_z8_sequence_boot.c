@@ -34,12 +34,16 @@
 #define CRL_APB_BOOT_MODE_USER_USE_ALT_SHIFT    8U
 #define CRL_APB_BOOT_MODE_USER_ALT_BOOT_MODE_SHIFT     12U
 
-extern iv_boot_sequence_t boot_seq[];
-extern int boot_dev_count;
+extern iv_boot_sequence_t user_boot_seq[];
+extern int user_boot_dev_count;
+
+static iv_boot_sequence_t boot_by_pn_seq[] = {
+    { .mode = XFSBL_SD0_BOOT_MODE, .num_attempts = -1 },  // Boot by part number
+};
+static int boot_by_pn_dev_count = sizeof(boot_by_pn_seq) / sizeof(boot_by_pn_seq[0]);
 
 static char *pr_boot_mode( uint32_t mode );
 static void soft_reset( void );
-
 
 #define I2C_EEPROM_BUS_ID   XPAR_XIICPS_1_DEVICE_ID
 #define I2C_EEPROM_ADDR		0x52
@@ -149,12 +153,25 @@ int iv_sequence_boot( void )
                             CRL_APB_BOOT_MODE_USER_BOOT_MODE_SHIFT;
     uint32_t alt_boot = (boot_mode_user_reg & CRL_APB_BOOT_MODE_USER_USE_ALT_MASK) >>
                             CRL_APB_BOOT_MODE_USER_USE_ALT_SHIFT;
-    iv_boot_sequence_t *seq_entry;
+    iv_boot_sequence_t *boot_seq;
+    int boot_dev_count;
     u32 status;
 
     XFsbl_Printf(DEBUG_PRINT_ALWAYS, "iVeia seq boot mode (0x%08x): %s, %s\r\n",
             boot_mode_user_reg, pr_boot_mode(boot_mode), alt_boot ? "ALT":"NORM");
 
+    //
+    // There are two possible boot sequences:
+    //      - boot_by_pn_seq - a fixed boot sequence intended to ONLY find a
+    //          PN-based BOOTNNNN.BIN on SD card.
+    //      - user_boot_seq - standard boot seq defined in iv_z8_sequence_boot.c
+    //
+#ifdef FORCE_BOOT_BY_PN
+    boot_seq = boot_by_pn_seq;
+    boot_dev_count = boot_by_pn_dev_count;
+#else
+    boot_seq = user_boot_seq;
+    boot_dev_count = user_boot_dev_count;
     //
     // alt_boot will be false for initial power up.  if alt_boot is true, that means
     // that we got here after reset from successful completion of sequence boot below,
@@ -165,6 +182,7 @@ int iv_sequence_boot( void )
     if ( alt_boot || boot_mode == XFSBL_JTAG_BOOT_MODE ) {
         return XFSBL_SUCCESS;
     }
+#endif
 
     for ( int boot_idx = 0; boot_idx < boot_dev_count; boot_idx++ )
     {
@@ -174,7 +192,7 @@ int iv_sequence_boot( void )
         //
         // TODO: Possibly validate images XFsbl_PartitionLoad() mechanism.
         //
-        seq_entry = &boot_seq[boot_idx];
+        iv_boot_sequence_t *seq_entry = &boot_seq[boot_idx];
         int num_attempts = seq_entry->num_attempts;
         int boot_by_pn = 0;
         struct iv_ipmi ipmi;
@@ -221,6 +239,7 @@ int iv_sequence_boot( void )
                     status = XFsbl_SdInit( seq_entry->mode );
                     break;
 
+#ifndef FORCE_BOOT_BY_PN
                 case XFSBL_QSPI24_BOOT_MODE:
                     status = XFsbl_Qspi24Init( seq_entry->mode );
                     break;
@@ -228,6 +247,7 @@ int iv_sequence_boot( void )
                 case XFSBL_QSPI32_BOOT_MODE:
                     status = XFsbl_Qspi32Init( seq_entry->mode );
                     break;
+#endif
 
 #if 0  // untested
                 case XFSBL_NAND_BOOT_MODE:

@@ -21,21 +21,17 @@ do_post_configure_copy () {
     fi
 }
 inherit post-configure-patches
+DDR_DOTS_PATCH := "${THISDIR}/files/ddr-dots.patch"
 POST_CONFIGURE_PATCHES_zynqmp := "\
     ${THISDIR}/files/add-iveia-init-hook.patch \
     ${THISDIR}/files/add_sequence_boot.patch \
-    ${THISDIR}/files/ddr-dots.patch \
+    ${DDR_DOTS_PATCH} \
     "
+# Remove patch ddr-dots which fails on some builds
+POST_CONFIGURE_PATCHES_remove_atlas-z8 := "${DDR_DOTS_PATCH}"
+POST_CONFIGURE_PATCHES_remove_00126 := "${DDR_DOTS_PATCH}"
+POST_CONFIGURE_PATCHES_remove_00146 := "${DDR_DOTS_PATCH}"
 
-# Remove patch ddr-dots which fails on 00146
-POST_CONFIGURE_PATCHES_remove_00146 := "\
-    ${THISDIR}/files/ddr-dots.patch \
-    "
-
-# Remove patch ddr-dots which conflicts with helios-z8-mods
-POST_CONFIGURE_PATCHES_remove_00126 := "\
-    ${THISDIR}/files/ddr-dots.patch \
-    "
 POST_CONFIGURE_PATCHES_append_00126 := "\
     ${THISDIR}/files/helios-z8-mods.patch \
     "
@@ -53,6 +49,7 @@ FSBL_SRCS_zynqmp := "\
 FSBL_SRCS_zynq := "\
     ${THISDIR}/files/zynq-hooks.c \
     "
+FSBL_SRCS_append_atlas-z8 := " ${THISDIR}/files/atlas-z8.c"
 FSBL_SRCS_append_00104 := " ${THISDIR}/files/00104.c"
 FSBL_SRCS_append_00104-fs001 := " ${THISDIR}/files/00104.c"
 FSBL_SRCS_append_00104-fs002 := " ${THISDIR}/files/00104.c"
@@ -68,6 +65,7 @@ FSBL_SRCS_append_00172-fs002 := " ${THISDIR}/files/00172.c"
 
 YAML_COMPILER_FLAGS_append_00049 = " -DNO_CLKGEN"
 YAML_COMPILER_FLAGS_append_00102 = " -DNO_I2C"
+YAML_COMPILER_FLAGS_append_atlas-z8 = " -DFORCE_BOOT_BY_PN"
 
 inherit switch-uart
 XPARAMETERS_H = "${B}/fsbl-firmware/zynqmp_fsbl_bsp/psu_cortexa53_0/include/xparameters.h"
