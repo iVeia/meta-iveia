@@ -5,3 +5,23 @@
     compatible = "iveia,00130", "iveia,atlas-z8", "xlnx,zynqmp";
 };
 
+// Rev B: EEPROM and Temp Sensor moved from I2C1 to I2C0
+// Rev C: EEPROM_WP connected to MIO45 (gpiochip334 + MIO45 = 379)
+// Rev C: Temp Sensor removed (DNS)
+
+&iv_ipmi {
+    /delete-node/ iv_mb;
+
+    iv_ipmi_mb: iv_mb {
+        i2c = < 0 0x52 0 >;  // <bus_num addr offset>
+
+        wp {
+            gpio = < 379 1 >;  // <gpio_num active>
+        };
+    };
+};
+
+&i2c1 {
+    /delete-node/ lm75@48;
+};
+
