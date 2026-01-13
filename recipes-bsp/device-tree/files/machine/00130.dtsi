@@ -6,7 +6,7 @@
 };
 
 // Rev B: EEPROM and Temp Sensor moved from I2C1 to I2C0
-// Rev C: EEPROM_WP connected to MIO45 (gpiochip334 + MIO45 = 379)
+// Rev C: EEPROM_WP connected to MIO45
 // Rev C: Temp Sensor removed (DNS)
 
 &iv_ipmi {
@@ -16,7 +16,7 @@
         i2c = < 0 0x52 0 >;  // <bus_num addr offset>
 
         wp {
-            gpio = < 379 1 >;  // <gpio_num active>
+            gpio = < 45 1 >;  // <gpio_num active>
         };
     };
 };
