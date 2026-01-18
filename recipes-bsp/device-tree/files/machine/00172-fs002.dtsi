@@ -1,1 +1,7 @@
 #include <machine/00172.dtsi>
+
+/ {
+    model = "Atlas-II Z8e";
+    compatible = "iveia,00172-fs002", "iveia,00172", "iveia,atlas-z8", "xlnx,zynqmp";
+};
+

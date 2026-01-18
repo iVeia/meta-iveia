@@ -1,5 +1,10 @@
 #include <machine/00172.dtsi>
 
+/ {
+    model = "Atlas-II Z8e";
+    compatible = "iveia,00172-fs001", "iveia,00172", "iveia,atlas-z8", "xlnx,zynqmp";
+};
+
 &spi0 {
     tpm_tis@0 {
         compatible = "tcg,tpm_tis-spi";
