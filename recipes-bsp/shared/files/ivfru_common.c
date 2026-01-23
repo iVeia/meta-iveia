@@ -60,6 +60,16 @@ static int fru_tl_get_length(const char *address)
 }
 
 /*
+ * fru_tl_get_type - Extracts the type of the IPMI type-length field.
+ *
+ * Returns the field type.
+ */
+static enum ivfru_tlb_type fru_tl_get_type(const char *address)
+{
+	return ( ( (*address) >> 6 ) & 0x3 );
+}
+
+/*
  * fru_area_format_field - Formats the IPMI type-length field at the given
  * address with the given data.
  *
@@ -773,16 +783,16 @@ int ivfru_display(void *location)
         printf("%-*s0x%02x\n", FIELD_NAME_DISPLAY_WIDTH, "Lang code:", bia->language_code);
 	if(length > 3) {
 		ipmi_time_to_date(bia->mfg_date_time, &day, &month, &year);
-        printf("%-*s0x%02x\n", FIELD_NAME_DISPLAY_WIDTH, "Mfg Date:", day, month, year);
+		printf("%-*s%02d-%02d-%04d\n", FIELD_NAME_DISPLAY_WIDTH, "Mfg Date:", day, month, year);
 	}
 
 	length -= sizeof(*bia);
 
 	const char *fixed[] = {
-		"Manufacturer",
-		"Part Name",
-		"Serial Number",
-		"Part Number",
+		"Manufacturer:",
+		"Part Name:",
+		"Serial Number:",
+		"Part Number:",
 	};
 	char *address = bia->variable;
 	for(int i = 0; length > 0 && i < sizeof(fixed) / sizeof(fixed[0]); i++)
@@ -804,13 +814,30 @@ int ivfru_display(void *location)
 
 	for(int i = 1; length > 0 && *address != FRU_END_MARKER; i++)
 	{
+		int blen = fru_tl_get_length(address);
+		enum ivfru_tlb_type ftype = fru_tl_get_type(address);
 		int flen = 1 + fru_tl_get_length(address);
 		length -= flen;
 		char data[flen];
 		fru_area_get_field_at_address(address, data, &address);
 		char field_name[100];
 		snprintf(field_name, sizeof(field_name) - 1, "Field %d:", i);
-        printf("%-*s%s\n", FIELD_NAME_DISPLAY_WIDTH, field_name, data);
+
+		if ( IVFRU_TLB_TYPE_11 == ftype )
+		{
+			// per Language Code, assume ASCII
+			printf("%-*s%s\n", FIELD_NAME_DISPLAY_WIDTH, field_name, data);
+		}
+		else
+		{
+			// treat other types as BINARY / UNSPECIFIED, print as hex
+			printf("%-*s0x", FIELD_NAME_DISPLAY_WIDTH, field_name);
+			for ( int i = 0; i < blen; i++ )
+			{
+				printf("%02x", data[i]);
+			}
+			printf("\n");
+		}
 	}
 
 	if((valres & VAL_RES_BIA_MASK) == VAL_RES_SUCCESS)
