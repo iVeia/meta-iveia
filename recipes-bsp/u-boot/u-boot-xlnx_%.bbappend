@@ -11,7 +11,6 @@ SRC_URI_append = "\
 SRC_URI_append = "\
     file://iveia-init.c;subdir=git/board/xilinx/common \
     file://iveia-ipmi.h;subdir=git/board/xilinx/common \
-    file://eeprom-ipmi-00130.c;subdir=git/board/xilinx/common \
     file://iveia-config.h;subdir=git/include/configs \
     "
 

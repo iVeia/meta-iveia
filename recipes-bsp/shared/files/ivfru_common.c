@@ -409,7 +409,11 @@ int ivfru_bia_validate(char *biaaddress, int old_format, enum validation_result 
 			goto end;
 	}
 
+#if defined(CONFIG_EEPROM_IPMI_ALTERNATE_FOR_00130)
+	if( (bia->format_version != 0x01) && (bia->format_version != 0x04) ) {
+#else
 	if(bia->format_version != 0x01) {
+#endif
 		res |= VAL_RES_BIA_INVALID_FORMAT_VERSION;
 		if(!ignore)
 			goto end;
@@ -615,6 +619,50 @@ int ivfru_get_bia_predefined_fields(void *location, char **product, int *product
 		*pn = address + 1;
 	}
 	fru_area_get_field_at_address(address, NULL, &address);
+
+#if defined(CONFIG_EEPROM_IPMI_ALTERNATE_FOR_00130)
+	// Check for iVeia SN in "Mfg. Serial Number" custom field.
+	// Expected fields are:
+	//
+	//	 0 FRU File ID
+	//	-- start of custom fields
+	//	 1 Board Revision
+	//	 2 MAC Address 1
+	//	 3 MAC Address 2
+	//	 4 MAC Address 3
+	//	 5 Mfg Serial Number
+	//	-- end-of-fields marker
+	//
+	for ( size_t i = 0; i < 6; i++ )
+	{
+		if (*address == FRU_END_MARKER)
+		{
+			break;
+		}
+
+		int flen  = fru_tl_get_length(address);
+		int ftype = fru_tl_get_type(address);
+
+		if ( (5 == i) && (IVFRU_TLB_TYPE_11 == ftype) && (flen > 0) )
+		{
+			// override Serial Number with "Mfg. Serial Number"
+			*sn_len      = flen;
+			*sn          = address + 1;
+
+			// override Product Name
+			*product     = "Atlas-II-Z8p-HD";
+			*product_len = strlen( *product );
+
+			// override Part Number (var/rev unknown)
+			*pn          = "205-00130-XX-XX";
+			*pn_len      = strlen( *pn );
+
+			break;
+		}
+
+		fru_area_get_field_at_address(address, NULL, &address);
+	}
+#endif
 
 	return IVFRU_RET_SUCCESS;
 }
