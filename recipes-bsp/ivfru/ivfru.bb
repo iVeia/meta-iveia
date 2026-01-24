@@ -14,6 +14,8 @@ SRC_URI += "file://ivfru_plat.c"
 SRC_URI += "file://ivfru_plat.h"
 S = "${WORKDIR}"
 
+CFLAGS_append_00130 = " -DCONFIG_EEPROM_IPMI_ALTERNATE_FOR_00130"
+
 do_compile() {
     ${CC} -o ${PN} ivfru.c ivfru_common.c ivfru_plat.c ${CFLAGS} ${LDFLAGS}
 }
