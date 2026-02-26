@@ -7,11 +7,15 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 inherit deploy
 
+PACKAGE_ARCH = "${MACHINE_ARCH}"
+
 DEPENDS += "bootgen-native"
 DEPENDS += "xilinx-bootbin"
 DEPENDS += "device-tree"
 
 BIF_FILE_PATH = "${STAGING_DATADIR}/bootgen.bif"
+
+do_compile[depends] += "fsbl-firmware:do_deploy"
 
 do_compile() {
     rm -rf ${B}/bootbin
@@ -21,7 +25,7 @@ do_compile() {
     # For each combo, use bootgen.bif from xilinx-bootbin recipe, and modify
     # *.dtb to be a *_combo.dtb.  Then rebuild with bootgen.
     #
-    # There may not be ANY combos that match the shell wildcard.  We use the idiom 
+    # There may not be ANY combos that match the shell wildcard.  We use the idiom
     #   "set -- ...*...; if [ -e "$1" ]; then"
     # as a portable way to test if the glob macthes or not.
     #
@@ -49,4 +53,5 @@ do_deploy() {
     fi
 }
 addtask do_deploy after do_compile before do_build
+
 
