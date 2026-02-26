@@ -74,5 +74,36 @@ SWITCH_UART_00126 := "0"
 inherit iveia-version-header
 IVEIA_VERSION_HEADER_FILE = "${B}/fsbl-firmware/iveia_version.h"
 
+#
+# Create variants of FSBL that have alternate iVeia boot sequences.  See
+# files/iv_z8_user_boot_sequence.c
+#
+do_compile_prepend_zynqmp() {
+    echo "" > ${B}/flags.mak
+}
+
+do_compile_append_zynqmp() {
+    cd ${B}/${XSCTH_PROJ}
+    cp executable.elf ${B}/executable-default.elf
+
+    echo "include ${B}/flags.mak" >> Makefile
+
+    echo 'CC_FLAGS += -DFORCE_QSPI32_BOOT_ONLY' > ${B}/flags.mak
+    make clean && oe_runmake
+    cp executable.elf ${B}/executable-qspi32.elf
+
+    echo 'CC_FLAGS += -DFORCE_QSPI24_BOOT_ONLY' > ${B}/flags.mak
+    make clean && oe_runmake
+    cp executable.elf ${B}/executable-qspi24.elf
+
+    echo "" > ${B}/flags.mak
+    cp ${B}/executable-default.elf executable.elf
+}
+
+do_deploy_append_zynqmp() {
+    install -Dm 0644 ${B}/executable-qspi32.elf ${DEPLOYDIR}/fsbl-${MACHINE}-qspi32.elf
+    install -Dm 0644 ${B}/executable-qspi24.elf ${DEPLOYDIR}/fsbl-${MACHINE}-qspi24.elf
+}
+
 #YAML_COMPILER_FLAGS_append = " -DFSBL_DEBUG -DFSBL_DEBUG_INFO"
 
