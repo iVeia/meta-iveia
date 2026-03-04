@@ -58,9 +58,11 @@ do_compile() {
             sed "s/\/${MACHINE}.dtb$/\/$(basename ${DTB})/" ${BIF_FILE_PATH} > ${B}/bootgen.bif
             run_bootgen boot_${MACHINE}_${BIN_SUFFIX}.bin
 
-            FSBL_ELF="${DEPLOY_DIR_IMAGE}/fsbl-${MACHINE}-qspi24.elf"
-            sed -i "s| [^ ]*/fsbl\.elf| ${FSBL_ELF}|" ${B}/bootgen.bif
-            run_bootgen boot_${MACHINE}_qspi24_${BIN_SUFFIX}.bin
+            if [ "${SOC_FAMILY}" = "zynqmp" ]; then
+                FSBL_ELF="${DEPLOY_DIR_IMAGE}/fsbl-${MACHINE}-qspi24.elf"
+                sed -i "s| [^ ]*/fsbl\.elf| ${FSBL_ELF}|" ${B}/bootgen.bif
+                run_bootgen boot_${MACHINE}_qspi24_${BIN_SUFFIX}.bin
+            fi
         done
     fi
 }
