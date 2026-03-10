@@ -137,34 +137,11 @@ install-job:
 test-job:
   stage: test
   tags: [ivtest]
-  variables:
-    TESTPLAN: iveia/nightly
   script:
     # Save CI_JOB_URL
     - echo TEST_JOB_URL=$CI_JOB_URL > vars.env
-    
-    # Get latest from origin/master, regardless of what we have locally
-    - cd ~/ivtest
-    - git fetch
-    - git reset --hard origin/master
 
-    # link meta-iveia ivinstaller artifacts into ivtest dir
-    - rm -rf ivinstall
-    - ln -sf ${IVINSTALL_ABS_PATH} ivinstall
-    - ls -la ivinstall/
-
-    # Install on all targets, then test all targets, and power everything off
-    - ./ivtest -i 0-
-    - ./ivtest -d -T 0- testplans/${TESTPLAN}
-    - ./ivtest -P 0-
-    - grep ^INFO ivlog/latest/logfile
-
-    # Artifacts
-    - cp -r ivlog/latest/ ${CI_PROJECT_DIR}/${IVTEST_REL_PATH}
-
-    # Verify zero test failures
-    - cat ivlog/latest/fails
-    - test $(cat ivlog/latest/fails) == 0
+    - bash scripts/ci/citest "$TEST_FIXTURE_YAML"
 
   artifacts:
     when: always

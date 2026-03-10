@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+# citest - spawn ATP test for all carriers
+#
+
+error() {
+    echo "ERROR: $1"
+    exit 1
+}
+
+spawn_carrier_tests()
+{
+    i=$1
+    PN=$(yq ".carriers[$i].pn" "$YAML") || error "invalid YAML $i carrier pn"
+    IP=$(yq ".carriers[$i].ip" "$YAML") || error "invalid YAML $i carrier ip"
+    UUTS=$(yq ".carriers[$i].uuts | join(\" \")" "$YAML") || error "invalid YAML uuts"
+
+    echo Starting TSC agent: $PN, $IP, $UUTS
+    OPTS="--carrier_pn $PN --carrier_ip $IP --protocol CITEST"
+    PYTHONPATH=/opt/tsc/dist/agent python3 -m tsc.agent.run $OPTS "$UUTS"
+}
+
+YAML="$1"
+[ -f "$YAML" ] || error "YAML file not given (arg 1)"
+
+NUM_CARRIERS=$(yq ".carriers | length" "$YAML") || error "invalid YAML num carriers"
+PIDS=()
+for ((i=0; i<NUM_CARRIERS; i++)); do
+    spawn_carrier_tests $i &
+    PIDS+=($!)
+done
+
+for pid in "${PIDS[@]}"; do
+    wait "$pid" || error "PID $pid failed with exit code $?"
+done

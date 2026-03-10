@@ -1,0 +1,39 @@
+#
+# example.yml - a YAML config for CI test fixture
+#
+# The test fixture consists of a number of carriers, each with one or more
+# UUTs.  This file defines the structure, and provides an example for testing.
+#
+# The actual YAML used by gitlab CI should be defined in gitlab at:
+#   meta-iveia -> Settings -> CI/CD -> Variables -> CI_TEST_FIXTURE_YAML
+# The type should be "file", and it gets passed as a YAML file to
+# scripts/ci/citest
+#
+
+
+# Config section is currently empty.  Reserved for future use.
+config: {}
+
+# List of carriers
+carriers:
+    - 
+      # PN of a supported carrier for testing (00118, 00176, or others)
+      # [initially only 118 supported]
+      pn: "00118"
+
+      # IP addr of carrier.  Address must be accessible from TSC.
+      ip: 192.168.10.214
+
+      # List of UUT 5 digit SNs.  Must be EMPTY if physical slot on carrier is
+      # empty.  Num UUTs should correspond to the physical slots for the given
+      # carrier PN.
+      uuts: [EMPTY, CJABC, CZ123, EMPTY]
+
+    - pn: "00100"
+      ip: 192.168.10.215
+      uuts: [CAXYZ]
+
+carriers:
+    - pn: "00118"
+      ip: 192.168.10.214
+      uuts: [C9A6J]
