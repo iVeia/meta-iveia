@@ -123,17 +123,16 @@ install-job:
   variables:
     TFTP_DIR: /srv/tftp
   script:
-    - cp ${CI_PROJECT_DIR}/recipes-core/images/files/uEnv.shim.txt ${TFTP_DIR}/uEnv.txt
+    - cp ${CI_PROJECT_DIR}/recipes-core/images/files/uEnv.cishim.txt ${TFTP_DIR}/uEnv.txt
+    # Optionally override default TFTP serverip by appending to uEnv.txt
+
     - cd ${TFTP_DIR}
-    - pwd
-    - ls -laR
     - > # NOTE: YAML FOLDING REQUIRES ALIGNED INDENT BELOW
       for m in $MACHINES; do
       rm -rf ${m} || exit 1;
       mkdir ${m} || exit 1;
       ${IVINSTALL_ABS_PATH}/ivinstall-full-${m} -d ${m} || exit 1;
       done
-    - ls -laR
 
 test-job:
   stage: test
