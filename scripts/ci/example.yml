@@ -5,21 +5,22 @@
 # UUTs.  This file defines the structure, and provides an example for testing.
 #
 # The actual YAML used by gitlab CI should be defined in gitlab at:
-#   meta-iveia -> Settings -> CI/CD -> Variables -> CI_TEST_FIXTURE_YAML
+#   meta-iveia -> Settings -> CI/CD -> Variables -> TEST_FIXTURE_YAML
 # The type should be "file", and it gets passed as a YAML file to
 # scripts/ci/citest
 #
 
 
 # Config section is currently empty.  Reserved for future use.
-config: {}
+config:
+    protocol: CITEST
 
 # List of carriers
 carriers:
     - 
       # PN of a supported carrier for testing (00118, 00176, or others)
       # [initially only 118 supported]
-      pn: "00118"
+      sn: DH123
 
       # IP addr of carrier.  Address must be accessible from TSC.
       ip: 192.168.10.214
@@ -29,11 +30,11 @@ carriers:
       # carrier PN.
       uuts: [EMPTY, CJABC, CZ123, EMPTY]
 
-    - pn: "00100"
+    - sn: CEAHT
       ip: 192.168.10.215
       uuts: [CAXYZ]
 
 carriers:
-    - pn: "00118"
+    - sn: DH000
       ip: 192.168.10.214
       uuts: [C9A6J]

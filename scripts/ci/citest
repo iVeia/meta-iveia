@@ -11,12 +11,13 @@ error() {
 spawn_carrier_tests()
 {
     i=$1
-    PN=$(yq ".carriers[$i].pn" "$YAML") || error "invalid YAML $i carrier pn"
+    PROTOCOL=$(yq ".config.protocol" "$YAML") || error "invalid YAML config.protocol"
+    SN=$(yq ".carriers[$i].sn" "$YAML") || error "invalid YAML $i carrier sn"
     IP=$(yq ".carriers[$i].ip" "$YAML") || error "invalid YAML $i carrier ip"
     UUTS=$(yq ".carriers[$i].uuts | join(\" \")" "$YAML") || error "invalid YAML uuts"
 
-    echo Starting TSC agent: $PN, $IP, $UUTS
-    OPTS="--carrier_pn $PN --carrier_ip $IP --protocol CITEST"
+    echo Starting TSC agent: $SN, $IP, $UUTS, $PROTOCOL
+    OPTS="--carrier_sn $SN --carrier_ip $IP --protocol $PROTOCOL"
     PYTHONPATH=/opt/tsc/dist/agent python3 -m tsc.agent.run $OPTS "$UUTS"
 }
 
