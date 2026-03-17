@@ -35,6 +35,6 @@ carriers:
       uuts: [CAXYZ]
 
 carriers:
-    - sn: DH000
+    - sn: DHG4N
       ip: 192.168.10.214
-      uuts: [C9A6J]
+      uuts: [C9A6J, CZAUZ, EMPTY, C69UL]

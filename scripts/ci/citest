@@ -2,35 +2,92 @@
 #
 # citest - spawn ATP test for all carriers
 #
+# Usage: citest YAML RESULTS_DIR
+#   YAML            YAML file containing test fixture info (see example.yml)
+#   RESULTS_DIR     Dir to put test result files on test completion
+#
 
 error() {
     echo "ERROR: $1"
+    if jobs -p >/dev/null; then
+        echo "INFO: waiting for background jobs..."
+        wait
+    fi
     exit 1
 }
+
+#
+# Process args
+#
+YAML="$1"
+[ -f "$YAML" ] || error "YAML file not given/valid (arg 1)"
+RESULTS_DIR="$2"
+[ -d "$RESULTS_DIR" ] || error "RESULTS_DIR not given/valid (arg 2)"
 
 spawn_carrier_tests()
 {
     i=$1
+    shift
+    UUTS=$*
     PROTOCOL=$(yq ".config.protocol" "$YAML") || error "invalid YAML config.protocol"
     SN=$(yq ".carriers[$i].sn" "$YAML") || error "invalid YAML $i carrier sn"
     IP=$(yq ".carriers[$i].ip" "$YAML") || error "invalid YAML $i carrier ip"
-    UUTS=$(yq ".carriers[$i].uuts | join(\" \")" "$YAML") || error "invalid YAML uuts"
 
     echo Starting TSC agent: $SN, $IP, $UUTS, $PROTOCOL
     OPTS="--carrier_sn $SN --carrier_ip $IP --protocol $PROTOCOL"
-    PYTHONPATH=/opt/tsc/dist/agent python3 -m tsc.agent.run $OPTS "$UUTS"
+    cd /opt/tsc
+    export PYTHONPATH=/opt/tsc/dist/agent
+
+
+    #
+    # Currently, tsc.agent.run can only handle running UUTs of the same type.
+    # As a workaround, we run each UUT on this carrier sequentially.
+    #
+    empties=()
+    for uut in $UUTS; do
+        if [ $uut != EMPTY ]; then
+            CMD="tsc.agent.run $OPTS ${empties[@]} $uut"
+            echo "RUNNING: $CMD"
+            python3 -m $CMD
+        fi
+        empties+=(EMPTY)
+    done
 }
 
-YAML="$1"
-[ -f "$YAML" ] || error "YAML file not given (arg 1)"
+#
+# TSC manager should not be running during our test, as it might possibly
+# archive our test result files before we get to save them.
+#
+cleanup() {
+    sudo systemctl start tsc-mgr.service
+    rm -f "$START_MARKER"
+}
+sudo systemctl stop tsc-mgr.service || error "failed to stop tsc-mgr"
+START_MARKER=$(mktemp)
+trap cleanup EXIT
 
 NUM_CARRIERS=$(yq ".carriers | length" "$YAML") || error "invalid YAML num carriers"
+ALL_UUTS=()
 PIDS=()
 for ((i=0; i<NUM_CARRIERS; i++)); do
-    spawn_carrier_tests $i &
+    UUTS=$(yq ".carriers[$i].uuts[]" "$YAML") || error "invalid YAML uuts"
+    for uut in $UUTS; do
+        [ $uut != EMPTY ] && ALL_UUTS+=($uut)
+    done
+    spawn_carrier_tests $i $UUTS &
     PIDS+=($!)
 done
 
+#
+# Wait for all tests to complete
+#
 for pid in "${PIDS[@]}"; do
     wait "$pid" || error "PID $pid failed with exit code $?"
+done
+
+#
+# Save all results files - only ones for the UUTs we've just tested that are new.
+#
+for uut in "${ALL_UUTS[@]}"; do
+    find /opt/tsc/tests/ -newer "$START_MARKER" -name "${uut}-*.txt" -exec cp {} "$RESULTS_DIR/" \;
 done
