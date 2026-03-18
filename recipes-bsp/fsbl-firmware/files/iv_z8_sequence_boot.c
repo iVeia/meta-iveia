@@ -177,9 +177,11 @@ int iv_sequence_boot( void )
     // that we got here after reset from successful completion of sequence boot below,
     // so return success to continue on with boot
     //
-    // Also, must do normal FSBL boot handling if in JTAG mode.
+    // Also, sequence boot only applies in QSPI mode, must do normal FSBL boot
+    // handling in JTAG/SD0/SD1/etc. mode.
     //
-    if ( alt_boot || boot_mode == XFSBL_JTAG_BOOT_MODE ) {
+    int is_qspi_mode = ( XFSBL_QSPI24_BOOT_MODE == boot_mode ) || ( XFSBL_QSPI32_BOOT_MODE == boot_mode );
+    if ( alt_boot || !is_qspi_mode ) {
         return XFSBL_SUCCESS;
     }
 #endif
