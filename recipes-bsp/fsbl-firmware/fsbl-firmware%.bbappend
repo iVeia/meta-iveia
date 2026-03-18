@@ -21,18 +21,16 @@ do_post_configure_copy () {
     fi
 }
 inherit post-configure-patches
-DDR_DOTS_PATCH := "${THISDIR}/files/ddr-dots.patch"
+PSU_INIT_PATCH          := "${THISDIR}/files/psu_init_zynqmp.patch"
+PSU_INIT_PATCH_atlas-z8 := "${THISDIR}/files/psu_init_atlas-z8.patch"
+PSU_INIT_PATCH_00126    := "${THISDIR}/files/psu_init_00126.patch"
+PSU_INIT_PATCH_00146    := "${THISDIR}/files/psu_init_00146.patch"
 POST_CONFIGURE_PATCHES_zynqmp := "\
-    ${THISDIR}/files/add-iveia-init-hook.patch \
     ${THISDIR}/files/add_sequence_boot.patch \
-    ${DDR_DOTS_PATCH} \
+    ${PSU_INIT_PATCH} \
     "
-# Remove patch ddr-dots which fails on some builds
-POST_CONFIGURE_PATCHES_remove_atlas-z8 := "${DDR_DOTS_PATCH}"
-POST_CONFIGURE_PATCHES_remove_00126 := "${DDR_DOTS_PATCH}"
-POST_CONFIGURE_PATCHES_remove_00146 := "${DDR_DOTS_PATCH}"
-
-POST_CONFIGURE_PATCHES_append_00126 := "\
+# helios-z8-mods must be applied before psu_init_00126 patch
+POST_CONFIGURE_PATCHES_prepend_00126 := "\
     ${THISDIR}/files/helios-z8-mods.patch \
     "
 
