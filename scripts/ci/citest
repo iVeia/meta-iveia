@@ -77,6 +77,8 @@ for ((i=0; i<NUM_CARRIERS; i++)); do
     spawn_carrier_tests $i $UUTS &
     PIDS+=($!)
 done
+echo ALL_UUTS:
+printf '\t%s\n' "${ALL_UUTS[@]}"
 
 #
 # Wait for all tests to complete
@@ -91,3 +93,15 @@ done
 for uut in "${ALL_UUTS[@]}"; do
     find /opt/tsc/tests/ -newer "$START_MARKER" -name "${uut}-*.txt" -exec cp {} "$RESULTS_DIR/" \;
 done
+
+#
+# There should be one log per UUT.  All logs must report PASS in filename
+#
+shopt -s nullglob
+ALL_LOGS=(    "$RESULTS_DIR"/*-CITEST-*.txt     )
+PASSED_LOGS=( "$RESULTS_DIR"/*-CITEST-*PASS.txt )
+echo ALL_LOGS:
+printf '\t%s\n' "${ALL_LOGS[@]}"
+(( ${#ALL_LOGS[@]} == ${#ALL_UUTS[@]} )) \
+    || error "Num CITEST logs (${#ALL_LOGS[@]}) less that num UUTs (${#ALL_UUTS[@]})"
+(( ${#PASSED_LOGS[@]} == ${#ALL_LOGS[@]} )) || error "Some UUTs did not pass"
