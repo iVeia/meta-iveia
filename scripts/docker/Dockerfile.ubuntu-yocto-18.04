@@ -48,6 +48,8 @@ RUN git config --global user.name "iVeia Builder"
 RUN git config --global color.ui false
 # Fix github deprecation of git:// paths - required to get Xilinx source
 RUN git config --global url."https://".insteadOf git://
+# Allow git to run in directories owned by a different user (e.g. CI runner)
+RUN git config --global --add safe.directory '*'
 
 # Set working directory
 WORKDIR /home/builder
