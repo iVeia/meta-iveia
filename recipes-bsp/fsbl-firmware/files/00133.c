@@ -6,7 +6,7 @@
 
 int iv_z8_has_clock_chip()
 {
-    return 0;
+    return 1;
 }
 
 void iv_z8_init_before_hook()
