@@ -127,11 +127,12 @@ install-job:
     # Optionally override default TFTP serverip by appending to uEnv.txt
 
     - cd ${TFTP_DIR}
+    - cp /opt/tsc/dist/uut .
     - > # NOTE: YAML FOLDING REQUIRES ALIGNED INDENT BELOW
       for m in $MACHINES; do
       rm -rf ${m} || exit 1;
       mkdir ${m} || exit 1;
-      ${IVINSTALL_ABS_PATH}/ivinstall-full-${m} -d ${m} || exit 1;
+      ${IVINSTALL_ABS_PATH}/ivinstall-full-${m} -i a3io-atp2 -d ${m} || exit 1;
       done
 
 test-job:
