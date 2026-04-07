@@ -145,7 +145,7 @@ test-job:
 
     # TEST_FIXTURE_YAML is defined in gitlab CI.  See example.yml
     - mkdir "$TEST_REL_PATH"
-    - bash scripts/ci/citest "$TEST_FIXTURE_YAML" "$TEST_REL_PATH" >"$TEST_LOG" 2>&1
+    - bash scripts/ci/citest "$TEST_FIXTURE_YAML" "$TEST_REL_PATH" 2>&1 | tee "$TEST_LOG"
 
   artifacts:
     when: always
