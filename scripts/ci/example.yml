@@ -33,8 +33,3 @@ carriers:
     - sn: CEAHT
       ip: 192.168.10.215
       uuts: [CAXYZ]
-
-carriers:
-    - sn: DHG4N
-      ip: 192.168.10.214
-      uuts: [C9A6J, CZAUZ, EMPTY, C69UL]
