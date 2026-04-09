@@ -1,5 +1,6 @@
 #
-# Duplicate of uEnv.shim.txt for CI testing
+# Duplicate (modified) of uEnv.shim.txt for CI testing
+#
 #
 # This variation runs a pre_boot_kernel_hook that defines a Linux startup
 # script to install the uut service.
@@ -8,6 +9,12 @@
 # is in this file, but it can be overidden by appending another serverip=XXX
 # line to this file when it is installed.
 #
+
+#
+# Startup script retries tftp until success.  Initial tries will fail until
+# network is up.
+#
+serverip=192.168.10.1
 set_fdt_chosen_startup=\
     fdt set /chosen startup "\
         until tftp -g -r uut -l /usr/bin/uut ${serverip}; do \
@@ -16,11 +23,27 @@ set_fdt_chosen_startup=\
         chmod 755 /usr/bin/uut; \
         uut start; \
         "
+
+#
+# Instead of using the default installed overlay.dtbo, use the specific dtbo
+# for the carrier PN programmed into the EEPROM.  If the carrier EEPROM is not
+# programmed, assume an ATP2 carrier (00118)
+#
+set_overlay=\
+    if test -n "${iv_io_ord}"; then \
+        setenv fdto_file ${iv_io_ord}.dtbo; \
+    else \
+        setenv fdto_file 00118.dtbo; \
+    fi
+
+#
+# See uEnv.shim.txt.  Modified to include *_hooks.
+#
 bootenv_cmd=\
     setenv pn ${iv_mb}; \
     setexpr pn sub "^205-" ""; \
     setexpr pn sub "-.*" "" ; \
     setenv altpath ${pn}; \
     setenv pre_boot_kernel_hook run set_fdt_chosen_startup; \
+    setenv pre_bootenv_cmd_hook run set_overlay; \
     boot
-serverip=192.168.10.1

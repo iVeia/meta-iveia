@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# CI install
+#
+# Must be envoked from gitlab CI.  CWD should be TFTP dir (i.e. installation
+# location)
+#
+# Usage: install IVINSTALL MACHINE
+#   IVINSTALL   Absolute path of ivinstall image
+#   MACHINE     MACHINE name (5 digit PN)
+
+error() {
+    echo "ERROR: $1"
+    exit 1
+}
+
+IVINSTALL_DIR=$1
+MACHINE=$2
+
+ARCHIVE_DIR=archive_dir
+
+rm -rf ${MACHINE} || error "Cannot remove dir ${MACHINE}"
+mkdir ${MACHINE} ||  error "Cannot make dir ${MACHINE}"
+${IVINSTALL_DIR}/ivinstall-full-${MACHINE} -d ${MACHINE} || error "ivinstall -d failed"
+
+#
+# Install ivinstall binaries and overlays.  Overlays are renamed to their
+# PN.dtbo so they are easy to find at boot.
+#
+copy_if_exists()
+{
+    if [ -f "$1" ]; then
+        cp "$1" "$2" || error "cp failed"
+    fi
+}
+rm -rf ${ARCHIVE_DIR} || error "Cannot remove dir ${ARCHIVE_DIR}"
+${IVINSTALL_DIR}/ivinstall-full-${MACHINE} -X ${ARCHIVE_DIR} || error "ivinstall -X failed"
+copy_if_exists ${ARCHIVE_DIR}/devicetree/a3io-atp2_overlay.dtbo     ${MACHINE}/00118.dtbo
+copy_if_exists ${ARCHIVE_DIR}/devicetree/a3io-aurora_overlay.dtbo   ${MACHINE}/00100.dtbo
+copy_if_exists ${ARCHIVE_DIR}/devicetree/a3io-sierra_overlay.dtbo   ${MACHINE}/00087.dtbo
+copy_if_exists ${ARCHIVE_DIR}/devicetree/a3io-rogue_overlay.dtbo    ${MACHINE}/00096.dtbo
+rm -rf ${ARCHIVE_DIR} || error "Cannot remove dir ${ARCHIVE_DIR}"
