@@ -40,10 +40,7 @@ set_overlay=\
 # See uEnv.shim.txt.  Modified to include *_hooks.
 #
 bootenv_cmd=\
-    setenv pn ${iv_mb}; \
-    setexpr pn sub "^205-" ""; \
-    setexpr pn sub "-.*" "" ; \
-    setenv altpath ${pn}; \
+    setenv altpath ${iv_mb_ord}; \
     setenv pre_boot_kernel_hook run set_fdt_chosen_startup; \
     setenv pre_bootenv_cmd_hook run set_overlay; \
     boot

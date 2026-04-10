@@ -5,17 +5,6 @@
 # of the boot images.  The ${altpath} is set to the PN (5-digit part number) of
 # the SoM.
 #
-# Note: iv_mb is of the form:
-#   205-nnnnn-vv-rr,sssss,PartName
-# where
-#   nnnnn: part number
-#   vv: variant
-#   rr: revision
-#   sssss: serial number
+# Note: iv_mb_ord is the 5-digit ordinal from the part number.
 #
-bootenv_cmd=\
-    setenv pn ${iv_mb}; \
-    setexpr pn sub "^205-" ""; \
-    setexpr pn sub "-.*" "" ; \
-    setenv altpath ${pn}; \
-    boot
+bootenv_cmd=setenv altpath ${iv_mb_ord}; boot
