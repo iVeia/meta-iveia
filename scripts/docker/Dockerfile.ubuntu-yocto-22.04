@@ -1,0 +1,62 @@
+FROM ubuntu:22.04
+
+# Update package lists and install packages
+RUN apt-get update && \
+    apt-get install -y \
+        python3 \
+        python3-pip \
+        python3-distutils \
+        python-is-python3 \
+        git \
+        curl \
+        gcc \
+        g++ \
+        gawk \
+        gnupg \
+        locales \
+        make \
+        chrpath \
+        cpio \
+        wget \
+        diffstat \
+        texinfo \
+        parted \
+        xxd \
+        libtinfo5 \
+        file \
+        lz4 \
+        zstd && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# repo command from apt is broken - manually download instead
+RUN curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-downloads/repo && \
+    chmod a+rx /usr/local/bin/repo
+
+# Set up UTF-8 locale
+RUN locale-gen en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
+
+# Create a non-root user named "builder"
+RUN useradd -m -s /bin/bash builder
+
+# Switch to the builder user
+USER builder
+
+# Force user name - required to run git
+RUN git config --global user.email "builder@iveia.com"
+RUN git config --global user.name "iVeia Builder"
+# Prevent repo utility from requesting "Enable color display ...?"
+RUN git config --global color.ui false
+# Fix github deprecation of git:// paths - required to get Xilinx source
+RUN git config --global url."https://".insteadOf git://
+# Allow git to run in directories owned by a different user (e.g. CI runner)
+RUN git config --global --add safe.directory '*'
+
+# Set working directory
+WORKDIR /home/builder
+
+# Default command
+CMD ["/bin/bash"]

@@ -32,10 +32,10 @@ This section details the fastest way to get started.
 
 ## Requirements
 
-iVeia follows the Xilinx tools in regards to supported OS versions, currently
-including Ubuntu 16.04 and 18.04.
+iVeia follows the Xilinx tools in regards to supported OS versions, and is
+currently tested under Ubuntu 22.04.
 
-meta-iveia is currently compatible with **Xilinx tools version: "2021.2"**.
+meta-iveia is currently compatible with **Xilinx tools version: "2024.2"**.
 
 ## Docker
 
