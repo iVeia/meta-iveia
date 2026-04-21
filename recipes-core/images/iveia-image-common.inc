@@ -38,6 +38,8 @@ IMAGE_INSTALL += "e2fsprogs-e2fsck e2fsprogs-mke2fs e2fsprogs-tune2fs"
 IMAGE_INSTALL += "e2fsprogs-badblocks e2fsprogs-resize2fs"
 IMAGE_INSTALL += "util-linux"
 
+IMAGE_FEATURES += "serial-autologin-root empty-root-password"
+
 # create /etc/os-release with build timestamp and git hash for meta-iveia 
 gen_os_release() {
      cp ${META_IVEIA_VERSIONS_FILE} ${IMAGE_ROOTFS}/etc/os-release
