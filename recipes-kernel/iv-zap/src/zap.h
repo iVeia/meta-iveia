@@ -46,10 +46,10 @@
 #define ZAP_IOC_R_INSTANCE_COUNT		_IOR(ZAP_IOC_MAGIC,  26, unsigned long)
 
 #define ZAP_IOC_R_RX_JUMBO_EN		_IOR(ZAP_IOC_MAGIC,  27, unsigned long)
-#define ZAP_IOC_W_RX_JUMBO_EN		_IOR(ZAP_IOC_MAGIC,  28, unsigned long)
+#define ZAP_IOC_W_RX_JUMBO_EN		_IOW(ZAP_IOC_MAGIC,  28, unsigned long)
 
 #define ZAP_IOC_R_TX_JUMBO_EN		_IOR(ZAP_IOC_MAGIC,  29, unsigned long)
-#define ZAP_IOC_W_TX_JUMBO_EN		_IOR(ZAP_IOC_MAGIC,  30, unsigned long)
+#define ZAP_IOC_W_TX_JUMBO_EN		_IOW(ZAP_IOC_MAGIC,  30, unsigned long)
 
 #define ZAP_IOC_MAXNR 30 
 
