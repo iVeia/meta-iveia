@@ -20,7 +20,7 @@ variables:
   IVINSTALL_REL_PATH: out/ivinstall
   IVINSTALL_ABS_PATH: ${CI_PROJECT_DIR}/${IVINSTALL_REL_PATH}
   IVINSTALL_TGT: ivinstall-full
-  UBUNTU_VER: "18.04"
+  UBUNTU_VER: "22.04"
 
   # MACHINEs that will be built and installed on the TFTP server
   MACHINES: >-
