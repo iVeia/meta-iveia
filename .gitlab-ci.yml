@@ -145,6 +145,7 @@ install-job:
 
     # Install boot files for each machine
     - cd ${TFTP_DIR}
+    - rm -r 0[0-9][0-9][0-9][0-9]
     - cp /opt/tsc/dist/uut .
     - for m in $MACHINES; do bash ${INSTALL_SCRIPT} ${IVINSTALL_ABS_PATH} ${m}; done
 
