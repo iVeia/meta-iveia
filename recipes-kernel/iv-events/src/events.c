@@ -197,7 +197,7 @@ int events_open(struct inode *inode, struct file *filp)
 	int success = 0;
 	dev = container_of(inode->i_cdev, struct events_dev, cdev);
 
-	pr_info("iv-events - OPEN (%d)\n", dev->opened);
+	//pr_info("iv-events - OPEN (%d)\n", dev->opened);
 
 	if (down_interruptible(&dev->sem)) return -ERESTARTSYS;
 
@@ -244,7 +244,7 @@ int events_release(struct inode *inode, struct file *filp)
 	struct events_dev *dev = pevents_file->dev;
 	int err = 0;
 
-	pr_info("iv-events - RELEASE\n");
+	//pr_info("iv-events - RELEASE\n");
 
 	if (down_interruptible(&dev->sem)) return -ERESTARTSYS;
 
