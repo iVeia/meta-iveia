@@ -13,7 +13,17 @@
 
 # Config section is currently empty.  Reserved for future use.
 config:
+    # Test protocol used by ATP
     protocol: CITEST
+
+    # TFTP server.  Optional - use if different than default
+    serverip: 192.168.10.1
+
+    # UUT map.  Some UUTs may need to run from a different dir than their PN.
+    # This maps UUT PNs, which are used as the TFTP boot dir, to a different
+    # dir.
+    uut_map:
+        00172: 00172-fs001
 
 # List of carriers
 carriers:

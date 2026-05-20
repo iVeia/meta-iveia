@@ -126,9 +126,24 @@ install-job:
     TFTP_DIR: /srv/tftp
     INSTALL_SCRIPT: ${CI_PROJECT_DIR}/scripts/ci/install
   script:
+    # Install uEnv.txt script, and append additional variable generated from
+    # the TEST_FIXTURE_YAML setup.  See example.yml.  Util yq is required on
+    # gitlab-runner to extract YAML.
     - cp ${CI_PROJECT_DIR}/recipes-core/images/files/uEnv.cishim.txt ${TFTP_DIR}/uEnv.txt
-    # Optionally override default TFTP serverip by appending to uEnv.txt
+    - yq 'select(.config.uut_map != null) | "mod_altpath_hook=\\"'
+            ${TEST_FIXTURE_YAML} >> ${TFTP_DIR}/uEnv.txt
+    - yq '.config.uut_map
+            | to_entries
+            | .[]
+            | "    test ${altpath} = " + .key + " && setenv altpath; \\" + .value'
+            ${TEST_FIXTURE_YAML} >> ${TFTP_DIR}/uEnv.txt
+    - yq 'select(.config.uut_map != null) | ""'
+            ${TEST_FIXTURE_YAML} >> ${TFTP_DIR}/uEnv.txt
+    - yq 'select(.config.serverip != null) | "serverip=" + .config.serverip'
+            ${TEST_FIXTURE_YAML} >> ${TFTP_DIR}/uEnv.txt
+    - cat ${TFTP_DIR}/uEnv.txt
 
+    # Install boot files for each machine
     - cd ${TFTP_DIR}
     - cp /opt/tsc/dist/uut .
     - for m in $MACHINES; do bash ${INSTALL_SCRIPT} ${IVINSTALL_ABS_PATH} ${m}; done

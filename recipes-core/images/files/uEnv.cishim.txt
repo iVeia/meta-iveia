@@ -41,6 +41,7 @@ set_overlay=\
 #
 bootenv_cmd=\
     setenv altpath ${iv_mb_ord}; \
+    run mod_altpath_hook; \
     setenv pre_boot_kernel_hook run set_fdt_chosen_startup; \
     setenv pre_bootenv_cmd_hook run set_overlay; \
     boot
