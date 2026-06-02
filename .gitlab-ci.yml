@@ -135,7 +135,7 @@ install-job:
     - yq '.config.uut_map
             | to_entries
             | .[]
-            | "    test ${altpath} = " + .key + " && setenv altpath; \\" + .value'
+            | "    test ${altpath} = " + .key + " && setenv altpath " + .value + "; \\"'
             ${TEST_FIXTURE_YAML} >> ${TFTP_DIR}/uEnv.txt
     - yq 'select(.config.uut_map != null) | ""'
             ${TEST_FIXTURE_YAML} >> ${TFTP_DIR}/uEnv.txt
