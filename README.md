@@ -10,7 +10,6 @@ need to be installed.
 # Supported Boards/Machines
 
 iVeia SoM part numbers (`MACHINE`) supported by this layer:
-- 00068 (Atlas-II Z7x)
 - 00090 (Atlas-II Z8)
 - 00104 (Atlas-III Z8)
 - 00114 (Atlas-III Z8e)

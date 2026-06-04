@@ -23,11 +23,9 @@ variables:
   UBUNTU_VER: "22.04"
 
   # MACHINEs that will be built and installed on the TFTP server
+  # Currently z7 MACHINEs are not supported, i.e.: 00049, 00068, 00102
   MACHINES: >-
-    00049
-    00068
     00090
-    00102
     00104
     00108
     00114
@@ -69,8 +67,8 @@ build-job:
     # issues.
     DL_DIR: cache/downloads
 
+    # SDKs to build (currently z7 SDK is not supported (atlas-z7))
     SDKS: >-
-      atlas-z7
       atlas-z8
 
     # These targets need to be rebuilt (if cached) in order to build in the
