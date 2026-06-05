@@ -1,8 +1,7 @@
 diff --git a/fsbl-firmware/psu_init.c b/fsbl-firmware/psu_init.c
-index a6442c08f4..57950b11d4 100644
 --- a/fsbl-firmware/psu_init.c
 +++ b/fsbl-firmware/psu_init.c
-@@ -6564,9 +6564,15 @@ psu_init(void)
+@@ -22765,10 +22765,16 @@ psu_init(void)
  	status &=  psu_peripherals_pre_init_data();
  	status &=   psu_pll_init_data();
  	status &=   psu_clock_init_data();
@@ -16,6 +15,7 @@ index a6442c08f4..57950b11d4 100644
 +	void iv_z8_init();
 +	iv_z8_init();
 +	outbyte('*'); usleep(1000);
+ 	status &=  init_serdes();
  	init_peripheral();
- 
+
  	status &=  psu_peripherals_powerdwn_data();
