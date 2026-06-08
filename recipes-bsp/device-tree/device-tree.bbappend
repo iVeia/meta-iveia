@@ -25,6 +25,7 @@ SRC_URI_append = " \
 SRC_URI_append_00104-fs001 = "file://machine/00104.dtsi"
 SRC_URI_append_00172-fs001 = "file://machine/00172.dtsi"
 SRC_URI_append_00172-fs002 = "file://machine/00172.dtsi"
+SRC_URI_append_00172-fs003 = "file://machine/00172.dtsi"
 
 DTC_BFLAGS = "-p ${DT_PADDING_SIZE} -@ -H epapr"
 

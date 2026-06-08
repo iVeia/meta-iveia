@@ -46,4 +46,5 @@ and will include the applicable variants.  If a `MACHINE` has no feature sets, t
 | 00172       | Same as fs002             | Any
 | 00172-fs001 | PS 2GB                    | 01
 | 00172-fs002 | PS 512MB                  | 02
+| 00172-fs003 | PS 4GB                    | 03
 
