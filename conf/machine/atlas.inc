@@ -20,6 +20,8 @@ YAML_SERIAL_CONSOLE_STDIN:pn-fsbl-firmware = "psu_uart_1"
 YAML_SERIAL_CONSOLE_STDOUT:pn-fsbl-firmware = "psu_uart_1"
 YAML_SERIAL_CONSOLE_STDIN:pn-fsbl-firmware:00126 = "psu_uart_0"
 YAML_SERIAL_CONSOLE_STDOUT:pn-fsbl-firmware:00126 = "psu_uart_0"
+YAML_SERIAL_CONSOLE_STDIN:pn-fsbl-firmware:zynq = "ps7_uart_1"
+YAML_SERIAL_CONSOLE_STDOUT:pn-fsbl-firmware:zynq = "ps7_uart_1"
 
 # Yocto arm-trusted-firmware(TF-A) variables
 ATF_CONSOLE = "cadence1"

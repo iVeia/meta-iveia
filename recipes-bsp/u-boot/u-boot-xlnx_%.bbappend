@@ -31,6 +31,7 @@ SRC_URI:append:00130 = "\
 do_configure:append() {
     # we use custom u-boot env - turn off extra additions from Xilinx
     echo  "#undef CFG_EXTRA_ENV_SETTINGS" >> ${S}/include/configs/xilinx_zynqmp.h
+    echo  "#undef CFG_EXTRA_ENV_SETTINGS" >> ${S}/include/configs/zynq-common.h
 
     # Add our board Kconfig to top level (simpler than a patch)
     echo  'source "board/iveia/atlas/Kconfig"' >> ${S}/Kconfig

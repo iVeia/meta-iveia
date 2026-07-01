@@ -11,8 +11,8 @@ diff --git a/lib/sw_apps/zynq_fsbl/src/main.c b/lib/sw_apps/zynq_fsbl/src/main.c
 index 88b6e34321..ac2f81dedc 100644
 --- a/lib/sw_apps/zynq_fsbl/src/main.c
 +++ b/lib/sw_apps/zynq_fsbl/src/main.c
-@@ -197,6 +197,10 @@ extern u8 BitstreamFlag;
- #ifdef XPAR_PS7_QSPI_LINEAR_0_S_AXI_BASEADDR
+@@ -213,6 +213,10 @@
+ #if defined(XPAR_PS7_QSPI_LINEAR_0_S_AXI_BASEADDR) || defined(XPAR_PS7_QSPI_LINEAR_0_BASEADDRESS)
  extern u32 QspiFlashSize;
  #endif
 +
@@ -22,7 +22,7 @@ index 88b6e34321..ac2f81dedc 100644
  /*****************************************************************************/
  /**
  *
-@@ -221,7 +225,9 @@ int main(void)
+@@ -237,7 +241,9 @@
  	/*
  	 * PCW initialization for MIO,PLL,CLK and DDR
  	 */
@@ -32,6 +32,6 @@ index 88b6e34321..ac2f81dedc 100644
  	if (Status != FSBL_PS7_INIT_SUCCESS) {
  		fsbl_printf(DEBUG_GENERAL,"PS7_INIT_FAIL : %s\r\n",
  						getPS7MessageInfo(Status));
--- 
+--
 2.25.1
 

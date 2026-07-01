@@ -1,2 +1,2 @@
-require conf/machine/include/soc-zynq.inc
+require conf/machine/zynq-generic.conf
 require conf/machine/atlas.inc

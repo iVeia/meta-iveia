@@ -11,15 +11,15 @@ diff --git a/lib/sw_apps/zynq_fsbl/src/main.c b/lib/sw_apps/zynq_fsbl/src/main.c
 index 62a5b4dd64..88b6e34321 100644
 --- a/lib/sw_apps/zynq_fsbl/src/main.c
 +++ b/lib/sw_apps/zynq_fsbl/src/main.c
-@@ -113,6 +113,7 @@
+@@ -118,6 +118,7 @@
+ #include "xil_exception.h"
  #include "xstatus.h"
  #include "fsbl_hooks.h"
- #include "xtime_l.h"
 +#include "iveia_version.h"
- 
- #ifdef XPAR_XWDTPS_0_BASEADDR
- #include "xwdtps.h"
-@@ -266,10 +267,29 @@ int main(void)
+ #ifndef SDT
+ #include "xtime_l.h"
+ #else
+@@ -282,10 +283,29 @@
  	/*
  	 * Print the FSBL Banner
  	 */
@@ -49,8 +49,8 @@ index 62a5b4dd64..88b6e34321 100644
 +		#error More than four meta-iveia* layers not supported
 +	#endif
  
- #ifdef XPAR_PS7_DDR_0_S_AXI_BASEADDR
- 
--- 
+ #if defined(XPAR_PS7_DDR_0_S_AXI_BASEADDR) || defined(XPAR_PS7_DDR_0_BASEADDRESS)
+
+--
 2.25.1
 
