@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brian Silverman <bsilverman@iveia.com>
+Date: Wed, 15 Jul 2026 15:03:00 -0400
+Subject: [PATCH] zynq: bring up QSPI on the JTAG_MODE handoff path
+
+Call InitQspi() directly in the JTAG_MODE branch, so QSPI is usable from u-boot
+on a JTAG-strapped bring-up/programming boot.  This is required for QSPI flash
+programming when JTAG-strapped.
+---
+ lib/sw_apps/zynq_fsbl/src/main.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/lib/sw_apps/zynq_fsbl/src/main.c b/lib/sw_apps/zynq_fsbl/src/main.c
+index 88b6e34321..ac2f81dedd 100644
+--- a/lib/sw_apps/zynq_fsbl/src/main.c
++++ b/lib/sw_apps/zynq_fsbl/src/main.c
+@@ -539,6 +539,11 @@
+ 		 */
+ 		SlcrLock();
+ 
++		/*
++		 * Force QSPI Init on JTAG-stapped boot.
++		 */
++		InitQspi();
++
+ 		FsblHandoffJtagExit();
+ 	} else {
+ 		fsbl_printf(DEBUG_GENERAL,"ILLEGAL_BOOT_MODE \r\n");
+--
+2.25.1
+

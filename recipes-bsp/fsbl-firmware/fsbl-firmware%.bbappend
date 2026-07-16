@@ -9,6 +9,7 @@ SRC_URI:append:zynq = "\
     file://iveia-version-banner-zynq.patch \
     file://weaken-fsbl-hooks-zynq.patch \
     file://ps7_init-pre-and-post-hooks.patch \
+    file://qspi-jtag-mode-zynq.patch \
     "
 
 # These patches must be applied after configure because configure dynamically
