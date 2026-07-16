@@ -4,7 +4,7 @@
 # Memory layout is critical, and must match addresses from the ivinstall
 # script.
 #
-fdt_addr=0x700000
+fdt_addr=0x01000000
 kernel_addr=0x800000
 bootenv_cmd=run board_config write_tarball defargs set_fdt_chosen boot_kernel
 defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon nozap

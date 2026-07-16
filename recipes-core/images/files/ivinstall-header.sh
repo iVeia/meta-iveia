@@ -537,10 +537,11 @@ fi
 # Memory layout:
 #   MB      ADDR
 #   0       0x00000000      Mem bottom
+#   2       0x00200000      Kernel relocation, defined by Xilinx.  Zynq-7000 only.
 #   5       0x00500000      JTAG magic flag (zynq only)
 #   6       0x00600000      uEnv.txt (with pre-header)
-#   7       0x00700000      DTB
 #   8       0x00800000      Kernel
+#   16      0x01000000      DTB
 #   64      0x04000000      U-Boot before relocation (zynq only)
 #   68      0x04400000      initrd (offset to avoid U-Boot on zynq)
 #   238     0x0EE00000      ZAP (size 128MB)
@@ -553,6 +554,9 @@ fi
 # the initial image.  However, during JTAG load, the initrd is loaded over JTAG
 # BEFORE u-boot is loaded/relocated.  Therefore on Zynq, we need to make sure
 # the U-Boot initial load address does not conflict with initrd.
+#
+# On Zynq-7000, Kernel must have enough space to fit between it's relocated
+# address and the DTB.
 #
 # ZAP reserves 128MB in the DTB, and this memory is blocked from use because it
 # is defined in the DTB even though it is not used in U-Boot.  The ZAP location
