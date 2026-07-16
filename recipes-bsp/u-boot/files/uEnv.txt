@@ -24,7 +24,7 @@ load_fpga=\
     ${loader} ${fpga_addr} ${altpath}/${fpga_file} && fpga loadb 0 ${fpga_addr} ${filesize}; \
     true
 load_kernel=\
-    if test ${board} = zynq; then \
+    if test ${soc} = zynq; then \
         setenv kernel_file uImage; \
         setenv kernel_bootcmd bootm; \
     else \

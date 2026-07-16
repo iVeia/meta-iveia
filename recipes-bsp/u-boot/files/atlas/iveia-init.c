@@ -368,7 +368,7 @@ static void set_mac_addrs(void)
     // ZynqMP SoMs is to use the eth3 (GEM3).
     //
     memset(macs, 0, sizeof(macs));
-    if (strcmp("zynq", CONFIG_SYS_BOARD) == 0) {
+    if (strcmp("zynq", CONFIG_SYS_SOC) == 0) {
         if (mb_mac) {
             macs[0] = mb_mac;
             macs[1] = mb_mac + 1;

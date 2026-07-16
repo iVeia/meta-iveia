@@ -11,7 +11,7 @@ defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon
 initrd_addr=0x04400000
 
 board_config=\
-    if test ${board} = zynq; then \
+    if test ${soc} = zynq; then \
         echo Booting on Zynq; \
         setenv kernel_bootcmd bootm; \
     else \

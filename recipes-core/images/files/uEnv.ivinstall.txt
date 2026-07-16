@@ -23,7 +23,7 @@ write_tarball=\
     mmc write ${tarball_addr} ${tarball_sect_offset} ${filesectors}
 
 board_config=\
-    if test ${board} = zynq; then \
+    if test ${soc} = zynq; then \
         echo Booting on Zynq; \
         setenv kernel_bootcmd bootm; \
     else \
