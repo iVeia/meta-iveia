@@ -3,10 +3,12 @@
 TGTS="\
     fsbl \
     fsbl-firmware \
-    pmu-firmware \
     u-boot-xlnx \
     linux-xlnx \
     xilinx-bootbin \
     ivinstall-full \
     "
+if [ "$(bitbake-getvar --value SOC_FAMILY)" = "zynqmp" ]; then
+    TGTS="$TGTS pmu-firmware"
+fi
 bitbake -c cleansstate $TGTS
