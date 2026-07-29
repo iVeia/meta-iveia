@@ -20,6 +20,16 @@
 
 &gem0 {
     status = "disabled";
+
+    /*
+     * gem0's own native MDIO controller is disconnected.  The MDIO in use is
+     * on I2C GPIO expander.  As of 2024.2 Xilinx, we must define this or else
+     * we slow boot by 40 seconds doing an MDIO bus scan.
+     */
+    mdio {
+        #address-cells = <1>;
+        #size-cells = <0>;
+    };
 };
 
 &gem1 {
