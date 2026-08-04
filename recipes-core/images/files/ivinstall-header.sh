@@ -537,11 +537,12 @@ fi
 # Memory layout:
 #   MB      ADDR
 #   0       0x00000000      Mem bottom
+#   1       0x00100000      DTB
+#   1.5     0x00180000      DTBO
 #   2       0x00200000      Kernel relocation, defined by Xilinx.  Zynq-7000 only.
 #   5       0x00500000      JTAG magic flag (zynq only)
 #   6       0x00600000      uEnv.txt (with pre-header)
-#   8       0x00800000      Kernel
-#   16      0x01000000      DTB
+#   8       0x00800000      Kernel (also bitfile before kernel load)
 #   64      0x04000000      U-Boot before relocation (zynq only)
 #   68      0x04400000      initrd (offset to avoid U-Boot on zynq)
 #   238     0x0EE00000      ZAP (size 128MB)
