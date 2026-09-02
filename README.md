@@ -17,6 +17,7 @@ iVeia SoM part numbers (`MACHINE`) supported by this layer:
 - 00126 (Helios Z8)
 - 00127 (Atlas-II Z8ev)
 - 00130 (Atlas-II Z8p HD PS)
+- 00184 (Atlas-III Z8N)
 
 iVeia IO boards (`IVIO`) supported by this layer:
 - io-captiva (PN 00074)

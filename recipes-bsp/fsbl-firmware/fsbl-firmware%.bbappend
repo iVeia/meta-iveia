@@ -64,6 +64,7 @@ FSBL_SRCS:append:00172 := " ${THISDIR}/files/00172.c"
 FSBL_SRCS:append:00172-fs001 := " ${THISDIR}/files/00172.c"
 FSBL_SRCS:append:00172-fs002 := " ${THISDIR}/files/00172.c"
 FSBL_SRCS:append:00172-fs003 := " ${THISDIR}/files/00172.c"
+FSBL_SRCS:append:00184 := " ${THISDIR}/files/00184.c"
 
 YAML_COMPILER_FLAGS:append:00049 = " -DNO_CLKGEN"
 YAML_COMPILER_FLAGS:append:00102 = " -DNO_I2C"
