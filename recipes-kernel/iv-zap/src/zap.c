@@ -163,7 +163,7 @@ setup_multiple_pools(int iNumPools)
 
     for (i = 0; i < iNumPools; i++) {
         zap_devp->interface[i].rx_paddr = (phys_addr_t)PAGE_ALIGN(((uintptr_t)zap_devp->rx_pool_paddr + iRxSize * i));
-        zap_devp->interface[i].tx_paddr = (phys_addr_t)PAGE_ALIGN(((uintptr_t)zap_devp->tx_pool_paddr + iRxSize * i));
+        zap_devp->interface[i].tx_paddr = (phys_addr_t)PAGE_ALIGN(((uintptr_t)zap_devp->tx_pool_paddr + iTxSize * i));
     }
 
     if (iNumPools == 1) {
