@@ -4,7 +4,7 @@
 # Memory layout is critical, and must match addresses from the ivinstall
 # script.
 #
-fdt_addr=0x01000000
+fdt_addr=0x0100000
 kernel_addr=0x800000
 bootenv_cmd=run board_config write_tarball defargs set_fdt_chosen boot_kernel
 defargs=setenv bootargs console=ttyPS0,115200n8 rw earlycon nozap
@@ -46,6 +46,7 @@ tarball_max_sect=2097152
 #       image to 'tar'.
 set_fdt_chosen=\
     fdt addr ${fdt_addr}; \
+    fdt resize 0x1000; \
     fdt set /chosen startup "\
         echo Preformat SD/eMMC...; \
         dd if=/dev/mmcblk${tarball_devnum} bs=512 \
